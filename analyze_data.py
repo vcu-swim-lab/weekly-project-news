@@ -1,13 +1,17 @@
 from googleapiclient import discovery
 import json
+import os
+from dotenv import load_dotenv
 
-API_KEY = "TODO: Perspective API Key, might need to be in public.env"
+load_dotenv('public.env')  
+
+# TODO: we don't have the Perspective API key yet
+API_KEY = os.environ.get("PERSPECTIVE_API_KEY")
 
 # Function that gets text as a parameter and analyzes how toxic it is, returning
 # a toxicity score
+# from: https://developers.perspectiveapi.com/s/docs-sample-requests?language=en_US
 def analyze_text(text):
-
-  # I got this from the Perspective API website's sample request :3
   client = discovery.build(
     "commentanalyzer",
     "v1alpha1",

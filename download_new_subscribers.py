@@ -1,5 +1,6 @@
 import requests
 import os
+import json
 from dotenv import load_dotenv
 
 load_dotenv('public.env')  
@@ -14,7 +15,21 @@ METHOD = "GET"
 
 response = requests.request(METHOD, f"{BASE_URL}/v1{ENDPOINT}", headers=headers)
 
-print(response.text)
+# outputs json data, the results shown below
+# print(response.text)
+
+if response.status_code == 200:
+  subscribers_data = response.json()
+
+  # save it to subscribers.json
+  with open('subscribers.json', 'w') as file:
+    json.dump(subscribers_data, file, indent=2)
+
+  print('Successfully saved to subscribers.json')
+else:
+  print(f"Error: {response.status_code} - {response.text}")
+
+
 
 # {
 #   "results": [

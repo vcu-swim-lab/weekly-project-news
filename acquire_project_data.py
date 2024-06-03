@@ -1,4 +1,7 @@
 from github import Github
+from github import Auth
+from github import GithubIntegration
+from github import PullRequest
 from datetime import datetime, timedelta, timezone
 import time
 
@@ -27,13 +30,30 @@ def get_issue_text(g, repo, one_week_ago):
 
     return issue_text
 
+# Gets the text from pull requests, including title, body, and state.
 def get_pr_text(g, repo, one_week_ago):
-    ### TODO
-    return ""
+    pr_text = ""
+    pulls = repo.get_pulls(state='all', sort='created', since=one_week_ago)
+    for pr in pulls:
+        pr_text += f"Title: {pr.title}"
+        pr_text += f"Body: {pr.body}"
+        pr_text += f"State: {pr.state}\n"
+        pr_text += "--------------------------------------------------"
+        rate_limit_check(g)
+    
+    return pr_text
 
 def get_commit_messages(g, repo, one_week_ago):
-    ### TODO
-    return ""
+    commit_text = ""
+    commits = repo.get_commits(state='all', sort='created', since=one_week_ago)
+
+    for commit in commits:
+        commit_text += f"Author: {commit.author.name}"
+        commit_text += f"Message: {commit.message}\n"
+        pr_text += "--------------------------------------------------"
+        rate_limit_check(g)
+
+    return commit_text
 
 
 if __name__ == '__main__':
@@ -45,6 +65,8 @@ if __name__ == '__main__':
     one_week_ago = datetime.now() - timedelta(days=7)
 
     print(get_issue_text(g, repo, one_week_ago))
+    print(get_pr_text(g, repo, one_week_ago))
+    print(get_commit_messages(g, repo, one_week_ago))
 
     # OUTPUT EVERYTHING AS A JSON FILE
 

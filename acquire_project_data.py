@@ -1,9 +1,7 @@
 from github import Github
-from github import Auth
-from github import GithubIntegration
-from github import PullRequest
 from datetime import datetime, timedelta, timezone
 import time
+import json
 
 
 def rate_limit_check(g):
@@ -33,7 +31,7 @@ def get_issue_text(g, repo, one_week_ago):
 # Gets the text from pull requests, including title, body, and state.
 def get_pr_text(g, repo, one_week_ago):
     pr_text = ""
-    pulls = repo.get_pulls(state='all', sort='created', since=one_week_ago)
+    pulls = repo.get_pulls(state='all', sort='created')
     for pr in pulls:
         pr_text += f"Title: {pr.title}"
         pr_text += f"Body: {pr.body}"
@@ -45,12 +43,12 @@ def get_pr_text(g, repo, one_week_ago):
 
 def get_commit_messages(g, repo, one_week_ago):
     commit_text = ""
-    commits = repo.get_commits(state='all', sort='created', since=one_week_ago)
+    commits = repo.get_commits(since=one_week_ago)
 
     for commit in commits:
-        commit_text += f"Author: {commit.author.name}"
-        commit_text += f"Message: {commit.message}\n"
-        pr_text += "--------------------------------------------------"
+        commit_text += f"Author: {commit.commit.author.name}"
+        commit_text += f"Message: {commit.commit.message}\n"
+        commit_text += "--------------------------------------------------"
         rate_limit_check(g)
 
     return commit_text
@@ -69,5 +67,15 @@ if __name__ == '__main__':
     print(get_commit_messages(g, repo, one_week_ago))
 
     # OUTPUT EVERYTHING AS A JSON FILE
+    #Sample JSON code
+    '''
+    dict = {
+     "issues": get_issue_text(g, repo, one_week_ago),
+     "pull requests": get_pr_text(g, repo, one_week_ago),
+     "commits": get_commit_messages(g, repo, one_week_ago)
+    }
+    with open("data.json", "w") as outfile:
+       json.dump(dict, outfile)
+    '''
 
     g.close()

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import time
 import json
 
-
+# Implements a rate limit checker that pauses the program if the limit of API requests is reached.
 def rate_limit_check(g):
     rate_limit = g.get_rate_limit().core
     if rate_limit.remaining < 10:  
@@ -12,6 +12,7 @@ def rate_limit_check(g):
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
 
+# Gets the text from issue queries, including title, body, and comments.
 def get_issue_text(g, repo, one_week_ago):
     issue_text = ""
     issues = repo.get_issues(state='all', since=one_week_ago)
@@ -41,6 +42,7 @@ def get_pr_text(g, repo, one_week_ago):
     
     return pr_text
 
+# Gets the text from commits, including the author and message.
 def get_commit_messages(g, repo, one_week_ago):
     commit_text = ""
     commits = repo.get_commits(since=one_week_ago)

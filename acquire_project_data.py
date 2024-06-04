@@ -1,7 +1,11 @@
 from github import Github
+from github import Auth
 from datetime import datetime, timedelta, timezone
 import time
 import json
+import requests
+import os
+from dotenv import load_dotenv
 
 # Implements a rate limit checker that pauses the program if the limit of API requests is reached.
 def rate_limit_check(g):
@@ -18,13 +22,13 @@ def get_issue_text(g, repo, one_week_ago):
     issues = repo.get_issues(state='all', since=one_week_ago)
 
     for issue in issues:
-        issue_text += f"Title: {issue.title}"
+        issue_text += f"Title: {issue.title}\n"
         issue_text += f"Body: {issue.body}\n"
 
         comments = issue.get_comments()
         for comment in comments:
             issue_text += f"Comment by {comment.user.login}: {comment.body}\n"
-        issue_text += "--------------------------------------------------"
+        issue_text += "--------------------------------------------------\n"
         rate_limit_check(g)
 
     return issue_text
@@ -34,10 +38,10 @@ def get_pr_text(g, repo, one_week_ago):
     pr_text = ""
     pulls = repo.get_pulls(state='all', sort='created')
     for pr in pulls:
-        pr_text += f"Title: {pr.title}"
-        pr_text += f"Body: {pr.body}"
+        pr_text += f"Title: {pr.title}\n"
+        pr_text += f"Body: {pr.body}\n"
         pr_text += f"State: {pr.state}\n"
-        pr_text += "--------------------------------------------------"
+        pr_text += "--------------------------------------------------\n"
         rate_limit_check(g)
     
     return pr_text
@@ -48,29 +52,29 @@ def get_commit_messages(g, repo, one_week_ago):
     commits = repo.get_commits(since=one_week_ago)
 
     for commit in commits:
-        commit_text += f"Author: {commit.commit.author.name}"
+        commit_text += f"Author: {commit.commit.author.name}\n"
         commit_text += f"Message: {commit.commit.message}\n"
-        commit_text += "--------------------------------------------------"
+        commit_text += "--------------------------------------------------\n"
         rate_limit_check(g)
 
     return commit_text
 
 
 if __name__ == '__main__':
+    load_dotenv()
     PROJECT_NAME = 'tensorflow/tensorflow' 
-
-    g = Github()
+    g = Github(os.environ['GITHUB_API_KEY'])
     repo = g.get_repo(PROJECT_NAME)
 
     one_week_ago = datetime.now() - timedelta(days=7)
+    one_day_ago = datetime.now() - timedelta(days=1)
 
     print(get_issue_text(g, repo, one_week_ago))
     print(get_pr_text(g, repo, one_week_ago))
     print(get_commit_messages(g, repo, one_week_ago))
 
     # OUTPUT EVERYTHING AS A JSON FILE
-    #Sample JSON code
-    '''
+    
     dict = {
      "issues": get_issue_text(g, repo, one_week_ago),
      "pull requests": get_pr_text(g, repo, one_week_ago),
@@ -78,6 +82,6 @@ if __name__ == '__main__':
     }
     with open("data.json", "w") as outfile:
        json.dump(dict, outfile)
-    '''
+    
 
     g.close()

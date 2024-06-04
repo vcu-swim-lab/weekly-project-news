@@ -2,7 +2,12 @@ from github import Github
 from datetime import datetime, timedelta, timezone
 import time
 import json
+import os
+from dotenv import load_dotenv
 
+load_dotenv('public.env')  
+
+# checks the rate limit
 def rate_limit_check(g):
     rate_limit = g.get_rate_limit().core
     if rate_limit.remaining < 10:  
@@ -11,22 +16,32 @@ def rate_limit_check(g):
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
 
+# formats a specific repo's issues as json data
 def get_issue_text(g, repo, one_week_ago):
-    issue_text = "Issues:\n"
+    issue_data_all = []
     issues = repo.get_issues(state='all', since=one_week_ago)
 
     for issue in issues:
-        issue_text += f"Title: {issue.title}\n"
-        issue_text += f"Body: {issue.body}\n"
+        issue_data = {
+            "title": issue.title,
+            "body": issue.body,
+            "user": issue.user.login,
+            "state": issue.state,
+            "comments": []
+        }
 
         comments = issue.get_comments()
         for comment in comments:
-            issue_text += f"\tComment by {comment.user.login}: {comment.body}\n"
-        issue_text += "--------------------------------------------------\n"
+            comment_data = {
+                "user": comment.user.login,
+                "body": comment.body
+            }
+            issue_data["comments"].append(comment_data)
 
+        issue_data_all.append(issue_data)
         rate_limit_check(g)
 
-    return issue_text
+    return issue_data_all
 
 # Gets the text from pull requests, including title, body, and state.
 def get_pr_text(g, repo, one_week_ago):
@@ -65,8 +80,9 @@ if __name__ == '__main__':
     repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
 
     # pygithub
-    g = Github()
+    g = Github(os.environ['GITHUB_API_KEY'])
     one_week_ago = datetime.now() - timedelta(days=7)
+    data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
@@ -79,21 +95,26 @@ if __name__ == '__main__':
         repo = g.get_repo('stevenbui44/test-vscode')
 
 
-        print(get_issue_text(g, repo, one_week_ago))
-        print(get_pr_text(g, repo, one_week_ago))
-        print(get_commit_messages(g, repo, one_week_ago))
+        # print(get_issue_text(g, repo, one_week_ago))
 
-        # OUTPUT EVERYTHING AS A JSON FILE
-        #Sample JSON code
+        repo_data = {
+            "repo_name": PROJECT_NAME,
+            "issues": get_issue_text(g, repo, one_week_ago),
+        }
+
+        data.append(repo_data)
+
+        # print(get_pr_text(g, repo, one_week_ago))
+        # print(get_commit_messages(g, repo, one_week_ago))
 
         
-        dict = {
-        "issues": get_issue_text(g, repo, one_week_ago),
-        "pull requests": get_pr_text(g, repo, one_week_ago),
-        "commits": get_commit_messages(g, repo, one_week_ago)
-        }
-        with open("data.json", "w") as outfile:
-            json.dump(dict, outfile, indent=2)
+        # dict = {
+        # "issues": get_issue_text(g, repo, one_week_ago),
+        # "pull requests": get_pr_text(g, repo, one_week_ago),
+        # "commits": get_commit_messages(g, repo, one_week_ago)
+        # }
+        with open("github_data.json", "w") as outfile:
+            json.dump(data, outfile, indent=2)
         
 
     g.close()

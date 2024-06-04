@@ -160,3 +160,7 @@ cython_debug/
 #.idea/
 
 public.env
+
+# output of download_new_subscribers
+# holds all subscriber data (email, GitHub link)
+subscribers.json

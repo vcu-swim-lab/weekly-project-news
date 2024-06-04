@@ -23,7 +23,8 @@ def get_issue_text(g, repo, one_week_ago):
         comments = issue.get_comments()
         for comment in comments:
             issue_text += f"Comment by {comment.user.login}: {comment.body}\n"
-        issue_text += "--------------------------------------------------"
+        issue_text += "--------------------------------------------------\n"
+
         rate_limit_check(g)
 
     return issue_text
@@ -55,27 +56,39 @@ def get_commit_messages(g, repo, one_week_ago):
 
 
 if __name__ == '__main__':
-    PROJECT_NAME = 'tensorflow/tensorflow' 
 
+    # get all of the subscribers from subscribers.json
+    with open('subscribers.json') as file:
+        subscribers_data = json.load(file)
+
+    # get a list of all of the repo names from subscribers_data
+    repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
+
+    # pygithub
     g = Github()
-    repo = g.get_repo(PROJECT_NAME)
-
     one_week_ago = datetime.now() - timedelta(days=7)
 
-    print(get_issue_text(g, repo, one_week_ago))
-    print(get_pr_text(g, repo, one_week_ago))
-    print(get_commit_messages(g, repo, one_week_ago))
+    # does this for every repo name (ex. tensorflow/tensorflow)
+    for repo_url in repo_names:
+        # project_name = anything after github.com/ (ex. tensorflow/tensorflow)
+        PROJECT_NAME = repo_url.split('https://github.com/')[-1]
 
-    # OUTPUT EVERYTHING AS A JSON FILE
-    #Sample JSON code
-    '''
-    dict = {
-     "issues": get_issue_text(g, repo, one_week_ago),
-     "pull requests": get_pr_text(g, repo, one_week_ago),
-     "commits": get_commit_messages(g, repo, one_week_ago)
-    }
-    with open("data.json", "w") as outfile:
-       json.dump(dict, outfile)
-    '''
+        repo = g.get_repo(PROJECT_NAME)
+
+        print(get_issue_text(g, repo, one_week_ago))
+        print(get_pr_text(g, repo, one_week_ago))
+        print(get_commit_messages(g, repo, one_week_ago))
+
+        # OUTPUT EVERYTHING AS A JSON FILE
+        #Sample JSON code
+        '''
+        dict = {
+        "issues": get_issue_text(g, repo, one_week_ago),
+        "pull requests": get_pr_text(g, repo, one_week_ago),
+        "commits": get_commit_messages(g, repo, one_week_ago)
+        }
+        with open("data.json", "w") as outfile:
+        json.dump(dict, outfile)
+        '''
 
     g.close()

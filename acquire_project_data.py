@@ -27,6 +27,7 @@ def get_issue_text(g, repo, one_week_ago):
             "body": issue.body,
             "user": issue.user.login,
             "state": issue.state,
+            "created_at": issue.created_at.isoformat(),
             "comments": []
         }
 
@@ -48,15 +49,30 @@ def get_pr_text(g, repo, one_week_ago):
     pr_data_all = []
     pulls = repo.get_pulls(state='all', sort='created')
     
+    # for pr in pulls:
+    #     if pr.created_at > one_week_ago:
+    #         if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
+    #             pr_data = {
+    #                 "title": pr.title,
+    #                 "body": pr.body,
+    #                 "state": pr.state,
+    #                 "user": pr.user.login,
+    #                 "created_at": pr.created_at.isoformat()
+    #             }
+    #         pr_data_all.append(pr_data)
+    #         rate_limit_check(g)
+
     for pr in pulls:
-        if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
-            pr_data = {
-                "title": pr.title,
-                "body": pr.body,
-                "state": pr.state,
-                "user": pr.user.login
-            }
-        pr_data_all.append(pr_data)
+        if pr.created_at > one_week_ago:
+            if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
+                pr_data = {
+                    "title": pr.title,
+                    "body": pr.body,
+                    "state": pr.state,
+                    "user": pr.user.login,
+                    "created_at": pr.created_at.isoformat()
+                }
+                pr_data_all.append(pr_data)
         rate_limit_check(g)
     
     return pr_data_all
@@ -69,7 +85,8 @@ def get_commit_messages(g, repo, one_week_ago):
     for commit in commits:
         commit_data = {
             "author": commit.commit.author.name,
-            "message": commit.commit.message
+            "message": commit.commit.message,
+            "created_at": commit.commit.author.date.isoformat()
         }
 
         commit_data_all.append(commit_data)
@@ -90,7 +107,8 @@ if __name__ == '__main__':
 
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
-    one_week_ago = datetime.now() - timedelta(hours=1)
+    # one_hour_ago = datetime.now() - timedelta(hours=1)
+    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=24)
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
@@ -98,22 +116,22 @@ if __name__ == '__main__':
         # project_name = anything after github.com/ (ex. tensorflow/tensorflow)
         PROJECT_NAME = repo_url.split('https://github.com/')[-1]
 
-        # commenting this out to test my own personal repo lol
-        repo = g.get_repo(PROJECT_NAME)
+        # repo = g.get_repo(PROJECT_NAME)
+        repo = g.get_repo('stevenbui44/test-vscode')
 
         # saves one repo's data
         repo_data = {
             "repo_name": PROJECT_NAME,
-            "issues": get_issue_text(g, repo, one_week_ago),
-            "pull_requests": get_pr_text(g, repo, one_week_ago),
-            "commits": get_commit_messages(g, repo, one_week_ago)
+            "issues": get_issue_text(g, repo, one_hour_ago),
+            "pull_requests": get_pr_text(g, repo, one_hour_ago),
+            "commits": get_commit_messages(g, repo, one_hour_ago)
         }
 
         data.append(repo_data)
 
         try:
             # with open("github_data.json", "w") as outfile:
-            with open("test_github_data.json", "w") as outfile:
+            with open("test_github_data_2.json", "w") as outfile:
                 json.dump(data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to github_data.json")
         except Exception as e:

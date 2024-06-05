@@ -49,12 +49,13 @@ def get_pr_text(g, repo, one_week_ago):
     pulls = repo.get_pulls(state='all', sort='created')
     
     for pr in pulls:
-        pr_data = {
-            "title": pr.title,
-            "body": pr.body,
-            "state": pr.state,
-            "user": pr.user.login
-        }
+        if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
+            pr_data = {
+                "title": pr.title,
+                "body": pr.body,
+                "state": pr.state,
+                "user": pr.user.login
+            }
         pr_data_all.append(pr_data)
         rate_limit_check(g)
     
@@ -80,7 +81,8 @@ def get_commit_messages(g, repo, one_week_ago):
 if __name__ == '__main__':
 
     # get all of the subscribers from subscribers.json
-    with open('subscribers.json') as file:
+    # with open('subscribers.json') as file:
+    with open('test-subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -88,7 +90,7 @@ if __name__ == '__main__':
 
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
-    one_week_ago = datetime.now() - timedelta(days=7)
+    one_week_ago = datetime.now() - timedelta(hours=1)
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
@@ -110,7 +112,8 @@ if __name__ == '__main__':
         data.append(repo_data)
 
         try:
-            with open("github_data.json", "w") as outfile:
+            # with open("github_data.json", "w") as outfile:
+            with open("test_github_data.json", "w") as outfile:
                 json.dump(data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to github_data.json")
         except Exception as e:

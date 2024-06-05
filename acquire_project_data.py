@@ -220,6 +220,4 @@ if __name__ == '__main__':
             print(f"Error writing data for {PROJECT_NAME} to github_data.json")
             print(f"Error code: {e}")
 
-        
-
     g.close()

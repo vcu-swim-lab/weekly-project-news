@@ -2,6 +2,7 @@ import requests
 import os
 import json
 from dotenv import load_dotenv
+import json
 
 load_dotenv('public.env')  
 
@@ -14,9 +15,6 @@ ENDPOINT = "/subscribers"
 METHOD = "GET"
 
 response = requests.request(METHOD, f"{BASE_URL}/v1{ENDPOINT}", headers=headers)
-
-# outputs json data, the results shown below
-# print(response.text)
 
 if response.status_code == 200:
   subscribers_data = response.json()

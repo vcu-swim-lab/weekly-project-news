@@ -5,6 +5,11 @@ import json
 import os
 from dotenv import load_dotenv
 
+# If want to change time zone import this python package
+# import pytz
+# Example of using est
+# est = pytz.timezone('America/New_York')
+
 load_dotenv('public.env')  
 
 # checks the rate limit
@@ -76,6 +81,27 @@ def get_commit_messages(g, repo, one_week_ago):
 
     return commit_data_all
 
+# Retrieves and sorts the issues that have been opened the longest
+def sort_issues(g, repo, one_week_ago):
+    issue_sort_data = []
+    issues = repo.get_issues(state='open', since=one_week_ago)
+    for issue in issues:
+        time_open = datetime.now(timezone.utc)-issue.created_at
+        days = time_open.days
+        hours, remainder = divmod(time_open.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        issue_data = {
+            "title": issue.title,
+            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+            "url": issue.html_url,
+        }
+        issue_sort_data.append(issue_data)
+        rate_limit_check(g)
+    
+    issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
+    return issue_sort_data
+
 
 if __name__ == '__main__':
 
@@ -93,18 +119,19 @@ if __name__ == '__main__':
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
-        # project_name = anything after github.com/ (ex. tensorflow/tensorflow)
-        PROJECT_NAME = repo_url.split('https://github.com/')[-1]
-
-        # commenting this out to test my own personal repo lol
+        # Testing my own repo 
+        PROJECT_NAME = 'cnovalski1/APIexample'
         repo = g.get_repo(PROJECT_NAME)
 
+    
         # saves one repo's data
+        
         repo_data = {
             "repo_name": PROJECT_NAME,
             "issues": get_issue_text(g, repo, one_week_ago),
             "pull_requests": get_pr_text(g, repo, one_week_ago),
-            "commits": get_commit_messages(g, repo, one_week_ago)
+            "commits": get_commit_messages(g, repo, one_week_ago),
+            "sorted_issues": sort_issues(g, repo, one_week_ago)
         }
 
         data.append(repo_data)

@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv('public.env')  
 
-# TODO: we don't have the Open API API key yet
-API_KEY = os.environ.get("OPENAI_API_KEY")
+API_KEY = os.environ.get("OPENAI_KEY")
 
 # TODO: not sure what model, https://platform.openai.com/docs/models
 llm = OpenAI(api_key=API_KEY, model_name="text-davinci-003")

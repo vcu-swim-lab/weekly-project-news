@@ -1,13 +1,18 @@
 from github import Github
-from github import Auth
 from datetime import datetime, timedelta, timezone
 import time
 import json
-import requests
 import os
 from dotenv import load_dotenv
 
-# Implements a rate limit checker that pauses the program if the limit of API requests is reached.
+# If want to change time zone import this python package
+# import pytz
+# Example of using est
+# est = pytz.timezone('America/New_York')
+
+load_dotenv('public.env')  
+
+# checks the rate limit
 def rate_limit_check(g):
     rate_limit = g.get_rate_limit().core
     if rate_limit.remaining < 10:  
@@ -16,72 +21,129 @@ def rate_limit_check(g):
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
 
-# Gets the text from issue queries, including title, body, and comments.
+# formats a specific repo's issues as json data
 def get_issue_text(g, repo, one_week_ago):
-    issue_text = ""
+    issue_data_all = []
     issues = repo.get_issues(state='all', since=one_week_ago)
 
     for issue in issues:
-        issue_text += f"Title: {issue.title}\n"
-        issue_text += f"Body: {issue.body}\n"
+        issue_data = {
+            "title": issue.title,
+            "body": issue.body,
+            "user": issue.user.login,
+            "state": issue.state,
+            "comments": []
+        }
 
         comments = issue.get_comments()
         for comment in comments:
-            issue_text += f"Comment by {comment.user.login}: {comment.body}\n"
-        issue_text += "--------------------------------------------------\n"
+            comment_data = {
+                "user": comment.user.login,
+                "body": comment.body
+            }
+            issue_data["comments"].append(comment_data)
+
+        issue_data_all.append(issue_data)
         rate_limit_check(g)
 
-    return issue_text
+    return issue_data_all
 
-# Gets the text from pull requests, including title, body, and state.
+# formats a specific repo's PRs as json data
 def get_pr_text(g, repo, one_week_ago):
-    pr_text = ""
+    pr_data_all = []
     pulls = repo.get_pulls(state='all', sort='created')
+    
     for pr in pulls:
-        pr_text += f"Title: {pr.title}\n"
-        pr_text += f"Body: {pr.body}\n"
-        pr_text += f"State: {pr.state}\n"
-        pr_text += "--------------------------------------------------\n"
+        pr_data = {
+            "title": pr.title,
+            "body": pr.body,
+            "state": pr.state,
+            "user": pr.user.login
+        }
+        pr_data_all.append(pr_data)
         rate_limit_check(g)
     
-    return pr_text
+    return pr_data_all
 
-# Gets the text from commits, including the author and message.
+# formats a specific repo's commit messages as json data
 def get_commit_messages(g, repo, one_week_ago):
-    commit_text = ""
+    commit_data_all = []
     commits = repo.get_commits(since=one_week_ago)
 
     for commit in commits:
-        commit_text += f"Author: {commit.commit.author.name}\n"
-        commit_text += f"Message: {commit.commit.message}\n"
-        commit_text += "--------------------------------------------------\n"
+        commit_data = {
+            "author": commit.commit.author.name,
+            "message": commit.commit.message
+        }
+
+        commit_data_all.append(commit_data)
         rate_limit_check(g)
 
-    return commit_text
+    return commit_data_all
+
+# Retrieves and sorts the issues that have been opened the longest
+def sort_issues(g, repo, one_week_ago):
+    issue_sort_data = []
+    issues = repo.get_issues(state='open', since=one_week_ago)
+    for issue in issues:
+        time_open = datetime.now(timezone.utc)-issue.created_at
+        days = time_open.days
+        hours, remainder = divmod(time_open.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        issue_data = {
+            "title": issue.title,
+            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+            "url": issue.html_url,
+        }
+        issue_sort_data.append(issue_data)
+        rate_limit_check(g)
+    
+    issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
+    return issue_sort_data
 
 
 if __name__ == '__main__':
-    load_dotenv()
-    PROJECT_NAME = 'tensorflow/tensorflow' 
+
+    # get all of the subscribers from subscribers.json
+    with open('subscribers.json') as file:
+        subscribers_data = json.load(file)
+
+    # get a list of all of the repo names from subscribers_data
+    repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
+
+    # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
-    repo = g.get_repo(PROJECT_NAME)
-
     one_week_ago = datetime.now() - timedelta(days=7)
-    one_day_ago = datetime.now() - timedelta(days=1)
+    data = []
 
-    print(get_issue_text(g, repo, one_week_ago))
-    print(get_pr_text(g, repo, one_week_ago))
-    print(get_commit_messages(g, repo, one_week_ago))
+    # for-loop for every repo name (ex. tensorflow/tensorflow)
+    for repo_url in repo_names:
+        # Testing my own repo 
+        PROJECT_NAME = 'cnovalski1/APIexample'
+        repo = g.get_repo(PROJECT_NAME)
 
-    # OUTPUT EVERYTHING AS A JSON FILE
     
-    dict = {
-     "issues": get_issue_text(g, repo, one_week_ago),
-     "pull requests": get_pr_text(g, repo, one_week_ago),
-     "commits": get_commit_messages(g, repo, one_week_ago)
-    }
-    with open("data.json", "w") as outfile:
-       json.dump(dict, outfile)
-    
+        # saves one repo's data
+        
+        repo_data = {
+            "repo_name": PROJECT_NAME,
+            "issues": get_issue_text(g, repo, one_week_ago),
+            "pull_requests": get_pr_text(g, repo, one_week_ago),
+            "commits": get_commit_messages(g, repo, one_week_ago),
+            "sorted_issues": sort_issues(g, repo, one_week_ago)
+        }
+
+        data.append(repo_data)
+
+        try:
+            with open("github_data.json", "w") as outfile:
+                json.dump(data, outfile, indent=2)
+            print(f"Successfully added {PROJECT_NAME} to github_data.json")
+        except Exception as e:
+            print(f"Error writing data for {PROJECT_NAME} to github_data.json")
+            print(f"Error code: {e}")
+
+        
 
     g.close()

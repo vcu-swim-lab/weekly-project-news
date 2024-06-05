@@ -48,31 +48,19 @@ def get_issue_text(g, repo, one_week_ago):
 def get_pr_text(g, repo, one_week_ago):
     pr_data_all = []
     pulls = repo.get_pulls(state='all', sort='created')
-    
-    # for pr in pulls:
-    #     if pr.created_at > one_week_ago:
-    #         if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
-    #             pr_data = {
-    #                 "title": pr.title,
-    #                 "body": pr.body,
-    #                 "state": pr.state,
-    #                 "user": pr.user.login,
-    #                 "created_at": pr.created_at.isoformat()
-    #             }
-    #         pr_data_all.append(pr_data)
-    #         rate_limit_check(g)
 
     for pr in pulls:
-        if pr.created_at > one_week_ago:
-            if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
-                pr_data = {
-                    "title": pr.title,
-                    "body": pr.body,
-                    "state": pr.state,
-                    "user": pr.user.login,
-                    "created_at": pr.created_at.isoformat()
-                }
-                pr_data_all.append(pr_data)
+        if pr.created_at <= one_week_ago:
+            break
+        if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
+            pr_data = {
+                "title": pr.title,
+                "body": pr.body,
+                "state": pr.state,
+                "user": pr.user.login,
+                "created_at": pr.created_at.isoformat()
+            }
+            pr_data_all.append(pr_data)
         rate_limit_check(g)
     
     return pr_data_all
@@ -107,8 +95,7 @@ if __name__ == '__main__':
 
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
-    # one_hour_ago = datetime.now() - timedelta(hours=1)
-    one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=24)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
@@ -117,14 +104,15 @@ if __name__ == '__main__':
         PROJECT_NAME = repo_url.split('https://github.com/')[-1]
 
         # repo = g.get_repo(PROJECT_NAME)
-        repo = g.get_repo('stevenbui44/test-vscode')
+        # repo = g.get_repo('stevenbui44/test-vscode')
+        repo = g.get_repo('zjunlp/EasyEdit')
 
         # saves one repo's data
         repo_data = {
             "repo_name": PROJECT_NAME,
-            "issues": get_issue_text(g, repo, one_hour_ago),
-            "pull_requests": get_pr_text(g, repo, one_hour_ago),
-            "commits": get_commit_messages(g, repo, one_hour_ago)
+            "issues": get_issue_text(g, repo, one_week_ago),
+            "pull_requests": get_pr_text(g, repo, one_week_ago),
+            "commits": get_commit_messages(g, repo, one_week_ago)
         }
 
         data.append(repo_data)

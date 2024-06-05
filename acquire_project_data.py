@@ -33,7 +33,7 @@ def get_issue_text(g, repo, one_week_ago):
                 "body": issue.body,
                 "user": issue.user.login,
                 "state": issue.state,
-                "created_at": issue.created_at.isoformat(),
+                # "created_at": issue.created_at.isoformat(),
                 "comments": []
             }
 
@@ -64,8 +64,8 @@ def get_pr_text(g, repo, one_week_ago):
                 "title": pr.title,
                 "body": pr.body,
                 "state": pr.state,
-                "user": pr.user.login,
-                "created_at": pr.created_at.isoformat()
+                "user": pr.user.login
+                # "created_at": pr.created_at.isoformat()
             }
             pr_data_all.append(pr_data)
         rate_limit_check(g)
@@ -78,11 +78,11 @@ def get_commit_messages(g, repo, one_week_ago):
     commits = repo.get_commits(since=one_week_ago)
 
     for commit in commits:
-        if "[bot]" not in commit.author.login.lower() and "bot" not in commit.author.login.lower():
+        if commit.author is not None and "[bot]" not in commit.author.login.lower() and "bot" not in commit.author.login.lower():
             commit_data = {
                 "author": commit.commit.author.name,
-                "message": commit.commit.message,
-                "created_at": commit.commit.author.date.isoformat()
+                "message": commit.commit.message
+                # "created_at": commit.commit.author.date.isoformat()
             }
 
             commit_data_all.append(commit_data)
@@ -115,7 +115,7 @@ def sort_issues(g, repo, one_week_ago):
 if __name__ == '__main__':
 
     # get all of the subscribers from subscribers.json
-    with open('test_monica_subscribers.json') as file:
+    with open('subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=1)
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)

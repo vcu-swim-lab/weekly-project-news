@@ -5,6 +5,11 @@ import json
 import os
 from dotenv import load_dotenv
 
+# If want to change time zone import this python package
+# import pytz
+# Example of using est
+# est = pytz.timezone('America/New_York')
+
 load_dotenv('public.env')  
 
 # checks the rate limit
@@ -81,6 +86,27 @@ def get_commit_messages(g, repo, one_week_ago):
         rate_limit_check(g)
 
     return commit_data_all
+  
+# Retrieves and sorts the issues that have been opened the longest
+def sort_issues(g, repo, one_week_ago):
+    issue_sort_data = []
+    issues = repo.get_issues(state='open', since=one_week_ago)
+    for issue in issues:
+        time_open = datetime.now(timezone.utc)-issue.created_at
+        days = time_open.days
+        hours, remainder = divmod(time_open.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        issue_data = {
+            "title": issue.title,
+            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+            "url": issue.html_url,
+        }
+        issue_sort_data.append(issue_data)
+        rate_limit_check(g)
+    
+    issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
+    return issue_sort_data
 
 
 if __name__ == '__main__':
@@ -105,6 +131,7 @@ if __name__ == '__main__':
 
         # repo = g.get_repo(PROJECT_NAME)
         # repo = g.get_repo('stevenbui44/test-vscode')
+        # repo = g.get_repo('cnovalski1/APIexample')
         repo = g.get_repo('zjunlp/EasyEdit')
 
         # saves one repo's data
@@ -112,7 +139,8 @@ if __name__ == '__main__':
             "repo_name": PROJECT_NAME,
             "issues": get_issue_text(g, repo, one_week_ago),
             "pull_requests": get_pr_text(g, repo, one_week_ago),
-            "commits": get_commit_messages(g, repo, one_week_ago)
+            "commits": get_commit_messages(g, repo, one_week_ago),
+            "sorted_issues": sort_issues(g, repo, one_week_ago)
         }
 
         data.append(repo_data)

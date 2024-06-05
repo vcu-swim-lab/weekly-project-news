@@ -27,24 +27,26 @@ def get_issue_text(g, repo, one_week_ago):
     issues = repo.get_issues(state='all', since=one_week_ago)
 
     for issue in issues:
-        issue_data = {
-            "title": issue.title,
-            "body": issue.body,
-            "user": issue.user.login,
-            "state": issue.state,
-            "created_at": issue.created_at.isoformat(),
-            "comments": []
-        }
-
-        comments = issue.get_comments()
-        for comment in comments:
-            comment_data = {
-                "user": comment.user.login,
-                "body": comment.body
+        if "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
+            issue_data = {
+                "title": issue.title,
+                "body": issue.body,
+                "user": issue.user.login,
+                "state": issue.state,
+                "created_at": issue.created_at.isoformat(),
+                "comments": []
             }
-            issue_data["comments"].append(comment_data)
 
-        issue_data_all.append(issue_data)
+            comments = issue.get_comments()
+            for comment in comments:
+                if "[bot]" not in comment.user.login.lower() and "bot" not in comment.user.login.lower():
+                    comment_data = {
+                        "user": comment.user.login,
+                        "body": comment.body
+                    }
+                    issue_data["comments"].append(comment_data)
+
+            issue_data_all.append(issue_data)
         rate_limit_check(g)
 
     return issue_data_all
@@ -76,13 +78,14 @@ def get_commit_messages(g, repo, one_week_ago):
     commits = repo.get_commits(since=one_week_ago)
 
     for commit in commits:
-        commit_data = {
-            "author": commit.commit.author.name,
-            "message": commit.commit.message,
-            "created_at": commit.commit.author.date.isoformat()
-        }
+        if "[bot]" not in commit.author.login.lower() and "bot" not in commit.author.login.lower():
+            commit_data = {
+                "author": commit.commit.author.name,
+                "message": commit.commit.message,
+                "created_at": commit.commit.author.date.isoformat()
+            }
 
-        commit_data_all.append(commit_data)
+            commit_data_all.append(commit_data)
         rate_limit_check(g)
 
     return commit_data_all
@@ -112,8 +115,7 @@ def sort_issues(g, repo, one_week_ago):
 if __name__ == '__main__':
 
     # get all of the subscribers from subscribers.json
-    # with open('subscribers.json') as file:
-    with open('test-subscribers.json') as file:
+    with open('test_monica_subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -129,10 +131,7 @@ if __name__ == '__main__':
         # project_name = anything after github.com/ (ex. tensorflow/tensorflow)
         PROJECT_NAME = repo_url.split('https://github.com/')[-1]
 
-        # repo = g.get_repo(PROJECT_NAME)
-        # repo = g.get_repo('stevenbui44/test-vscode')
-        # repo = g.get_repo('cnovalski1/APIexample')
-        repo = g.get_repo('zjunlp/EasyEdit')
+        repo = g.get_repo(PROJECT_NAME)
 
         # saves one repo's data
         repo_data = {
@@ -146,8 +145,7 @@ if __name__ == '__main__':
         data.append(repo_data)
 
         try:
-            # with open("github_data.json", "w") as outfile:
-            with open("test_github_data_2.json", "w") as outfile:
+            with open("github_data.json", "w") as outfile:
                 json.dump(data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to github_data.json")
         except Exception as e:

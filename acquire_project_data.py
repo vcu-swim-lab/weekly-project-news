@@ -160,13 +160,12 @@ def get_weekly_contributors(g, repo, one_week_ago):
     return contributor_data
 
 # Gets the total number of commits in the last week
-def get_num_commits(g, repo, one_week_ago):
-    commits = repo.get_commits(since=one_week_ago).totalCount
-    return commits
+def get_num_commits(commit_data):
+    return len(commit_data)
 
 # Gets the total number of PRs in the last week
-def get_num_prs(prs_data):
-    return len(prs_data)
+def get_num_prs(pr_data):
+    return len(pr_data)
 
 #TODO
 # Get the issues with the most comments
@@ -198,16 +197,17 @@ if __name__ == '__main__':
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
+        commit_data = get_commit_messages(g, repo, one_week_ago)
         pr_data = get_pr_text(g, repo, one_week_ago)
         repo_data = {
             # "repo_name": PROJECT_NAME,
             # "issues": get_issue_text(g, repo, one_week_ago),
             "pull_requests": pr_data,
-            "commits": get_commit_messages(g, repo, one_week_ago),
+            "commits": commit_data,
             # "issues_by_open_date": sort_issues(g, repo)
             # "new_contributors": get_new_contributors(g, repo, one_week_ago),
             # "weekly_contributors": get_weekly_contributors(g, repo, one_week_ago),
-            "num_commits": get_num_commits(g, repo, one_week_ago),
+            "num_commits": get_num_commits(commit_data),
             "num_prs": get_num_prs(pr_data)
         }
 

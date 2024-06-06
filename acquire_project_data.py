@@ -160,6 +160,10 @@ def get_weekly_contributors(g, repo, one_week_ago):
     return contributor_data
 
 # Gets the total number of commits in the last week
+# def get_num_commits(g, repo, one_week_ago):
+#     commits = repo.get_commits(since=one_week_ago).totalCount
+#     return commits
+
 def get_num_commits(commit_data):
     return len(commit_data)
 
@@ -178,7 +182,7 @@ def get_num_prs(pr_data):
 if __name__ == '__main__':
 
     # get all of the subscribers from subscribers.json
-    with open('test_monica_subscribers.json') as file:
+    with open('subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -186,7 +190,7 @@ if __name__ == '__main__':
 
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
-    one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=3)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=2)
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
@@ -197,18 +201,18 @@ if __name__ == '__main__':
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
-        commit_data = get_commit_messages(g, repo, one_week_ago)
         pr_data = get_pr_text(g, repo, one_week_ago)
+        commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
-            # "repo_name": PROJECT_NAME,
-            # "issues": get_issue_text(g, repo, one_week_ago),
+            "repo_name": PROJECT_NAME,
+            "issues": get_issue_text(g, repo, one_week_ago),
             "pull_requests": pr_data,
             "commits": commit_data,
-            # "issues_by_open_date": sort_issues(g, repo)
+            # "issues_by_open_date": sort_issues(g, repo, one_week_ago),
             # "new_contributors": get_new_contributors(g, repo, one_week_ago),
             # "weekly_contributors": get_weekly_contributors(g, repo, one_week_ago),
-            "num_commits": get_num_commits(commit_data),
-            "num_prs": get_num_prs(pr_data)
+            "num_prs": get_num_prs(pr_data),
+            "num_commits": get_num_commits(commit_data)
         }
 
         data.append(repo_data)

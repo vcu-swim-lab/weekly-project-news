@@ -119,7 +119,7 @@ def get_new_contributors(g, repo, one_week_ago):
             first_commit = c
             break
 
-        if first_commit.commit.committer.date.replace(tzinfo=None) >= one_week_ago.replace(tzinfo=None):
+        if first_commit and first_commit.commit.committer.date.replace(tzinfo=None) >= one_week_ago.replace(tzinfo=None):
             data = {
                 "author": commit.commit.author.name,
                 "description": "new contributor"
@@ -193,21 +193,21 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'cnovalski1/APIexample'
+        PROJECT_NAME = 'monicahq/monica'
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
         
         repo_data = {
-            "repo_name": PROJECT_NAME,
-            "issues": get_issue_text(g, repo, one_week_ago),
-            "pull_requests": get_pr_text(g, repo, one_week_ago),
-            "commits": get_commit_messages(g, repo, one_week_ago),
-            "issues_by_open_date": sort_issues(g, repo),
+            # "repo_name": PROJECT_NAME,
+            # "issues": get_issue_text(g, repo, one_week_ago),
+            # "pull_requests": get_pr_text(g, repo, one_week_ago),
+            # "commits": get_commit_messages(g, repo, one_week_ago),
+            # "issues_by_open_date": sort_issues(g, repo)
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            "total_commits": get_total_commits(g, repo, one_week_ago),
-            "total_contributors_all_time": get_all_contributors(g, repo),
-            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago)
+            # "total_commits": get_total_commits(g, repo, one_week_ago),
+            # "total_contributors_all_time": get_all_contributors(g, repo),
+            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago)
         }
 
         data.append(repo_data)

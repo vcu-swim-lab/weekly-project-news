@@ -54,7 +54,7 @@ def get_issue_text(g, repo, one_week_ago):
 # formats a specific repo's PRs as json data
 def get_pr_text(g, repo, one_week_ago):
     pr_data_all = []
-    pulls = repo.get_pulls(state='all', sort='created')
+    pulls = repo.get_pulls(state='all', sort='created', direction='desc')
 
     for pr in pulls:
         if pr.created_at <= one_week_ago:
@@ -112,7 +112,7 @@ def sort_issues(g, repo, one_week_ago):
     issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
     return issue_sort_data
 
-
+# NOTE: Christian is working on this right now
 # Retrieves the number of new contributors in the last week.
 def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data = []
@@ -140,7 +140,7 @@ def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
     return new_contributor_data
 
-
+# NOTE: Christian is working on this right now
 # Get total number of contributors in the last week (even if they've contributed before)
 def get_weekly_contributors(g, repo, one_week_ago):
     contributor_data = []
@@ -159,23 +159,14 @@ def get_weekly_contributors(g, repo, one_week_ago):
     
     return contributor_data
 
-
-# Get total number of contributors to date for the project
-def get_all_contributors(g, repo):
-    contributors = repo.get_contributors(anon="true")
-    num_contributors = 0
-
-    for contributor in contributors:
-        num_contributors += 1
-
-    return num_contributors
-
-
-# Gets the total number of commits in the last week.
-def get_total_commits(g, repo, one_week_ago):
+# Gets the total number of commits in the last week
+def get_num_commits(g, repo, one_week_ago):
     commits = repo.get_commits(since=one_week_ago).totalCount
-    return commits # Can turn to string if needed with str(commits)
+    return commits
 
+# Gets the total number of PRs in the last week
+def get_num_prs(prs_data):
+    return len(prs_data)
 
 #TODO
 # Get the issues with the most comments
@@ -188,7 +179,7 @@ def get_total_commits(g, repo, one_week_ago):
 if __name__ == '__main__':
 
     # get all of the subscribers from subscribers.json
-    with open('subscribers.json') as file:
+    with open('test_monica_subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -196,7 +187,7 @@ if __name__ == '__main__':
 
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=3)
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
@@ -207,16 +198,17 @@ if __name__ == '__main__':
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
+        pr_data = get_pr_text(g, repo, one_week_ago)
         repo_data = {
-            "repo_name": PROJECT_NAME,
-            "issues": get_issue_text(g, repo, one_week_ago),
-            "pull_requests": get_pr_text(g, repo, one_week_ago),
+            # "repo_name": PROJECT_NAME,
+            # "issues": get_issue_text(g, repo, one_week_ago),
+            "pull_requests": pr_data,
             "commits": get_commit_messages(g, repo, one_week_ago),
-            "issues_by_open_date": sort_issues(g, repo)
-            "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            # "total_commits": get_total_commits(g, repo, one_week_ago),
-            # "total_contributors_all_time": get_all_contributors(g, repo),
-            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago)
+            # "issues_by_open_date": sort_issues(g, repo)
+            # "new_contributors": get_new_contributors(g, repo, one_week_ago),
+            # "weekly_contributors": get_weekly_contributors(g, repo, one_week_ago),
+            "num_commits": get_num_commits(g, repo, one_week_ago),
+            "num_prs": get_num_prs(pr_data)
         }
 
         data.append(repo_data)

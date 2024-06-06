@@ -62,16 +62,18 @@ def sort_issues_open_date(g, repo):
         days = time_open.days
         hours, remainder = divmod(time_open.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
+        total_minutes = time_open.total_seconds() // 60
 
         issue_data = {
             "title": issue.title,
             "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
-            "url": issue.html_url,
+            "minutes_open": total_minutes,
+            "url": issue.html_url
         }
         issue_sort_data.append(issue_data)
         rate_limit_check(g)
     
-    issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
+    issue_sort_data.sort(key=lambda x: x["minutes_open"], reverse=True)
     return issue_sort_data
 
 
@@ -175,6 +177,7 @@ def get_new_contributors(g, repo, one_week_ago):
             num_new_contributors+=1
             new_contributor_data.append(data)
             processed_authors.add(commit.commit.author.name)
+        rate_limit_check(g)
     
     # Can turn to string if needed with str(num_new_contributors)
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
@@ -211,6 +214,8 @@ def get_total_commits(g, repo, one_week_ago):
     commits = repo.get_commits(since=one_week_ago).totalCount
     return commits # Can turn to string if needed with str(commits)
 
+# Gets the contributors that are considered "active"
+# Currently, it is > 0 commits this week, > 0 issues this month, and > 0 PRs this week
 def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
     # Store active contributor data
     active_contributors = []
@@ -244,6 +249,8 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
     pulls = repo.get_pulls(state='all', sort='created')
     for pr in pulls:
         if '[bot]' in pr.user.login.lower():
+            continue
+        if pr.created_at <= one_week_ago:
             continue
         
         author = commit.commit.author.name
@@ -288,9 +295,9 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
         
         rate_limit_check(g)
         
-    # Commit threshold for being considered active
-    commit_threshold = 1
-    pr_threshold = 1
+    
+    commit_threshold = 0 # Commit threshold for being considered active
+    pr_threshold = 0 # Pull requests in the last week
     issue_threshold = 0 # Issues created in the last month
 
     # Filter contributors who meet the activity threshold

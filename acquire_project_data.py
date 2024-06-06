@@ -1,5 +1,5 @@
 from github import Github
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 import time
 import json
 import os
@@ -89,9 +89,10 @@ def get_commit_messages(g, repo, one_week_ago):
         rate_limit_check(g)
 
     return commit_data_all
-  
+
 # Retrieves and sorts the issues that have been opened the longest
-def sort_issues(g, repo, one_week_ago):
+# Issues opened within the last week? Put one_week_ago in the parameters and since=one_week_ago in get_issues()
+def sort_issues(g, repo, one_week_ago): 
     issue_sort_data = []
     issues = repo.get_issues(state='open', since=one_week_ago)
     for issue in issues:
@@ -112,6 +113,78 @@ def sort_issues(g, repo, one_week_ago):
     return issue_sort_data
 
 
+# Retrieves the number of new contributors in the last week.
+def get_new_contributors(g, repo, one_week_ago):
+    new_contributor_data = []
+    commits = repo.get_commits(since=one_week_ago)
+    num_new_contributors = 0
+
+    for commit in commits:
+        commit_author = commit.author
+        author_commits = repo.get_commits(author=commit_author)
+        first_commit = None
+
+        for c in author_commits:
+            first_commit = c
+            break
+
+        if first_commit and first_commit.commit.committer.date.replace(tzinfo=None) >= one_week_ago.replace(tzinfo=None):
+            data = {
+                "author": commit.commit.author.name,
+                "description": "new contributor"
+            }
+            num_new_contributors+=1
+            new_contributor_data.append(data)
+    
+    # Can turn to string if needed with str(num_new_contributors)
+    new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
+    return new_contributor_data
+
+
+# Get total number of contributors in the last week (even if they've contributed before)
+def get_weekly_contributors(g, repo, one_week_ago):
+    contributor_data = []
+    commits = repo.get_commits(since=one_week_ago)
+    num_weekly_contributors = 0
+
+    for commit in commits:
+        if commit.commit.author.name not in contributor_data:
+            data = {
+                "author": commit.commit.author.name,
+                "description": "contributed this week"
+            }
+            contributor_data.append(data)
+            num_weekly_contributors += 1
+    contributor_data.append({"number_of_weekly_contributors": num_weekly_contributors})
+    
+    return contributor_data
+
+
+# Get total number of contributors to date for the project
+def get_all_contributors(g, repo):
+    contributors = repo.get_contributors(anon="true")
+    num_contributors = 0
+
+    for contributor in contributors:
+        num_contributors += 1
+
+    return num_contributors
+
+
+# Gets the total number of commits in the last week.
+def get_total_commits(g, repo, one_week_ago):
+    commits = repo.get_commits(since=one_week_ago).totalCount
+    return commits # Can turn to string if needed with str(commits)
+
+
+#TODO
+# Get the issues with the most comments
+
+#TODO
+# Get the number and list the contributors who have made more than one(or more) commit in the last week? Month? 
+
+
+
 if __name__ == '__main__':
 
     # get all of the subscribers from subscribers.json
@@ -123,23 +196,27 @@ if __name__ == '__main__':
 
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=1)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # project_name = anything after github.com/ (ex. tensorflow/tensorflow)
         PROJECT_NAME = repo_url.split('https://github.com/')[-1]
-
+        
         repo = g.get_repo(PROJECT_NAME)
-
+    
         # saves one repo's data
         repo_data = {
             "repo_name": PROJECT_NAME,
             "issues": get_issue_text(g, repo, one_week_ago),
             "pull_requests": get_pr_text(g, repo, one_week_ago),
             "commits": get_commit_messages(g, repo, one_week_ago),
-            "sorted_issues": sort_issues(g, repo, one_week_ago)
+            "issues_by_open_date": sort_issues(g, repo)
+            "new_contributors": get_new_contributors(g, repo, one_week_ago),
+            # "total_commits": get_total_commits(g, repo, one_week_ago),
+            # "total_contributors_all_time": get_all_contributors(g, repo),
+            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago)
         }
 
         data.append(repo_data)

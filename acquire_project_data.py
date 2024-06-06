@@ -50,8 +50,8 @@ def get_issue_text(g, repo, one_week_ago):
         rate_limit_check(g)
 
     return issue_data_all
-
-
+  
+  
 # Retrieves and sorts the issues that have been opened the longest
 # Issues opened within the last week? Put one_week_ago in the parameters and since=one_week_ago in get_issues()
 def sort_issues_open_date(g, repo): 
@@ -105,7 +105,7 @@ def sort_issue_num_comments(g, repo):
 # formats a specific repo's PRs as json data
 def get_pr_text(g, repo, one_week_ago):
     pr_data_all = []
-    pulls = repo.get_pulls(state='all', sort='created')
+    pulls = repo.get_pulls(state='all', sort='created', direction='desc')
 
     for pr in pulls:
         if pr.created_at <= one_week_ago:
@@ -140,7 +140,6 @@ def get_commit_messages(g, repo, one_week_ago):
         rate_limit_check(g)
 
     return commit_data_all
-
 
 # Retrieves the number of new contributors in the last week.
 def get_new_contributors(g, repo, one_week_ago):
@@ -183,7 +182,7 @@ def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
     return new_contributor_data
 
-
+# NOTE: Christian is working on this right now
 # Get total number of contributors in the last week (even if they've contributed before)
 def get_weekly_contributors(g, repo, one_week_ago):
     contributor_data = []
@@ -202,7 +201,20 @@ def get_weekly_contributors(g, repo, one_week_ago):
     
     return contributor_data
 
+# Gets the total number of commits in the last week
+# def get_num_commits(g, repo, one_week_ago):
+#     commits = repo.get_commits(since=one_week_ago).totalCount
+#     return commits
 
+
+def get_num_commits(commit_data):
+    return len(commit_data)
+
+# Gets the total number of PRs in the last week
+def get_num_prs(pr_data):
+    return len(pr_data)
+
+  
 # Get total number of contributors to date for the project
 def get_all_contributors(g, repo):
     contributors = repo.get_contributors(anon="true")
@@ -328,7 +340,7 @@ if __name__ == '__main__':
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
-    
+
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
@@ -338,11 +350,13 @@ if __name__ == '__main__':
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
+        pr_data = get_pr_text(g, repo, one_week_ago)
+        commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
             "repo_name": PROJECT_NAME,
             "issues": get_issue_text(g, repo, one_week_ago),
-            "pull_requests": get_pr_text(g, repo, one_week_ago),
-            "commits": get_commit_messages(g, repo, one_week_ago),
+            "pull_requests": pr_data,
+            "commits": commit_data,
             "issues_by_open_date": sort_issues_open_date(g, repo),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
             "total_commits": get_total_commits(g, repo, one_week_ago),
@@ -350,6 +364,8 @@ if __name__ == '__main__':
             "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
             "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
             "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
+            "num_prs": get_num_prs(pr_data),
+            "num_commits": get_num_commits(commit_data)
         }
 
         data.append(repo_data)

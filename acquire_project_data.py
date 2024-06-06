@@ -72,6 +72,66 @@ def get_pr_text(g, repo, one_week_ago):
     
     return pr_data_all
 
+# retrieves total number of pull requests
+def get_tot_num_pr(g, repo, one_week_ago):
+    pull_count = 0
+    pulls = repo.get_pulls(state='all', sort='created')
+
+    for pr in pulls:
+        if pr.created_at <= one_week_ago:
+            break
+        pr_count += 1
+        rate_limit_check(g)
+    
+    return pr_count
+
+# retrieves total number of closed pull requests
+def get_num_closed_pr(g, repo, one_week_ago):
+    closed_count = 0
+    pulls = repo.get_pulls(state = 'all', sort = 'created')
+
+    for pr in pulls:
+        if pr.created_at <= one_week_ago:
+            break
+        if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
+            if pr.state == 'closed':
+                closed_count += 1
+        rate_limit_check(g)
+    
+    return closed_count
+
+# retrieves total number of open pull requests
+def get_num_open_pr(g, repo, one_week_ago):
+    open_count = 0
+    pulls = repo.get_pulls(state = 'all', sort = 'created')
+
+    for pr in pulls:
+        if pr.created_at <= one_week_ago:
+            break
+        if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
+            if pr.state == 'open':
+                open_count += 1
+        rate_limit_check(g)
+    
+    return open_count
+
+# calculates the average time it takes to close a pr
+def get_avg_pr_close_time(g, repo, one_week_ago):
+    total_time = timedelta()  # Initialize total time difference
+    closed_count = 0
+    pulls = repo.get_pulls(state='closed')
+
+    for pr in pulls:
+        if pr.closed_at:
+            total_time += (pr.closed_at - pr.created_at)
+            closed_count += 1
+
+    if closed_count == 0:
+        return None
+
+    average_time = total_time / closed_count
+    return average_time
+
 # formats a specific repo's commit messages as json data
 def get_commit_messages(g, repo, one_week_ago):
     commit_data_all = []
@@ -212,11 +272,16 @@ if __name__ == '__main__':
             "issues": get_issue_text(g, repo, one_week_ago),
             "pull_requests": get_pr_text(g, repo, one_week_ago),
             "commits": get_commit_messages(g, repo, one_week_ago),
-            "issues_by_open_date": sort_issues(g, repo)
+            "issues_by_open_date": sort_issues(g, repo),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
             # "total_commits": get_total_commits(g, repo, one_week_ago),
             # "total_contributors_all_time": get_all_contributors(g, repo),
             # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago)
+            # "total_num_pulls": get_num_pr(g, repo, one_week_ago)
+            # "total_closed_pulls": get_num_closed_pr(g, repo, one_week_ago)
+            # "total_open_pulls": get_num_open_pr(g, repo, one_week_ago)
+            # 'avg_close_time" : get_avg_pr_close_time(g, repo, one_week_ago)
+
         }
 
         data.append(repo_data)

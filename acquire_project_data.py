@@ -27,23 +27,26 @@ def get_issue_text(g, repo, one_week_ago):
     issues = repo.get_issues(state='all', since=one_week_ago)
 
     for issue in issues:
-        issue_data = {
-            "title": issue.title,
-            "body": issue.body,
-            "user": issue.user.login,
-            "state": issue.state,
-            "comments": []
-        }
-
-        comments = issue.get_comments()
-        for comment in comments:
-            comment_data = {
-                "user": comment.user.login,
-                "body": comment.body
+        if "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
+            issue_data = {
+                "title": issue.title,
+                "body": issue.body,
+                "user": issue.user.login,
+                "state": issue.state,
+                # "created_at": issue.created_at.isoformat(),
+                "comments": []
             }
-            issue_data["comments"].append(comment_data)
 
-        issue_data_all.append(issue_data)
+            comments = issue.get_comments()
+            for comment in comments:
+                if "[bot]" not in comment.user.login.lower() and "bot" not in comment.user.login.lower():
+                    comment_data = {
+                        "user": comment.user.login,
+                        "body": comment.body
+                    }
+                    issue_data["comments"].append(comment_data)
+
+            issue_data_all.append(issue_data)
         rate_limit_check(g)
 
     return issue_data_all
@@ -101,15 +104,19 @@ def sort_issue_num_comments(g, repo):
 def get_pr_text(g, repo, one_week_ago):
     pr_data_all = []
     pulls = repo.get_pulls(state='all', sort='created')
-    
+
     for pr in pulls:
-        pr_data = {
-            "title": pr.title,
-            "body": pr.body,
-            "state": pr.state,
-            "user": pr.user.login
-        }
-        pr_data_all.append(pr_data)
+        if pr.created_at <= one_week_ago:
+            break
+        if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
+            pr_data = {
+                "title": pr.title,
+                "body": pr.body,
+                "state": pr.state,
+                "user": pr.user.login
+                # "created_at": pr.created_at.isoformat()
+            }
+            pr_data_all.append(pr_data)
         rate_limit_check(g)
     
     return pr_data_all
@@ -120,15 +127,39 @@ def get_commit_messages(g, repo, one_week_ago):
     commits = repo.get_commits(since=one_week_ago)
 
     for commit in commits:
-        commit_data = {
-            "author": commit.commit.author.name,
-            "message": commit.commit.message
-        }
+        if commit.author is not None and "[bot]" not in commit.author.login.lower() and "bot" not in commit.author.login.lower():
+            commit_data = {
+                "author": commit.commit.author.name,
+                "message": commit.commit.message
+                # "created_at": commit.commit.author.date.isoformat()
+            }
 
-        commit_data_all.append(commit_data)
+            commit_data_all.append(commit_data)
         rate_limit_check(g)
 
     return commit_data_all
+
+# Retrieves and sorts the issues that have been opened the longest
+# Issues opened within the last week? Put one_week_ago in the parameters and since=one_week_ago in get_issues()
+def sort_issues(g, repo): 
+    issue_sort_data = []
+    issues = repo.get_issues(state='open')
+    for issue in issues:
+        time_open = datetime.now(timezone.utc)-issue.created_at
+        days = time_open.days
+        hours, remainder = divmod(time_open.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        issue_data = {
+            "title": issue.title,
+            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+            "url": issue.html_url,
+        }
+        issue_sort_data.append(issue_data)
+        rate_limit_check(g)
+    
+    issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
+    return issue_sort_data
 
 
 # Retrieves the number of new contributors in the last week.
@@ -234,13 +265,12 @@ if __name__ == '__main__':
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
-        
         repo_data = {
             "repo_name": PROJECT_NAME,
             "issues": get_issue_text(g, repo, one_week_ago),
             "pull_requests": get_pr_text(g, repo, one_week_ago),
             "commits": get_commit_messages(g, repo, one_week_ago),
-            "issues_by_open_date": sort_issues_open_date(g, repo),
+            "issues_by_open_date": sort_issues(g, repo),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
             "total_commits": get_total_commits(g, repo, one_week_ago),
             "total_contributors_all_time": get_all_contributors(g, repo),

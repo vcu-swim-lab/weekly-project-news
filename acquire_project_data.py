@@ -139,28 +139,6 @@ def get_commit_messages(g, repo, one_week_ago):
 
     return commit_data_all
 
-# Retrieves and sorts the issues that have been opened the longest
-# Issues opened within the last week? Put one_week_ago in the parameters and since=one_week_ago in get_issues()
-def sort_issues(g, repo): 
-    issue_sort_data = []
-    issues = repo.get_issues(state='open')
-    for issue in issues:
-        time_open = datetime.now(timezone.utc)-issue.created_at
-        days = time_open.days
-        hours, remainder = divmod(time_open.seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-
-        issue_data = {
-            "title": issue.title,
-            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
-            "url": issue.html_url,
-        }
-        issue_sort_data.append(issue_data)
-        rate_limit_check(g)
-    
-    issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
-    return issue_sort_data
-
 
 # Retrieves the number of new contributors in the last week.
 def get_new_contributors(g, repo, one_week_ago):
@@ -225,12 +203,7 @@ def get_weekly_contributors(g, repo, one_week_ago):
 # Get total number of contributors to date for the project
 def get_all_contributors(g, repo):
     contributors = repo.get_contributors(anon="true")
-    num_contributors = 0
-
-    for contributor in contributors:
-        num_contributors += 1
-
-    return num_contributors
+    return contributors.totalCount
 
 
 # Gets the total number of commits in the last week.
@@ -238,14 +211,102 @@ def get_total_commits(g, repo, one_week_ago):
     commits = repo.get_commits(since=one_week_ago).totalCount
     return commits # Can turn to string if needed with str(commits)
 
+def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
+    # Store active contributor data
+    active_contributors = []
+    
+    # By number of commits
+    commits = repo.get_commits(since=one_week_ago)
+    for commit in commits:
+        if '[bot]' in commit.commit.author.name:
+            continue
+        
+        author = commit.commit.author.name
+        found = False
+        
+        for contributor in active_contributors:    
+            if contributor['author'] == author:
+                contributor['commits'] += 1
+                found = True
+                break
+        if not found:
+            contributor_data = {
+                'author': author,
+                'commits': 1,
+                'pull_requests': 0,
+                'issues': 0
+            }
+            active_contributors.append(contributor_data)
+        
+        rate_limit_check(g)
+    
+    # By number of PRs
+    pulls = repo.get_pulls(state='all', sort='created')
+    for pr in pulls:
+        if '[bot]' in pr.user.login.lower():
+            continue
+        
+        author = commit.commit.author.name
+        found = False 
+        for contributor in active_contributors:
+            if contributor['author'] == author:
+                contributor['pull_requests'] += 1
+                found = True
+                break
+        if not found:
+            contributor_data = {
+                'author': author,
+                'commits': 0,
+                'pull_requests': 1,
+                'issues': 0
+            }
+            active_contributors.append(contributor_data)
+        
+        rate_limit_check(g)
 
-#TODO
-# Get the number and list the contributors who have made more than one(or more) commit in the last week? Month? 
+    # By number of issues
+    issues = repo.get_issues(since=thirty_days_ago)
+    for issue in issues:
+        if '[bot]' in pr.user.login.lower():
+            continue
+        
+        author = commit.commit.author.name
+        found = False 
+        for contributor in active_contributors:
+            if contributor['author'] == author:
+                contributor['issues'] += 1
+                found = True
+                break
+        if not found:
+            contributor_data = {
+                'author': author,
+                'commits': 0,
+                'pull_requests': 0,
+                'issues': 1
+            }
+            active_contributors.append(contributor_data)
+        
+        rate_limit_check(g)
+        
+    # Commit threshold for being considered active
+    commit_threshold = 1
+    pr_threshold = 1
+    issue_threshold = 0 # Issues created in the last month
 
+    # Filter contributors who meet the activity threshold
+    # Change conditional statement depending on what is considered "active"
+    active_contributors = [
+        contributor for contributor in active_contributors
+        if contributor['commits'] > commit_threshold or contributor['pull_requests'] > pr_threshold or contributor['issues'] > issue_threshold
+    ]
+    
+    num_active_contributors = len(active_contributors) # Gets number of active contributors
+    active_contributors.append({'number_of_active_contributors': num_active_contributors})
+    return active_contributors
+    
 
-
+# Main 
 if __name__ == '__main__':
-
     # get all of the subscribers from subscribers.json
     with open('subscribers.json') as file:
         subscribers_data = json.load(file)
@@ -255,7 +316,12 @@ if __name__ == '__main__':
 
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
+    
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    
+    # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
+    
     data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
@@ -270,12 +336,13 @@ if __name__ == '__main__':
             "issues": get_issue_text(g, repo, one_week_ago),
             "pull_requests": get_pr_text(g, repo, one_week_ago),
             "commits": get_commit_messages(g, repo, one_week_ago),
-            "issues_by_open_date": sort_issues(g, repo),
+            "issues_by_open_date": sort_issues_open_date(g, repo),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
             "total_commits": get_total_commits(g, repo, one_week_ago),
             "total_contributors_all_time": get_all_contributors(g, repo),
             "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-             "issues_by_number_of_comments": sort_issue_num_comments(g, repo)
+            "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
+            "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
 
         data.append(repo_data)
@@ -287,5 +354,5 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Error writing data for {PROJECT_NAME} to github_data.json")
             print(f"Error code: {e}")
-
+    
     g.close()

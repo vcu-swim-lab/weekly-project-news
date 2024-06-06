@@ -48,6 +48,55 @@ def get_issue_text(g, repo, one_week_ago):
 
     return issue_data_all
 
+
+# Retrieves and sorts the issues that have been opened the longest
+# Issues opened within the last week? Put one_week_ago in the parameters and since=one_week_ago in get_issues()
+def sort_issues_open_date(g, repo): 
+    issue_sort_data = []
+    issues = repo.get_issues(state='open')
+    for issue in issues:
+        time_open = datetime.now(timezone.utc)-issue.created_at
+        days = time_open.days
+        hours, remainder = divmod(time_open.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        issue_data = {
+            "title": issue.title,
+            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+            "url": issue.html_url,
+        }
+        issue_sort_data.append(issue_data)
+        rate_limit_check(g)
+    
+    issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
+    return issue_sort_data
+
+
+# Get the issues with the most comments and sorts them
+def sort_issue_num_comments(g, repo):
+    # Data array for the issues, retreives the issues from the repo
+    issue_data = []
+    issues = repo.get_issues(state='open')
+
+    # Iterates through each issue
+    for issue in issues:
+        comments = issue.get_comments()
+        num_comments = comments.totalCount # Retreives the number of comments on an issue
+            
+        # If the number of comments on an issue is 0, skip it
+        if num_comments == 0:
+            continue
+        else: #Otherwise, add the title and number of comments to the data array
+            # Can add more descriptors to data if needed
+            data = {
+            "title": issue.title,
+            "number_of_comments": num_comments
+            }
+            issue_data.append(data)
+    issue_data.sort(key=lambda x: x["number_of_comments"], reverse=True) # Sort the issues by number of comments
+    return issue_data # Return in JSON format
+
+
 # formats a specific repo's PRs as json data
 def get_pr_text(g, repo, one_week_ago):
     pr_data_all = []
@@ -81,51 +130,42 @@ def get_commit_messages(g, repo, one_week_ago):
 
     return commit_data_all
 
-# Retrieves and sorts the issues that have been opened the longest
-# Issues opened within the last week? Put one_week_ago in the parameters and since=one_week_ago in get_issues()
-def sort_issues(g, repo): 
-    issue_sort_data = []
-    issues = repo.get_issues(state='open')
-    for issue in issues:
-        time_open = datetime.now(timezone.utc)-issue.created_at
-        days = time_open.days
-        hours, remainder = divmod(time_open.seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-
-        issue_data = {
-            "title": issue.title,
-            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
-            "url": issue.html_url,
-        }
-        issue_sort_data.append(issue_data)
-        rate_limit_check(g)
-    
-    issue_sort_data.sort(key=lambda x: x["time_open"], reverse=True)
-    return issue_sort_data
-
 
 # Retrieves the number of new contributors in the last week.
 def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data = []
     commits = repo.get_commits(since=one_week_ago)
     num_new_contributors = 0
+    processed_authors = set()
 
+    # Loop through repo commits
     for commit in commits:
-        commit_author = commit.author
-        author_commits = repo.get_commits(author=commit_author)
-        first_commit = None
+        # Filter through bot commits
+        if '[bot]' in commit.commit.author.name:
+            continue
+        
+        # Try retreiving author commits. If it doesn't work, print out error message.
+        try:
+            author_commits = repo.get_commits(author=commit.commit.author.name)
+        except AssertionError as e:
+            print(f"Skipping problematic commit: {e}")
+            continue
 
+        # Find author's first commit to analyze the date
+        first_commit = None
         for c in author_commits:
             first_commit = c
             break
-
-        if first_commit and first_commit.commit.committer.date.replace(tzinfo=None) >= one_week_ago.replace(tzinfo=None):
+            
+        # If commit is valid and within the last week, add it to the data array.
+        if first_commit and (first_commit.commit.committer.date.replace(tzinfo=None) >= one_week_ago.replace(tzinfo=None)) and (first_commit.commit.author.name not in processed_authors):
             data = {
                 "author": commit.commit.author.name,
                 "description": "new contributor"
             }
             num_new_contributors+=1
             new_contributor_data.append(data)
+            processed_authors.add(commit.commit.author.name)
     
     # Can turn to string if needed with str(num_new_contributors)
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
@@ -169,9 +209,6 @@ def get_total_commits(g, repo, one_week_ago):
 
 
 #TODO
-# Get the issues with the most comments
-
-#TODO
 # Get the number and list the contributors who have made more than one(or more) commit in the last week? Month? 
 
 
@@ -193,21 +230,22 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'monicahq/monica'
+        PROJECT_NAME = 'cnovalski1/APIexample'
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
         
         repo_data = {
-            # "repo_name": PROJECT_NAME,
-            # "issues": get_issue_text(g, repo, one_week_ago),
-            # "pull_requests": get_pr_text(g, repo, one_week_ago),
-            # "commits": get_commit_messages(g, repo, one_week_ago),
-            # "issues_by_open_date": sort_issues(g, repo)
+            "repo_name": PROJECT_NAME,
+            "issues": get_issue_text(g, repo, one_week_ago),
+            "pull_requests": get_pr_text(g, repo, one_week_ago),
+            "commits": get_commit_messages(g, repo, one_week_ago),
+            "issues_by_open_date": sort_issues_open_date(g, repo),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            # "total_commits": get_total_commits(g, repo, one_week_ago),
-            # "total_contributors_all_time": get_all_contributors(g, repo),
-            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago)
+            "total_commits": get_total_commits(g, repo, one_week_ago),
+            "total_contributors_all_time": get_all_contributors(g, repo),
+            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
+             "issues_by_number_of_comments": sort_issue_num_comments(g, repo)
         }
 
         data.append(repo_data)

@@ -191,6 +191,8 @@ def get_weekly_contributors(g, repo, one_week_ago):
     num_weekly_contributors = 0
 
     for commit in commits:
+        if '[bot]' in commit.commit.author.name:
+            continue
         if commit.commit.author.name not in contributor_data:
             data = {
                 "author": commit.commit.author.name,
@@ -204,6 +206,7 @@ def get_weekly_contributors(g, repo, one_week_ago):
 
 
 # Get total number of contributors to date for the project
+# Add code to not list bots??
 def get_all_contributors(g, repo):
     contributors = repo.get_contributors(anon="true")
     return contributors.totalCount

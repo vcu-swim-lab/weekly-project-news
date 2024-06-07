@@ -90,6 +90,9 @@ def sort_issues_open_date(g, repo):
     issue_sort_data = []
     issues = repo.get_issues(state='open')
     for issue in issues:
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+            continue
+        
         time_open = datetime.now(timezone.utc)-issue.created_at
         days = time_open.days
         hours, remainder = divmod(time_open.seconds, 3600)
@@ -116,6 +119,9 @@ def sort_issue_num_comments(g, repo):
 
     # Iterates through each issue
     for issue in issues:
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+            continue
+        
         comments = issue.get_comments()
         num_comments = comments.totalCount # Retreives the number of comments on an issue
             
@@ -156,6 +162,9 @@ def avg_issue_close_time(g, repo):
     
     # Iterates through each issue and calculates the total close time in minutes for each issue
     for issue in issues:
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+            continue
+        
         time_open = issue.closed_at - issue.created_at
         total_minutes = time_open.total_seconds() // 60
         total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
@@ -177,6 +186,9 @@ def avg_issue_close_time_weekly(g, repo, one_week_ago):
     
     # Iterates through each issue and calculates the total close time in minutes for each issue
     for issue in issues:
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+            continue
+        
         time_open = issue.closed_at - issue.created_at
         total_minutes = time_open.total_seconds() // 60
         total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues

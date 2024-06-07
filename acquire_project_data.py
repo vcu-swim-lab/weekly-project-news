@@ -287,37 +287,41 @@ def get_new_contributors(g, repo, one_week_ago):
 
     # Loop through repo commits
     for commit in commits:
-        # Filter through bot commits
-        if '[bot]' in commit.commit.author.name:
+        author = commit.author
+
+        # skip author
+        if author is None or '[bot]' in (author.name or '') or 'bot' in (author.name or '') or author.login in processed_authors:
             continue
         
-        # Try retreiving author commits. If it doesn't work, print out error message.
+        # Try retrieving author commits. If it doesn't work, print out error message.
         try:
-            author_commits = repo.get_commits(author=commit.commit.author.name)
+            author_commits = repo.get_commits(author=author.login)
+            first_commit = None
+
+            # get the author's first commit
+            for author_commit in author_commits:
+                commit_date = author_commit.commit.committer.date
+                if first_commit is None or commit_date < first_commit:
+                    first_commit = commit_date
+
+            # If first commit is valid and within the last week, they are a new contributor
+            if first_commit and first_commit >= one_week_ago:
+                data = {
+                    "author": author.login
+                }
+                num_new_contributors += 1
+                new_contributor_data.append(data)
+                processed_authors.add(author.login)
+            rate_limit_check(g)
+
         except AssertionError as e:
             print(f"Skipping problematic commit: {e}")
             continue
 
-        # Find author's first commit to analyze the date
-        first_commit = None
-        for c in author_commits:
-            first_commit = c
-            break
-            
-        # If commit is valid and within the last week, add it to the data array.
-        if first_commit and (first_commit.commit.committer.date.replace(tzinfo=None) >= one_week_ago.replace(tzinfo=None)) and (first_commit.commit.author.name not in processed_authors):
-            data = {
-                "author": commit.commit.author.name,
-                "description": "new contributor"
-            }
-            num_new_contributors+=1
-            new_contributor_data.append(data)
-            processed_authors.add(commit.commit.author.name)
-        rate_limit_check(g)
-    
     # Can turn to string if needed with str(num_new_contributors)
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
     return new_contributor_data
+
 
 # CONTRIBUTORS 2: Gets NUMBER of contributors who made any commits within one_week_ago
 def get_weekly_contributors(g, repo, one_week_ago):
@@ -450,7 +454,7 @@ if __name__ == '__main__':
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
     
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=1)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
@@ -462,7 +466,8 @@ if __name__ == '__main__':
     for repo_url in repo_names:
         # Testing my own repo 
         # PROJECT_NAME = 'cnovalski1/APIexample'
-        PROJECT_NAME = 'monicahq/monica'
+        # PROJECT_NAME = 'monicahq/monica'
+        PROJECT_NAME = 'aio-libs/create-aio-app'
         # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         repo = g.get_repo(PROJECT_NAME)
     
@@ -491,9 +496,10 @@ if __name__ == '__main__':
             "commits": commit_data,
             "num_commits": get_num_commits(commit_data),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-            "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
+            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
+            # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
+        # TODO: all of the contributors (3 functions) have not been checked yet
 
         data.append(repo_data)
 

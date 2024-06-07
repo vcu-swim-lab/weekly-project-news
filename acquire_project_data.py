@@ -21,13 +21,42 @@ def rate_limit_check(g):
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
 
-# ISSUES 1: Gets ALL issues within one_week_ago
-def get_issue_text(g, repo, one_week_ago):
+# ISSUES 1: Gets all open issues within one_week_ago
+def get_open_issues(g, repo, one_week_ago):
     issue_data_all = []
-    issues = repo.get_issues(state='all', since=one_week_ago)
+    issues = repo.get_issues(state='open', since=one_week_ago)
 
     for issue in issues:
-        if "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
+        if issue.created_at > one_week_ago and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
+            issue_data = {
+                "title": issue.title,
+                "body": issue.body,
+                "user": issue.user.login,
+                "state": issue.state,
+                "comments": []
+            }
+
+            comments = issue.get_comments()
+            for comment in comments:
+                if "[bot]" not in comment.user.login.lower() and "bot" not in comment.user.login.lower():
+                    comment_data = {
+                        "user": comment.user.login,
+                        "body": comment.body
+                    }
+                    issue_data["comments"].append(comment_data)
+
+            issue_data_all.append(issue_data)
+        rate_limit_check(g)
+
+    return issue_data_all
+
+# ISSUES 2: Gets all closed issues within one_week_ago
+def get_closed_issues(g, repo, one_week_ago):
+    issue_data_all = []
+    issues = repo.get_issues(state='closed', since=one_week_ago)
+
+    for issue in issues:
+        if issue.created_at > one_week_ago and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
             issue_data = {
                 "title": issue.title,
                 "body": issue.body,
@@ -50,7 +79,7 @@ def get_issue_text(g, repo, one_week_ago):
 
     return issue_data_all
   
-# ISSUES 2: Gets all issues within one_week_ago, sorted by longest open date first
+# ISSUES 3: Gets all issues within one_week_ago, sorted by longest open date first
 def sort_issues_open_date(g, repo): 
     issue_sort_data = []
     issues = repo.get_issues(state='open')
@@ -73,8 +102,7 @@ def sort_issues_open_date(g, repo):
     issue_sort_data.sort(key=lambda x: x["minutes_open"], reverse=True)
     return issue_sort_data
 
-
-# ISSUES 3: Gets all issues within one_week_ago, sorted by most comments first
+# ISSUES 4: Gets all issues within one_week_ago, sorted by most comments first
 def sort_issue_num_comments(g, repo):
     # Data array for the issues, retreives the issues from the repo
     issue_data = []
@@ -309,7 +337,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
 # Main 
 if __name__ == '__main__':
     # get all of the subscribers from subscribers.json
-    with open('test_monica_subscribers.json') as file:
+    with open('subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -318,10 +346,10 @@ if __name__ == '__main__':
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
     
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=1)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
-    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
+    # thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
 
     data = []
 
@@ -329,24 +357,26 @@ if __name__ == '__main__':
     for repo_url in repo_names:
         # Testing my own repo 
         # PROJECT_NAME = 'cnovalski1/APIexample'
-        PROJECT_NAME = 'monicahq/monica'
+        # PROJECT_NAME = 'monicahq/monica'
+        PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
-        pr_data = get_pr_text(g, repo, one_week_ago)
-        commit_data = get_commit_messages(g, repo, one_week_ago)
+        # pr_data = get_pr_text(g, repo, one_week_ago)
+        # commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
-            "repo_name": PROJECT_NAME,
-            "issues": get_issue_text(g, repo, one_week_ago),
-            "issues_by_open_date": sort_issues_open_date(g, repo),
-            "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
-            "pull_requests": pr_data,
-            "num_prs": get_num_prs(pr_data),
-            "commits": commit_data,
-            "num_commits": get_num_commits(commit_data),
-            "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-            "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
+            # "repo_name": PROJECT_NAME,
+            "issues_open": get_open_issues(g, repo, one_week_ago),
+            "issues_closed": get_closed_issues(g, repo, one_week_ago),
+            # "issues_by_open_date": sort_issues_open_date(g, repo),
+            # "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
+            # "pull_requests": pr_data,
+            # "num_prs": get_num_prs(pr_data),
+            # "commits": commit_data,
+            # "num_commits": get_num_commits(commit_data),
+            # "new_contributors": get_new_contributors(g, repo, one_week_ago),
+            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
+            # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
 
         data.append(repo_data)

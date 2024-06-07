@@ -27,7 +27,10 @@ def get_open_issues(g, repo, one_week_ago):
     issues = repo.get_issues(state='open', since=one_week_ago)
 
     for issue in issues:
-        if issue.created_at > one_week_ago and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
+        # issue within one_week_ago
+        # issue is not a pull request
+        # issue is not a bot
+        if issue.created_at > one_week_ago and not issue.pull_request and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
             issue_data = {
                 "title": issue.title,
                 "body": issue.body,
@@ -56,7 +59,10 @@ def get_closed_issues(g, repo, one_week_ago):
     issues = repo.get_issues(state='closed', since=one_week_ago)
 
     for issue in issues:
-        if issue.created_at > one_week_ago and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
+        # issue within one_week_ago
+        # issue is not a pull request
+        # issue is not a bot
+        if issue.created_at > one_week_ago and not issue.pull_request and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
             issue_data = {
                 "title": issue.title,
                 "body": issue.body,
@@ -346,10 +352,10 @@ if __name__ == '__main__':
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
     
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=1)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=3)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
-    # thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
 
     data = []
 
@@ -357,12 +363,12 @@ if __name__ == '__main__':
     for repo_url in repo_names:
         # Testing my own repo 
         # PROJECT_NAME = 'cnovalski1/APIexample'
-        # PROJECT_NAME = 'monicahq/monica'
-        PROJECT_NAME = repo_url.split('https://github.com/')[-1]
+        PROJECT_NAME = 'monicahq/monica'
+        # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
-        # pr_data = get_pr_text(g, repo, one_week_ago)
+        pr_data = get_pr_text(g, repo, one_week_ago)
         # commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
             # "repo_name": PROJECT_NAME,
@@ -370,7 +376,7 @@ if __name__ == '__main__':
             "issues_closed": get_closed_issues(g, repo, one_week_ago),
             # "issues_by_open_date": sort_issues_open_date(g, repo),
             # "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
-            # "pull_requests": pr_data,
+            "pull_requests": pr_data,
             # "num_prs": get_num_prs(pr_data),
             # "commits": commit_data,
             # "num_commits": get_num_commits(commit_data),

@@ -123,6 +123,7 @@ def sort_issue_num_comments(g, repo):
             "number_of_comments": num_comments
             }
             issue_data.append(data)
+        rate_limit_check(g)
     issue_data.sort(key=lambda x: x["number_of_comments"], reverse=True) # Sort the issues by number of comments
     return issue_data # Return in JSON format
 
@@ -152,6 +153,7 @@ def avg_issue_close_time(g, repo):
         time_open = issue.closed_at - issue.created_at
         total_minutes = time_open.total_seconds() // 60
         total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
+        rate_limit_check(g)
     
     # Prevents dividing by zero
     if total_issues > 0:
@@ -172,6 +174,7 @@ def avg_issue_close_time_weekly(g, repo, one_week_ago):
         time_open = issue.closed_at - issue.created_at
         total_minutes = time_open.total_seconds() // 60
         total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
+        rate_limit_check(g)
     
     # Prevents dividing by zero
     if total_issues > 0:
@@ -440,7 +443,7 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'tensorflow/tensorflow'
+        PROJECT_NAME = 'cnovalski1/APIexample'
         repo = g.get_repo(PROJECT_NAME)
     
         
@@ -448,7 +451,7 @@ if __name__ == '__main__':
         pr_data_open = get_open_prs(g, repo, one_week_ago)
         pr_data_closed = get_closed_prs(g, repo, one_week_ago)
         weekly_open_issues = get_open_issues(g, repo, one_week_ago)
-        all_open_issues = sort_issues_open_date(g, repo, one_week_ago)
+        all_open_issues = sort_issues_open_date(g, repo)
         weekly_closed_issues = get_closed_issues(g, repo, one_week_ago)
         commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
@@ -475,7 +478,7 @@ if __name__ == '__main__':
         data.append(repo_data)
 
         try:
-            with open("testing-github_data.json", "w") as outfile:
+            with open("github_data.json", "w") as outfile:
                 json.dump(data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to github_data.json")
         except Exception as e:

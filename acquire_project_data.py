@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv('public.env')  
 
-# checks the rate limit
+# Checks the rate limit
 def rate_limit_check(g):
     rate_limit = g.get_rate_limit().core
     if rate_limit.remaining < 10:  
@@ -21,7 +21,7 @@ def rate_limit_check(g):
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
 
-# formats a specific repo's issues as json data
+# ISSUES 1: Gets ALL issues within one_week_ago
 def get_issue_text(g, repo, one_week_ago):
     issue_data_all = []
     issues = repo.get_issues(state='all', since=one_week_ago)
@@ -33,7 +33,6 @@ def get_issue_text(g, repo, one_week_ago):
                 "body": issue.body,
                 "user": issue.user.login,
                 "state": issue.state,
-                # "created_at": issue.created_at.isoformat(),
                 "comments": []
             }
 
@@ -51,9 +50,7 @@ def get_issue_text(g, repo, one_week_ago):
 
     return issue_data_all
   
-  
-# Retrieves and sorts the issues that have been opened the longest
-# Issues opened within the last week? Put one_week_ago in the parameters and since=one_week_ago in get_issues()
+# ISSUES 2: Gets all issues within one_week_ago, sorted by longest open date first
 def sort_issues_open_date(g, repo): 
     issue_sort_data = []
     issues = repo.get_issues(state='open')
@@ -77,7 +74,7 @@ def sort_issues_open_date(g, repo):
     return issue_sort_data
 
 
-# Get the issues with the most comments and sorts them
+# ISSUES 3: Gets all issues within one_week_ago, sorted by most comments first
 def sort_issue_num_comments(g, repo):
     # Data array for the issues, retreives the issues from the repo
     issue_data = []
@@ -102,7 +99,8 @@ def sort_issue_num_comments(g, repo):
     return issue_data # Return in JSON format
 
 
-# formats a specific repo's PRs as json data
+
+# PRS 1: Gets ALL pull requests within one_week_ago
 def get_pr_text(g, repo, one_week_ago):
     pr_data_all = []
     pulls = repo.get_pulls(state='all', sort='created', direction='desc')
@@ -116,14 +114,19 @@ def get_pr_text(g, repo, one_week_ago):
                 "body": pr.body,
                 "state": pr.state,
                 "user": pr.user.login
-                # "created_at": pr.created_at.isoformat()
             }
             pr_data_all.append(pr_data)
         rate_limit_check(g)
     
     return pr_data_all
 
-# formats a specific repo's commit messages as json data
+# PRS 2: Gets NUMBER of pull requests made within one_week_ago
+def get_num_prs(pr_data):
+    return len(pr_data)
+
+
+
+# COMMITS 1: Gets ALL commits within one_week_ago
 def get_commit_messages(g, repo, one_week_ago):
     commit_data_all = []
     commits = repo.get_commits(since=one_week_ago)
@@ -133,7 +136,6 @@ def get_commit_messages(g, repo, one_week_ago):
             commit_data = {
                 "author": commit.commit.author.name,
                 "message": commit.commit.message
-                # "created_at": commit.commit.author.date.isoformat()
             }
 
             commit_data_all.append(commit_data)
@@ -141,7 +143,13 @@ def get_commit_messages(g, repo, one_week_ago):
 
     return commit_data_all
 
-# Retrieves the number of new contributors in the last week.
+# COMMITS 2: Gets NUMBER of commits made within one_week_ago
+def get_num_commits(commit_data):
+    return len(commit_data)
+
+
+
+# CONTRIBUTORS 1: Gets NUMBER of new contributors who made their first commit within one_week_ago
 def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data = []
     commits = repo.get_commits(since=one_week_ago)
@@ -182,8 +190,7 @@ def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
     return new_contributor_data
 
-# NOTE: Christian is working on this right now
-# Get total number of contributors in the last week (even if they've contributed before)
+# CONTRIBUTORS 2: Gets NUMBER of contributors who made any commits within one_week_ago
 def get_weekly_contributors(g, repo, one_week_ago):
     contributor_data = []
     commits = repo.get_commits(since=one_week_ago)
@@ -201,33 +208,8 @@ def get_weekly_contributors(g, repo, one_week_ago):
     
     return contributor_data
 
-# Gets the total number of commits in the last week
-# def get_num_commits(g, repo, one_week_ago):
-#     commits = repo.get_commits(since=one_week_ago).totalCount
-#     return commits
-
-
-def get_num_commits(commit_data):
-    return len(commit_data)
-
-# Gets the total number of PRs in the last week
-def get_num_prs(pr_data):
-    return len(pr_data)
-
-  
-# Get total number of contributors to date for the project
-def get_all_contributors(g, repo):
-    contributors = repo.get_contributors(anon="true")
-    return contributors.totalCount
-
-
-# Gets the total number of commits in the last week.
-def get_total_commits(g, repo, one_week_ago):
-    commits = repo.get_commits(since=one_week_ago).totalCount
-    return commits # Can turn to string if needed with str(commits)
-
-# Gets the contributors that are considered "active"
-# Currently, it is > 0 commits this week, > 0 issues this month, and > 0 PRs this week
+# CONTRIBUTORS 3: Gets ALL contributors who are considered "active" within one_week_ago
+# Active: > 0 commits this week, > 0 issues this month, AND > 0 PRs this week
 def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
     # Store active contributor data
     active_contributors = []
@@ -327,7 +309,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
 # Main 
 if __name__ == '__main__':
     # get all of the subscribers from subscribers.json
-    with open('subscribers.json') as file:
+    with open('test_monica_subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -346,32 +328,31 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'cnovalski1/APIexample'
+        # PROJECT_NAME = 'cnovalski1/APIexample'
+        PROJECT_NAME = 'monicahq/monica'
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
         pr_data = get_pr_text(g, repo, one_week_ago)
         commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
-            "repo_name": PROJECT_NAME,
-            "issues": get_issue_text(g, repo, one_week_ago),
-            "pull_requests": pr_data,
+            # "repo_name": PROJECT_NAME,
+            # "issues": get_issue_text(g, repo, one_week_ago),
+            # "pull_requests": pr_data,
             "commits": commit_data,
-            "issues_by_open_date": sort_issues_open_date(g, repo),
-            "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            "total_commits": get_total_commits(g, repo, one_week_ago),
-            "total_contributors_all_time": get_all_contributors(g, repo),
-            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-            "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
-            "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
-            "num_prs": get_num_prs(pr_data),
+            # "issues_by_open_date": sort_issues_open_date(g, repo),
+            # "new_contributors": get_new_contributors(g, repo, one_week_ago),
+            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
+            # "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
+            # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago),
+            # "num_prs": get_num_prs(pr_data),
             "num_commits": get_num_commits(commit_data)
         }
 
         data.append(repo_data)
 
         try:
-            with open("github_data.json", "w") as outfile:
+            with open("testing-github_data.json", "w") as outfile:
                 json.dump(data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to github_data.json")
         except Exception as e:

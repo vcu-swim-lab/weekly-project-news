@@ -23,7 +23,7 @@ def rate_limit_check(g):
 
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(g, repo, one_week_ago):
-    issue_data_all = []
+    issue_data_open = []
     issues = repo.get_issues(state='open', since=one_week_ago)
 
     for issue in issues:
@@ -48,14 +48,14 @@ def get_open_issues(g, repo, one_week_ago):
                     }
                     issue_data["comments"].append(comment_data)
 
-            issue_data_all.append(issue_data)
+            issue_data_open.append(issue_data)
         rate_limit_check(g)
 
-    return issue_data_all
+    return issue_data_open
 
 # ISSUES 2: Gets all closed issues within one_week_ago
 def get_closed_issues(g, repo, one_week_ago):
-    issue_data_all = []
+    issue_data_closed = []
     issues = repo.get_issues(state='closed', since=one_week_ago)
 
     for issue in issues:
@@ -80,39 +80,38 @@ def get_closed_issues(g, repo, one_week_ago):
                     }
                     issue_data["comments"].append(comment_data)
 
-            issue_data_all.append(issue_data)
+            issue_data_closed.append(issue_data)
         rate_limit_check(g)
 
-    return issue_data_all
+    return issue_data_closed
   
-# ISSUES 3: Gets all issues within one_week_ago, sorted by longest open date first
+# ISSUES 3: Gets all issues, sorted by longest open date first
 def sort_issues_open_date(g, repo): 
     issue_sort_data = []
     issues = repo.get_issues(state='open')
     for issue in issues:
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+            continue
+        
+        time_open = datetime.now(timezone.utc)-issue.created_at
+        days = time_open.days
+        hours, remainder = divmod(time_open.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        total_minutes = time_open.total_seconds() // 60
 
-        if "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower() and not issue.pull_request:
-            time_open = datetime.now(timezone.utc)-issue.created_at
-            days = time_open.days
-            hours, remainder = divmod(time_open.seconds, 3600)
-            minutes, seconds = divmod(remainder, 60)
-            total_minutes = time_open.total_seconds() // 60
-
-            issue_data = {
-                "title": issue.title,
-                "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
-                "minutes_open": total_minutes,
-                "url": issue.html_url
-            }
-            issue_sort_data.append(issue_data)
+        issue_data = {
+            "title": issue.title,
+            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+            "minutes_open": total_minutes,
+            "url": issue.html_url
+        }
+        issue_sort_data.append(issue_data)
         rate_limit_check(g)
     
     issue_sort_data.sort(key=lambda x: x["minutes_open"], reverse=True)
     return issue_sort_data
-
   
-  
-# ISSUES 3: Gets all issues within one_week_ago, sorted by most comments first
+# ISSUES 4: Gets all issues within one_week_ago, sorted by most comments first
 def sort_issue_num_comments(g, repo):
     # Data array for the issues, retreives the issues from the repo
     issue_data = []
@@ -120,23 +119,86 @@ def sort_issue_num_comments(g, repo):
 
     # Iterates through each issue
     for issue in issues:
-        if "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower() and not issue.pull_request:
-            comments = issue.get_comments()
-            num_comments = comments.totalCount # Retreives the number of comments on an issue
-                
-            # If the number of comments on an issue is 0, skip it
-            if num_comments == 0:
-                continue
-            else: #Otherwise, add the title and number of comments to the data array
-                # Can add more descriptors to data if needed
-                data = {
-                "title": issue.title,
-                "number_of_comments": num_comments
-                }
-                issue_data.append(data)
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+            continue
+        
+        comments = issue.get_comments()
+        num_comments = comments.totalCount # Retreives the number of comments on an issue
+            
+        # If the number of comments on an issue is 0, skip it
+        if num_comments == 0:
+            continue
+        else: #Otherwise, add the title and number of comments to the data array
+            # Can add more descriptors to data if needed
+            data = {
+            "title": issue.title,
+            "number_of_comments": num_comments
+            }
+            issue_data.append(data)
+        rate_limit_check(g)
     issue_data.sort(key=lambda x: x["number_of_comments"], reverse=True) # Sort the issues by number of comments
     return issue_data # Return in JSON format
 
+# ISSUES 5: Get number of open issues in the last week
+### Has attribute open_issues_count for repo
+def get_num_open_issues_weekly(weekly_open_issues):
+    return len(weekly_open_issues)
+
+# ISSUES 6: Get number of closed issues in the last week
+def get_num_closed_issues_weekly(weekly_closed_issues):
+    return len(weekly_closed_issues)
+
+# ISSUES 7: Get current total number of open issues
+def get_num_open_issues_all(all_open_issues):
+    return len(all_open_issues)
+    
+
+# ISSUES 7: Get average time to close issues all time
+def avg_issue_close_time(g, repo):
+    issues = repo.get_issues(state='closed')
+    total_issues = issues.totalCount
+    total_close_time = 0
+    avg_close_time = 0
+    
+    # Iterates through each issue and calculates the total close time in minutes for each issue
+    for issue in issues:
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+            continue
+        
+        time_open = issue.closed_at - issue.created_at
+        total_minutes = time_open.total_seconds() // 60
+        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
+        rate_limit_check(g)
+    
+    # Prevents dividing by zero
+    if total_issues > 0:
+        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
+    
+    return avg_close_time # Return the average time to close issues
+
+
+# ISSUES 8: Get average time to close issues in the last week 
+def avg_issue_close_time_weekly(g, repo, one_week_ago):
+    issues = repo.get_issues(state='closed', since=one_week_ago)
+    total_issues = issues.totalCount
+    total_close_time = 0
+    avg_close_time = 0
+    
+    # Iterates through each issue and calculates the total close time in minutes for each issue
+    for issue in issues:
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+            continue
+        
+        time_open = issue.closed_at - issue.created_at
+        total_minutes = time_open.total_seconds() // 60
+        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
+        rate_limit_check(g)
+    
+    # Prevents dividing by zero
+    if total_issues > 0:
+        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
+    
+    return avg_close_time # Return the average time to close issues in the last week
 
 
 # PRS 1: Gets open pull requests within one_week_ago
@@ -320,7 +382,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
         if pr.created_at <= one_week_ago:
             continue
         
-        author = commit.commit.author.name
+        author = pr.user.login
         found = False 
         for contributor in active_contributors:
             if contributor['author'] == author:
@@ -344,7 +406,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
         if '[bot]' in pr.user.login.lower():
             continue
         
-        author = commit.commit.author.name
+        author = issue.user.login
         found = False 
         for contributor in active_contributors:
             if contributor['author'] == author:
@@ -392,7 +454,8 @@ if __name__ == '__main__':
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
     
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=365)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
@@ -408,23 +471,30 @@ if __name__ == '__main__':
         # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         repo = g.get_repo(PROJECT_NAME)
     
+        
         # saves one repo's data
-        # pr_data_open = get_open_prs(g, repo, one_week_ago)
-        # pr_data_closed = get_closed_prs(g, repo, one_week_ago)
+        pr_data_open = get_open_prs(g, repo, one_week_ago)
+        pr_data_closed = get_closed_prs(g, repo, one_week_ago)
+        weekly_open_issues = get_open_issues(g, repo, one_week_ago)
+        all_open_issues = sort_issues_open_date(g, repo)
+        weekly_closed_issues = get_closed_issues(g, repo, one_week_ago)
         commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
             "repo_name": PROJECT_NAME,
-            # "issues_open": get_open_issues(g, repo, one_week_ago),
-            # "issues_closed": get_closed_issues(g, repo, one_week_ago),
-            # "issues_by_open_date": sort_issues_open_date(g, repo),
-            # "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
-            # "open_pull_requests": pr_data_open,
-            # "closed_pull_requests": pr_data_closed,
-            # "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
-            # "num_open_prs": get_num_open_prs(pr_data_open),
-            # "num_closed_prs": get_num_closed_prs(pr_data_closed),
-            # "commits": commit_data,
-            # "num_commits": get_num_commits(commit_data),
+            "issues_open": get_open_issues(g, repo, one_week_ago),
+            "issues_closed": get_closed_issues(g, repo, one_week_ago),
+            "num_all_open_issues": get_num_open_issues_all(all_open_issues),
+            "num_weekly_open_issues": get_num_open_issues_weekly(weekly_open_issues),
+            "num_weekly_closed_issues": get_num_closed_issues_weekly(weekly_closed_issues),
+            "issues_by_open_date": sort_issues_open_date(g, repo),
+            "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
+            "open_pull_requests": pr_data_open,
+            "closed_pull_requests": pr_data_closed,
+            "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
+            "num_open_prs": get_num_open_prs(pr_data_open),
+            "num_closed_prs": get_num_closed_prs(pr_data_closed),
+            "commits": commit_data,
+            "num_commits": get_num_commits(commit_data),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
             # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
             # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
@@ -434,7 +504,7 @@ if __name__ == '__main__':
         data.append(repo_data)
 
         try:
-            with open("testing-github_data.json", "w") as outfile:
+            with open("github_data.json", "w") as outfile:
                 json.dump(data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to github_data.json")
         except Exception as e:

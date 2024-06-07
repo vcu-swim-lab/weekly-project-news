@@ -23,7 +23,7 @@ def rate_limit_check(g):
 
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(g, repo, one_week_ago):
-    issue_data_all = []
+    issue_data_open = []
     issues = repo.get_issues(state='open', since=one_week_ago)
 
     for issue in issues:
@@ -45,14 +45,14 @@ def get_open_issues(g, repo, one_week_ago):
                     }
                     issue_data["comments"].append(comment_data)
 
-            issue_data_all.append(issue_data)
+            issue_data_open.append(issue_data)
         rate_limit_check(g)
 
-    return issue_data_all
+    return issue_data_open
 
 # ISSUES 2: Gets all closed issues within one_week_ago
 def get_closed_issues(g, repo, one_week_ago):
-    issue_data_all = []
+    issue_data_closed = []
     issues = repo.get_issues(state='closed', since=one_week_ago)
 
     for issue in issues:
@@ -74,12 +74,12 @@ def get_closed_issues(g, repo, one_week_ago):
                     }
                     issue_data["comments"].append(comment_data)
 
-            issue_data_all.append(issue_data)
+            issue_data_closed.append(issue_data)
         rate_limit_check(g)
 
-    return issue_data_all
+    return issue_data_closed
   
-# ISSUES 3: Gets all issues within one_week_ago, sorted by longest open date first
+# ISSUES 3: Gets all issues, sorted by longest open date first
 def sort_issues_open_date(g, repo): 
     issue_sort_data = []
     issues = repo.get_issues(state='open')
@@ -101,10 +101,8 @@ def sort_issues_open_date(g, repo):
     
     issue_sort_data.sort(key=lambda x: x["minutes_open"], reverse=True)
     return issue_sort_data
-
   
-  
-# ISSUES 3: Gets all issues within one_week_ago, sorted by most comments first
+# ISSUES 4: Gets all issues within one_week_ago, sorted by most comments first
 def sort_issue_num_comments(g, repo):
     # Data array for the issues, retreives the issues from the repo
     issue_data = []
@@ -128,6 +126,58 @@ def sort_issue_num_comments(g, repo):
     issue_data.sort(key=lambda x: x["number_of_comments"], reverse=True) # Sort the issues by number of comments
     return issue_data # Return in JSON format
 
+# ISSUES 5: Get number of open issues in the last week
+### Has attribute open_issues_count for repo
+def get_num_open_issues_weekly(weekly_open_issues):
+    return len(weekly_open_issues)
+
+# ISSUES 6: Get number of closed issues in the last week
+def get_num_closed_issues_weekly(weekly_closed_issues):
+    return len(weekly_closed_issues)
+
+# ISSUES 7: Get current total number of open issues
+def get_num_open_issues_all(all_open_issues):
+    return len(all_open_issues)
+    
+
+# ISSUES 7: Get average time to close issues all time
+def avg_issue_close_time(g, repo):
+    issues = repo.get_issues(state='closed')
+    total_issues = issues.totalCount
+    total_close_time = 0
+    avg_close_time = 0
+    
+    # Iterates through each issue and calculates the total close time in minutes for each issue
+    for issue in issues:
+        time_open = issue.closed_at - issue.created_at
+        total_minutes = time_open.total_seconds() // 60
+        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
+    
+    # Prevents dividing by zero
+    if total_issues > 0:
+        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
+    
+    return avg_close_time # Return the average time to close issues
+
+
+# ISSUES 8: Get average time to close issues in the last week 
+def avg_issue_close_time_weekly(g, repo, one_week_ago):
+    issues = repo.get_issues(state='closed', since=one_week_ago)
+    total_issues = issues.totalCount
+    total_close_time = 0
+    avg_close_time = 0
+    
+    # Iterates through each issue and calculates the total close time in minutes for each issue
+    for issue in issues:
+        time_open = issue.closed_at - issue.created_at
+        total_minutes = time_open.total_seconds() // 60
+        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
+    
+    # Prevents dividing by zero
+    if total_issues > 0:
+        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
+    
+    return avg_close_time # Return the average time to close issues in the last week
 
 
 # PRS 1: Gets open pull requests within one_week_ago
@@ -307,7 +357,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
         if pr.created_at <= one_week_ago:
             continue
         
-        author = commit.commit.author.name
+        author = pr.user.login
         found = False 
         for contributor in active_contributors:
             if contributor['author'] == author:
@@ -331,7 +381,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
         if '[bot]' in pr.user.login.lower():
             continue
         
-        author = commit.commit.author.name
+        author = issue.user.login
         found = False 
         for contributor in active_contributors:
             if contributor['author'] == author:
@@ -380,6 +430,7 @@ if __name__ == '__main__':
     g = Github(os.environ['GITHUB_API_KEY'])
     
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=1)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
     # thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
@@ -389,17 +440,24 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'cnovalski1/APIexample'
+        PROJECT_NAME = 'tensorflow/tensorflow'
         repo = g.get_repo(PROJECT_NAME)
     
+        
         # saves one repo's data
         pr_data_open = get_open_prs(g, repo, one_week_ago)
         pr_data_closed = get_closed_prs(g, repo, one_week_ago)
+        weekly_open_issues = get_open_issues(g, repo, one_week_ago)
+        all_open_issues = sort_issues_open_date(g, repo, one_week_ago)
+        weekly_closed_issues = get_closed_issues(g, repo, one_week_ago)
         commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
             "repo_name": PROJECT_NAME,
             "issues_open": get_open_issues(g, repo, one_week_ago),
             "issues_closed": get_closed_issues(g, repo, one_week_ago),
+            "num_all_open_issues": get_num_open_issues_all(all_open_issues),
+            "num_weekly_open_issues": get_num_open_issues_weekly(weekly_open_issues),
+            "num_weekly_closed_issues": get_num_closed_issues_weekly(weekly_closed_issues),
             "issues_by_open_date": sort_issues_open_date(g, repo),
             "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
             "open_pull_requests": pr_data_open,

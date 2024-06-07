@@ -336,17 +336,17 @@ if __name__ == '__main__':
         pr_data = get_pr_text(g, repo, one_week_ago)
         commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
-            # "repo_name": PROJECT_NAME,
-            # "issues": get_issue_text(g, repo, one_week_ago),
-            # "pull_requests": pr_data,
+            "repo_name": PROJECT_NAME,
+            "issues": get_issue_text(g, repo, one_week_ago),
+            "issues_by_open_date": sort_issues_open_date(g, repo),
+            "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
+            "pull_requests": pr_data,
+            "num_prs": get_num_prs(pr_data),
             "commits": commit_data,
-            # "issues_by_open_date": sort_issues_open_date(g, repo),
-            # "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-            # "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
-            # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago),
-            # "num_prs": get_num_prs(pr_data),
-            "num_commits": get_num_commits(commit_data)
+            "num_commits": get_num_commits(commit_data),
+            "new_contributors": get_new_contributors(g, repo, one_week_ago),
+            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
+            "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
 
         data.append(repo_data)

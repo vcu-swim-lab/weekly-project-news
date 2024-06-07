@@ -1,6 +1,6 @@
 import json
-from langchain import PromptTemplate, LLMChain
-from langchain.llms import OpenAI
+from langchain.chains import ConversationChain
+from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
 
@@ -8,85 +8,45 @@ load_dotenv('public.env')
 
 API_KEY = os.environ.get("OPENAI_KEY")
 
-# TODO: not sure what model, https://platform.openai.com/docs/models
-llm = OpenAI(api_key=API_KEY, model_name="text-davinci-003")
+# models: https://platform.openai.com/docs/models
+llm = ChatOpenAI(
+  model_name="gpt-3.5-turbo", 
+  temperature=0.9,
+  openai_api_key=API_KEY
+)
 
-# Function that generates a summary of the project's issues, returning a
-# summary that can be put in the newsletter
-def generate_issues_summary(issues, toxicity_score):
-  template = """
-  Given the following issues for a project:
-  Issues: {issues}
-  Toxicity Score: {toxicity_score}
+# Function that generates a summary of the project's PRs
+# https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
+def generate_pull_requests_summary(context, question):
+  
+  # use a ConversationChain because LLMChain is deprecated
+  conversation = ConversationChain(llm=llm, verbose=True)
 
-  Generate a concise summary of the notable issues and conversations from the past week.
-  """
+  # use invoke because run is deprecated and takes only 1 argument
+  response = conversation.invoke(input=question, context=context)
 
-  prompt = PromptTemplate(
-    input_variables=["issues", "toxicity_score"],
-    template=template,
-  )
+  print('1')
+  # {'input': 'Be nice in 5 words or fewer', 'history': '', 'response': 'Treat others with kindness always.'}
+  print(response)
 
-  chain = LLMChain(llm=llm, prompt=prompt)
-  summary = chain.run(issues=issues, toxicity_score=toxicity_score)
-  return summary
-
-# Function that generates a summary of the project's PRs, returning a
-# summary that can be put in the newsletter
-def generate_pull_requests_summary(pull_requests, toxicity_score):
-  template = """
-  Given the following pull requests for a project:
-  Pull Requests: {pull_requests}
-  Toxicity Score: {toxicity_score}
-
-  Generate a concise summary of the notable pull requests and discussions from the past week.
-  """
-
-  prompt = PromptTemplate(
-    input_variables=["pull_requests", "toxicity_score"],
-    template=template,
-  )
-
-  chain = LLMChain(llm=llm, prompt=prompt)
-  summary = chain.run(pull_requests=pull_requests, toxicity_score=toxicity_score)
-  return summary
-
-# Function that generates a summary of the project's commit messages, 
-# returning a summary that can be put in the newsletter
-def generate_commit_messages_summary(commit_messages):
-  template = """
-  Given the following commit messages for a project:
-  Commit Messages: {commit_messages}
-
-  Generate a concise summary of the commit activity from the past week.
-  """
-
-  prompt = PromptTemplate(
-    input_variables=["commit_messages"],
-    template=template,
-  )
-
-  chain = LLMChain(llm=llm, prompt=prompt)
-  summary = chain.run(commit_messages=commit_messages)
-  return summary
+  return response;
 
 
 if __name__ == '__main__':
-  # with open('analyzed_data.json', 'r') as file:
-  #   data = json.load(file)
+  with open('test_github_data.json', 'r') as file:
+    github_data = json.load(file)
 
-  # for item in data:
-  #   issues_summary = generate_issues_summary(item['issue_text'], item['toxicity_score'])
-  #   pull_requests_summary = generate_pull_requests_summary(item['pr_text'], item['toxicity_score'])
-  #   commit_messages_summary = generate_commit_messages_summary(item['commit_messages'])
+  for repo in github_data:
+    context = "Some context"
+    question = "Be nice in 5 words or fewer"
+    summary = generate_pull_requests_summary(context, question)
+    # repo['pull_requests_summary'] = pull_requests_summary
 
-  #   item['issues_summary'] = issues_summary
-  #   item['pull_requests_summary'] = pull_requests_summary
-  #   item['commit_messages_summary'] = commit_messages_summary
+  # print(f"Pull Requests Summary:\n{pull_requests_summary}\n")
 
-  # with open('newsletter_data.json', 'w') as file:
-  #   json.dump(data, file)
+  print('2')
+  # {'input': 'Be nice in 5 words or fewer', 'history': '', 'response': 'Treat others with kindness always.'}
+  print(summary)
 
-  issues_summary = generate_issues_summary('this is testing issue data', 0.1)
-  pull_requests_summary = generate_pull_requests_summary('this is testing PR data', 0.1)
-  commit_messages_summary = generate_commit_messages_summary('this is testing commit data', 0.1)
+  # with open('newsletter_data.json', 'w') as file: 
+  #   json.dump(github_data, file, indent=2)

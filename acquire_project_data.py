@@ -90,19 +90,21 @@ def sort_issues_open_date(g, repo):
     issue_sort_data = []
     issues = repo.get_issues(state='open')
     for issue in issues:
-        time_open = datetime.now(timezone.utc)-issue.created_at
-        days = time_open.days
-        hours, remainder = divmod(time_open.seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        total_minutes = time_open.total_seconds() // 60
 
-        issue_data = {
-            "title": issue.title,
-            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
-            "minutes_open": total_minutes,
-            "url": issue.html_url
-        }
-        issue_sort_data.append(issue_data)
+        if "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower() and not issue.pull_request:
+            time_open = datetime.now(timezone.utc)-issue.created_at
+            days = time_open.days
+            hours, remainder = divmod(time_open.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            total_minutes = time_open.total_seconds() // 60
+
+            issue_data = {
+                "title": issue.title,
+                "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+                "minutes_open": total_minutes,
+                "url": issue.html_url
+            }
+            issue_sort_data.append(issue_data)
         rate_limit_check(g)
     
     issue_sort_data.sort(key=lambda x: x["minutes_open"], reverse=True)
@@ -118,19 +120,20 @@ def sort_issue_num_comments(g, repo):
 
     # Iterates through each issue
     for issue in issues:
-        comments = issue.get_comments()
-        num_comments = comments.totalCount # Retreives the number of comments on an issue
-            
-        # If the number of comments on an issue is 0, skip it
-        if num_comments == 0:
-            continue
-        else: #Otherwise, add the title and number of comments to the data array
-            # Can add more descriptors to data if needed
-            data = {
-            "title": issue.title,
-            "number_of_comments": num_comments
-            }
-            issue_data.append(data)
+        if "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower() and not issue.pull_request:
+            comments = issue.get_comments()
+            num_comments = comments.totalCount # Retreives the number of comments on an issue
+                
+            # If the number of comments on an issue is 0, skip it
+            if num_comments == 0:
+                continue
+            else: #Otherwise, add the title and number of comments to the data array
+                # Can add more descriptors to data if needed
+                data = {
+                "title": issue.title,
+                "number_of_comments": num_comments
+                }
+                issue_data.append(data)
     issue_data.sort(key=lambda x: x["number_of_comments"], reverse=True) # Sort the issues by number of comments
     return issue_data # Return in JSON format
 
@@ -222,37 +225,41 @@ def get_new_contributors(g, repo, one_week_ago):
 
     # Loop through repo commits
     for commit in commits:
-        # Filter through bot commits
-        if '[bot]' in commit.commit.author.name:
+        author = commit.author
+
+        # skip author
+        if author is None or '[bot]' in (author.name or '') or 'bot' in (author.name or '') or author.login in processed_authors:
             continue
         
-        # Try retreiving author commits. If it doesn't work, print out error message.
+        # Try retrieving author commits. If it doesn't work, print out error message.
         try:
-            author_commits = repo.get_commits(author=commit.commit.author.name)
+            author_commits = repo.get_commits(author=author.login)
+            first_commit = None
+
+            # get the author's first commit
+            for author_commit in author_commits:
+                commit_date = author_commit.commit.committer.date
+                if first_commit is None or commit_date < first_commit:
+                    first_commit = commit_date
+
+            # If first commit is valid and within the last week, they are a new contributor
+            if first_commit and first_commit >= one_week_ago:
+                data = {
+                    "author": author.login
+                }
+                num_new_contributors += 1
+                new_contributor_data.append(data)
+                processed_authors.add(author.login)
+            rate_limit_check(g)
+
         except AssertionError as e:
             print(f"Skipping problematic commit: {e}")
             continue
 
-        # Find author's first commit to analyze the date
-        first_commit = None
-        for c in author_commits:
-            first_commit = c
-            break
-            
-        # If commit is valid and within the last week, add it to the data array.
-        if first_commit and (first_commit.commit.committer.date.replace(tzinfo=None) >= one_week_ago.replace(tzinfo=None)) and (first_commit.commit.author.name not in processed_authors):
-            data = {
-                "author": commit.commit.author.name,
-                "description": "new contributor"
-            }
-            num_new_contributors+=1
-            new_contributor_data.append(data)
-            processed_authors.add(commit.commit.author.name)
-        rate_limit_check(g)
-    
     # Can turn to string if needed with str(num_new_contributors)
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
     return new_contributor_data
+
 
 # CONTRIBUTORS 2: Gets NUMBER of contributors who made any commits within one_week_ago
 def get_weekly_contributors(g, repo, one_week_ago):
@@ -385,7 +392,7 @@ if __name__ == '__main__':
     # pygithub
     g = Github(os.environ['GITHUB_API_KEY'])
     
-    one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=3)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=365)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
@@ -396,31 +403,33 @@ if __name__ == '__main__':
     for repo_url in repo_names:
         # Testing my own repo 
         # PROJECT_NAME = 'cnovalski1/APIexample'
-        PROJECT_NAME = 'monicahq/monica'
+        # PROJECT_NAME = 'monicahq/monica'
+        PROJECT_NAME = 'aio-libs/create-aio-app'
         # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
-        pr_data_open = get_open_prs(g, repo, one_week_ago)
-        pr_data_closed = get_closed_prs(g, repo, one_week_ago)
+        # pr_data_open = get_open_prs(g, repo, one_week_ago)
+        # pr_data_closed = get_closed_prs(g, repo, one_week_ago)
         commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
             "repo_name": PROJECT_NAME,
-            "issues_open": get_open_issues(g, repo, one_week_ago),
-            "issues_closed": get_closed_issues(g, repo, one_week_ago),
-            "issues_by_open_date": sort_issues_open_date(g, repo),
-            "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
-            "open_pull_requests": pr_data_open,
-            "closed_pull_requests": pr_data_closed,
-            "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
-            "num_open_prs": get_num_open_prs(pr_data_open),
-            "num_closed_prs": get_num_closed_prs(pr_data_closed),
-            "commits": commit_data,
-            "num_commits": get_num_commits(commit_data),
+            # "issues_open": get_open_issues(g, repo, one_week_ago),
+            # "issues_closed": get_closed_issues(g, repo, one_week_ago),
+            # "issues_by_open_date": sort_issues_open_date(g, repo),
+            # "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
+            # "open_pull_requests": pr_data_open,
+            # "closed_pull_requests": pr_data_closed,
+            # "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
+            # "num_open_prs": get_num_open_prs(pr_data_open),
+            # "num_closed_prs": get_num_closed_prs(pr_data_closed),
+            # "commits": commit_data,
+            # "num_commits": get_num_commits(commit_data),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-            "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
+            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
+            # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
+        # TODO: all of the contributors (3 functions) have not been checked yet
 
         data.append(repo_data)
 

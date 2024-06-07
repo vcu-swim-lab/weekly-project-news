@@ -73,7 +73,6 @@ def sort_issues_open_date(g, repo):
     issue_sort_data.sort(key=lambda x: x["minutes_open"], reverse=True)
     return issue_sort_data
 
-
 # ISSUES 3: Gets all issues within one_week_ago, sorted by most comments first
 def sort_issue_num_comments(g, repo):
     # Data array for the issues, retreives the issues from the repo
@@ -100,11 +99,11 @@ def sort_issue_num_comments(g, repo):
 
 
 
-# PRS 1: Gets ALL pull requests within one_week_ago
-def get_pr_text(g, repo, one_week_ago):
-    pr_data_all = []
-    pulls = repo.get_pulls(state='all', sort='created', direction='desc')
-
+# PRS 1: Gets open pull requests within one_week_ago
+def get_open_prs(g, repo, one_week_ago):
+    pr_data_open = []
+    pulls = repo.get_pulls(state='open', sort='created', direction='desc')
+    
     for pr in pulls:
         if pr.created_at <= one_week_ago:
             break
@@ -115,14 +114,42 @@ def get_pr_text(g, repo, one_week_ago):
                 "state": pr.state,
                 "user": pr.user.login
             }
-            pr_data_all.append(pr_data)
+            pr_data_open.append(pr_data)
         rate_limit_check(g)
     
-    return pr_data_all
+    return pr_data_open
 
-# PRS 2: Gets NUMBER of pull requests made within one_week_ago
-def get_num_prs(pr_data):
-    return len(pr_data)
+# PRS 2: Gets closed pull requests within one_week_ago
+def get_closed_prs(g, repo, one_week_ago):
+    pr_data_closed = []
+    pulls = repo.get_pulls(state='closed', sort='created', direction='desc')
+    
+    for pr in pulls:
+        if pr.created_at <= one_week_ago:
+            break
+        if "[bot]" not in pr.user.login.lower() and "bot" not in pr.user.login.lower():
+            pr_data = {
+                "title": pr.title,
+                "body": pr.body,
+                "state": pr.state,
+                "user": pr.user.login
+            }
+            pr_data_closed.append(pr_data)
+        rate_limit_check(g)
+    
+    return pr_data_closed
+
+# PRS 3: Gets NUMBER of ALL pull requests made within one_week_ago
+def get_num_prs(pr_data_open, pr_data_closed):
+    return len(pr_data_open) + len(pr_data_closed)
+
+# PRS 4: Get NUMBER of OPEN pull requests made within one_week_ago
+def get_num_open_prs(pr_data_open):
+    return len(pr_data_open)
+
+# PRS 5: Get NUMBER of CLOSED pull requests made within one_week_ago
+def get_num_closed_prs(pr_data_closed):
+    return len(pr_data_closed)
 
 
 
@@ -308,10 +335,11 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
     return active_contributors
     
 
+
 # Main 
 if __name__ == '__main__':
     # get all of the subscribers from subscribers.json
-    with open('test_monica_subscribers.json') as file:
+    with open('subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -330,20 +358,23 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        # PROJECT_NAME = 'cnovalski1/APIexample'
-        PROJECT_NAME = 'monicahq/monica'
+        PROJECT_NAME = 'cnovalski1/APIexample'
         repo = g.get_repo(PROJECT_NAME)
     
         # saves one repo's data
-        pr_data = get_pr_text(g, repo, one_week_ago)
+        pr_data_open = get_open_prs(g, repo, one_week_ago)
+        pr_data_closed = get_closed_prs(g, repo, one_week_ago)
         commit_data = get_commit_messages(g, repo, one_week_ago)
         repo_data = {
             "repo_name": PROJECT_NAME,
             "issues": get_issue_text(g, repo, one_week_ago),
             "issues_by_open_date": sort_issues_open_date(g, repo),
             "issues_by_number_of_comments": sort_issue_num_comments(g, repo),
-            "pull_requests": pr_data,
-            "num_prs": get_num_prs(pr_data),
+            "open_pull_requests": pr_data_open,
+            "closed_pull_requests": pr_data_closed,
+            "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
+            "num_open_prs": get_num_open_prs(pr_data_open),
+            "num_closed_prs": get_num_closed_prs(pr_data_closed),
             "commits": commit_data,
             "num_commits": get_num_commits(commit_data),
             "new_contributors": get_new_contributors(g, repo, one_week_ago),

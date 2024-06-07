@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 # Example of using est
 # est = pytz.timezone('America/New_York')
 
-load_dotenv('public.env')  
+load_dotenv()  
 
 # Checks the rate limit
 def rate_limit_check(g):
@@ -451,7 +451,6 @@ if __name__ == '__main__':
     g = Github(os.environ['GITHUB_API_KEY'])
     
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=1)
-    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
@@ -461,8 +460,7 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        # PROJECT_NAME = 'cnovalski1/APIexample'
-        PROJECT_NAME = 'monicahq/monica'
+        PROJECT_NAME = 'tensorflow/tensorflow'
         # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         repo = g.get_repo(PROJECT_NAME)
     

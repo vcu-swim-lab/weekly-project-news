@@ -270,6 +270,64 @@ def summary_num_commits(repo):
   return response['text'].lstrip('\n"')
 
 
+# CONTRIBUTORS 1
+def summary_new_contributors(repo):
+  
+  # PART 1: get the context
+  if not repo.get("new_contributors"):
+    context = "No new contributors this week."
+  else:
+    context = json.dumps(repo["new_contributors"], indent=2).strip()
+
+  # PART 2: get the question
+  question = "Summarize the content of this data, representing the number of new contributors in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+# CONTRIBUTORS 2
+def summary_contributed_this_week(repo):
+  
+  # PART 1: get the context
+  if not repo.get("contributed_this_week"):
+    context = "No contributors this week."
+  else:
+    context = json.dumps(repo["contributed_this_week"], indent=2).strip()
+
+  # PART 2: get the question
+  question = "Summarize the content of this data, representing the number of contributors this week in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+# CONTRIBUTORS 3
+def summary_active_contributors(repo):
+  
+  # PART 1: get the context
+  if not repo.get("active_contributors"):
+    context = "No active contributors."
+  else:
+    context = json.dumps(repo["active_contributors"], indent=2).strip()
+
+  # PART 2: get the question
+  question = "Summarize the content of this data, representing the number of active contributors in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+
+
+
+
 
 
 
@@ -296,6 +354,10 @@ if __name__ == '__main__':
 
       # "summaries_commits": summary_commits(repo),
       # "summaries_num_commits": summary_num_commits(repo),
+
+      "summaries_new_contributors": summary_new_contributors(repo),
+      "summaries_contributed_this_week": summary_contributed_this_week(repo),
+      "summaries_active_contributors": summary_active_contributors(repo)
     }
     
   try:

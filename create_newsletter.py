@@ -29,7 +29,8 @@ def generate_pull_requests_summary(prompt):
 
   # use invoke because run is deprecated and takes only 1 argument
   # generates a response to an input question
-  response = conversation.invoke(input=question, context=context)
+  # response = conversation.invoke(input=question, context=context)
+  response = conversation.predict(input=prompt)
 
   return response;
 
@@ -50,6 +51,10 @@ if __name__ == '__main__':
     question = "Generate 10 words or fewer summarizing this data, representing the number of open issues"
 
 
+    # print('a')
+    # print(prompt)
+    # print('b')
+
     # This is what the prompt looks like:
     # "Context :26
     # Question: Generate 10 words or fewer summarizing this data, representing the number of open issue"
@@ -60,8 +65,6 @@ if __name__ == '__main__':
 
   print('Response:')
 
-  # TODO: We need to change this prompt because ChatGPT is dumb as rocks I literally gave it a prompt
-  # saying we have 26 open issues how many issues do we have and it keeps saying we have 5 issues I despise you
   print(response)
 
   # with open('newsletter_data.json', 'w') as file: 

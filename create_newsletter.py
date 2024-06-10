@@ -12,22 +12,15 @@ load_dotenv('public.env')
 
 API_KEY = os.environ.get("OPENAI_KEY")
 
-# models: https://platform.openai.com/docs/models
-# llm = ChatOpenAI(
-#   model_name="gpt-3.5-turbo", 
-#   temperature=1.0,
-#   openai_api_key=API_KEY
-# )
-
-prompt_template = "Context: {context}\nQuestion: {question}"
+# TODO: when you add "model_name="gpt-3.5-turbo" to llm, the API key is not recognized
+prompt_template = "Context: {context}\nQuestion: {question}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
-chain = LLMChain(llm=OpenAI(temperature=1.0, openai_api_key = os.environ.get("OPENAI_KEY")), prompt=PROMPT)
+llm=OpenAI(temperature=1.0, openai_api_key = API_KEY)
+chain = LLMChain(llm=llm, prompt=PROMPT)
 
 
 # Function that generates a summary of the project's PRs
 # https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
-# def summary_num_all_open_issues(context, question):
-# def generate_pull_requests_summary(prompt):
 def summary_num_all_open_issues(repo):
   
   # case 1: there is no data (aka json field is [])
@@ -36,11 +29,12 @@ def summary_num_all_open_issues(repo):
   # case 2: there is data
   else:
     context = json.dumps(repo["num_all_open_issues"], indent=2)
-    
-  question = "Generate 10 words or fewer summarizing this data, representing the number of open issues"
 
-  # response = chain.invoke(question=question, input=PROMPT)
-  response = chain.invoke({"context": context, "question": question})
+  question = "Generate 10 words or fewer summarizing this data, representing the number of open issues"
+  # question = "Summarize this data, representing the number of open issues"
+
+  # response = chain.invoke({"context": context, "question": question})
+  response = {'context': '26', 'question': 'Generate 10 words or fewer summarizing this data, representing the number of open issues', 'text': 'Answer: There are 26 open issues in the data. '}
 
   return response;
 
@@ -51,25 +45,8 @@ if __name__ == '__main__':
 
   for repo in github_data:
 
-    # response = summary_num_all_open_issues(context, question)
     response = summary_num_all_open_issues(repo)
-    # TODO
-
+    summary_num_all_open_issues = response['text']
     
-
-
-    # print('a')
-    # print(prompt)
-    # print('b')
-
-    # This is what the prompt looks like:
-    # "Context :26
-    # Question: Generate 10 words or fewer summarizing this data, representing the number of open issue"
-    # prompt = f"Context: {context}\nQuestion: {question}"
-
-    # response = summary_num_all_open_issues(context, question)
-    # response = generate_pull_requests_summary(prompt)
-
-  print('Response:')
-
-  print(response)
+  print('Summary of all open issues:')
+  print(summary_num_all_open_issues)

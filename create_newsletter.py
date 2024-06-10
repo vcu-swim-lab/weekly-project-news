@@ -1,18 +1,14 @@
 import json
-from langchain.chains import ConversationChain
 from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
-
 from langchain.chains import LLMChain
-from langchain.llms import OpenAI 
 from langchain.prompts import PromptTemplate
 
 load_dotenv('public.env')  
 
 API_KEY = os.environ.get("OPENAI_KEY")
 
-# TODO: when you add "model_name="gpt-3.5-turbo" to llm, the API key is not recognized
 # https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
 prompt_template = "Context: {context}\nQuestion: {question}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
@@ -31,11 +27,9 @@ def summary_issues_open(repo):
 
   # PART 2: get the question
   question = "Generate 10 words or fewer summarizing this data, representing open issues in a GitHub repository"
-  # question = "Summarize this data, representing the number of open issues"
 
   # PART 3: generate the summary
   response = chain.invoke({"context": context, "question": question})
-  # response = {'context': '26', 'question': 'Generate 10 words or fewer summarizing this data, representing the number of open issues', 'text': 'There are 26 open issues in the data. '}
 
   return response['text'].lstrip('\n"')
 
@@ -51,11 +45,9 @@ def summary_issues_closed(repo):
 
   # PART 2: get the question
   question = "Generate 10 words or fewer summarizing this data, representing closed issues in a GitHub repository"
-  # question = "Summarize this data, representing the number of open issues"
 
   # PART 3: generate the summary
   response = chain.invoke({"context": context, "question": question})
-  # response = {'context': 'No closed issues.', 'question': 'Generate 10 words or fewer summarizing this data, representing closed issues in a GitHub repository', 'text': 'Summary: No recently closed issues found in repository.'}
 
   return response['text'].lstrip('\n"')
 
@@ -71,11 +63,9 @@ def summary_num_all_open_issues(repo):
 
   # PART 2: get the question
   question = "Generate 10 words or fewer summarizing this data, representing the total number of open issues in a GitHub repository"
-  # question = "Summarize this data, representing the number of open issues"
 
   # PART 3: generate the summary
   response = chain.invoke({"context": context, "question": question})
-  # response = {'context': 'No closed issues.', 'question': 'Generate 10 words or fewer summarizing this data, representing closed issues in a GitHub repository', 'text': 'Summary: No recently closed issues found in repository.'}
 
   return response['text'].lstrip('\n"')
 
@@ -91,11 +81,9 @@ def summary_num_weekly_open_issues(repo):
 
   # PART 2: get the question
   question = "Generate 10 words or fewer summarizing this data, representing the number of new open issues made this week in a GitHub repository"
-  # question = "Summarize this data, representing the number of open issues"
 
   # PART 3: generate the summary
   response = chain.invoke({"context": context, "question": question})
-  # response = {'context': 'No closed issues.', 'question': 'Generate 10 words or fewer summarizing this data, representing closed issues in a GitHub repository', 'text': 'Summary: No recently closed issues found in repository.'}
 
   return response['text'].lstrip('\n"')
 
@@ -111,11 +99,9 @@ def summary_num_weekly_closed_issues(repo):
 
   # PART 2: get the question
   question = "Generate 10 words or fewer summarizing this data, representing the number of issues closed this week in a GitHub repository"
-  # question = "Summarize this data, representing the number of open issues"
 
   # PART 3: generate the summary
   response = chain.invoke({"context": context, "question": question})
-  # response = {'context': 'No closed issues.', 'question': 'Generate 10 words or fewer summarizing this data, representing closed issues in a GitHub repository', 'text': 'Summary: No recently closed issues found in repository.'}
 
   return response['text'].lstrip('\n"')
 
@@ -132,11 +118,9 @@ def summary_issues_by_open_date(repo):
   # PART 2: get the question
   # TODO: should reflect the content, including what issue is about judging by title
   question = "Summarize the content of this data, representing the open issues in a GitHub repository sorted by their time open"
-  # question = "Summarize this data, representing the number of open issues"
 
   # PART 3: generate the summary
   response = chain.invoke({"context": context, "question": question})
-  # response = {'context': 'No closed issues.', 'question': 'Generate 10 words or fewer summarizing this data, representing closed issues in a GitHub repository', 'text': 'Summary: No recently closed issues found in repository.'}
 
   return response['text'].lstrip('\n"')
 
@@ -153,11 +137,9 @@ def summary_issues_by_number_of_comments(repo):
   # PART 2: get the question
   # TODO: should reflect the content, including what issue is about judging by title
   question = "Summarize the content of this data, representing the open issues in a GitHub repository sorted by their number of comments"
-  # question = "Summarize this data, representing the number of open issues"
 
   # PART 3: generate the summary
   response = chain.invoke({"context": context, "question": question})
-  # response = {'context': 'No closed issues.', 'question': 'Generate 10 words or fewer summarizing this data, representing closed issues in a GitHub repository', 'text': 'Summary: No recently closed issues found in repository.'}
 
   return response['text'].lstrip('\n"')
 
@@ -169,22 +151,30 @@ if __name__ == '__main__':
 
   for repo in github_data:
 
+    # output:
+    # {
+    #   "summaries_issues_open": "No unresolved problems in the GitHub repository.",
+    #   "summaries_issues_closed": "No closed issues in the GitHub repository.",
+    #   "summaries_num_all_open_issues": "Total number of open issues in GitHub repository is 26.",
+    #   "summaries_num_weekly_open_issues": "Zero new open issues created this week.",
+    #   "summaries_num_weekly_closed_issues": "Zero issues closed in the GitHub repository this week.",
+    #   "summaries_issues_by_open_date": "The data represents a list of open issues in a GitHub repository related to the aio-libs/create-aio-app project. The issues are sorted by the amount of time they have been open, with the oldest issue being \"Once initial polish finished, update aiohttp docs and point users to this repository\" at 2086 days and the most recent being \"Let's put `create-aio-app` under the `aio-libs` org on PyPI\" at 172 days. The issues cover a range of topics such as documentation updates, deployment, testing, structure corrections, feature proposals, CI/CD improvements, and various bug fixes and enhancements.",
+    #   "summaries_issues_by_number_of_comments": "The data represents a list of open issues in a GitHub repository, sorted by the number of comments each issue has. The issues range from adding parameters to a makefile, updating requirements, adding sections to the readme file, moving functionality from backend to frontend, adding authorization, creating issue templates, correcting project structure, tracking available ports, integrating Sentry support, deploying to Heroku, proposing new features, resolving permission denied errors, organizing projects under specific organizations, managing requirements, handling build dependencies, updating credentials in CI configurations, following conventional commit practices, and improving CI testing."
+    # }
+
     summaries = {
       "summaries_issues_open": summary_issues_open(repo),
-      # "summaries_issues_closed": summary_issues_closed(repo),
-      # "summaries_num_all_open_issues": summary_num_all_open_issues(repo),
-      # "summaries_num_weekly_open_issues": summary_num_weekly_open_issues(repo),
-      # "summaries_num_weekly_closed_issues": summary_num_weekly_closed_issues(repo),
-      # "summaries_issues_by_open_date": summary_issues_by_open_date(repo),
-      # "summaries_issues_by_number_of_comments": summary_issues_by_number_of_comments(repo),
+      "summaries_issues_closed": summary_issues_closed(repo),
+      "summaries_num_all_open_issues": summary_num_all_open_issues(repo),
+      "summaries_num_weekly_open_issues": summary_num_weekly_open_issues(repo),
+      "summaries_num_weekly_closed_issues": summary_num_weekly_closed_issues(repo),
+      "summaries_issues_by_open_date": summary_issues_by_open_date(repo),
+      "summaries_issues_by_number_of_comments": summary_issues_by_number_of_comments(repo),
     }
     
-  print(json.dumps(summaries, indent=4))
-
-  # try:
-  #     with open("newsletter.json", "w") as outfile:
-  #         json.dump(data, outfile, indent=2)
-  #     print(f"Successfully added {PROJECT_NAME} to github_data.json")
-  # except Exception as e:
-  #     print(f"Error writing data for {PROJECT_NAME} to github_data.json")
-  #     print(f"Error code: {e}")
+  try:
+      with open("newsletter_data.json", "w") as outfile:
+          json.dump(summaries, outfile, indent=2)
+          print(json.dumps(summaries, indent=4))
+  except Exception as e:
+      print(f"Error code: {e}")

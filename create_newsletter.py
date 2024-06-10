@@ -11,42 +11,58 @@ API_KEY = os.environ.get("OPENAI_KEY")
 # models: https://platform.openai.com/docs/models
 llm = ChatOpenAI(
   model_name="gpt-3.5-turbo", 
-  temperature=0.9,
+  temperature=1.0,
   openai_api_key=API_KEY
 )
 
 # Function that generates a summary of the project's PRs
 # https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
-def generate_pull_requests_summary(context, question):
+# def generate_pull_requests_summary(context, question):
+def generate_pull_requests_summary(prompt):
   
   # use a ConversationChain because LLMChain is deprecated
+  # establishes a conversation connection
   conversation = ConversationChain(llm=llm, verbose=True)
 
-  # use invoke because run is deprecated and takes only 1 argument
-  response = conversation.invoke(input=question, context=context)
+  # print('context: ', context)
+  # print('question: ', question)
 
-  print('1')
-  # {'input': 'Be nice in 5 words or fewer', 'history': '', 'response': 'Treat others with kindness always.'}
-  print(response)
+  # use invoke because run is deprecated and takes only 1 argument
+  # generates a response to an input question
+  response = conversation.invoke(input=question, context=context)
 
   return response;
 
 
 if __name__ == '__main__':
-  with open('test_github_data.json', 'r') as file:
+  with open('github_data.json', 'r') as file:
     github_data = json.load(file)
 
   for repo in github_data:
-    context = "Some context"
-    question = "Be nice in 5 words or fewer"
-    summary = generate_pull_requests_summary(context, question)
-    # repo['pull_requests_summary'] = pull_requests_summary
 
-  # print(f"Pull Requests Summary:\n{pull_requests_summary}\n")
+    # case 1: there is np data (aka json field is [])
+    if repo.get("num_all_open_issues") is None:
+      context = "No data available."
+    # case 2: there is data
+    else:
+      context = json.dumps(repo["num_all_open_issues"], indent=2)
+      
+    question = "Generate 10 words or fewer summarizing this data, representing the number of open issues"
 
-  print('2')
-  # {'input': 'Be nice in 5 words or fewer', 'history': '', 'response': 'Treat others with kindness always.'}
-  print(summary)
+
+    # This is what the prompt looks like:
+    # "Context :26
+    # Question: Generate 10 words or fewer summarizing this data, representing the number of open issue"
+    prompt = f"Context: {context}\nQuestion: {question}"
+
+    # response = generate_pull_requests_summary(context, question)
+    response = generate_pull_requests_summary(prompt)
+
+  print('Response:')
+
+  # TODO: We need to change this prompt because ChatGPT is dumb as rocks I literally gave it a prompt
+  # saying we have 26 open issues how many issues do we have and it keeps saying we have 5 issues I despise you
+  print(response)
 
   # with open('newsletter_data.json', 'w') as file: 
   #   json.dump(github_data, file, indent=2)

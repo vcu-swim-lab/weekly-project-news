@@ -145,7 +145,7 @@ def summary_issues_by_number_of_comments(repo):
 
 
 # PRS 1
-def summaries_open_pull_requests(repo):
+def summary_open_pull_requests(repo):
   
   # PART 1: get the context
   if not repo.get("open_pull_requests"):
@@ -154,7 +154,6 @@ def summaries_open_pull_requests(repo):
     context = json.dumps(repo["open_pull_requests"], indent=2).strip()
 
   # PART 2: get the question
-  # TODO: should reflect the content, including what issue is about judging by title
   question = "Summarize the content of this data, representing the open pull requests in a GitHub repository"
 
   # PART 3: generate the summary
@@ -164,7 +163,7 @@ def summaries_open_pull_requests(repo):
 
 
 # PRS 2
-def summaries_closed_pull_requests(repo):
+def summary_closed_pull_requests(repo):
   
   # PART 1: get the context
   if not repo.get("closed_pull_requests"):
@@ -173,7 +172,6 @@ def summaries_closed_pull_requests(repo):
     context = json.dumps(repo["closed_pull_requests"], indent=2).strip()
 
   # PART 2: get the question
-  # TODO: should reflect the content, including what issue is about judging by title
   question = "Summarize the content of this data, representing the closed pull requests in a GitHub repository"
 
   # PART 3: generate the summary
@@ -183,7 +181,7 @@ def summaries_closed_pull_requests(repo):
 
 
 # PRS 3
-def summaries_num_all_prs(repo):
+def summary_num_all_prs(repo):
   
   # PART 1: get the context
   if not repo.get("num_all_prs"):
@@ -192,7 +190,6 @@ def summaries_num_all_prs(repo):
     context = json.dumps(repo["num_all_prs"], indent=2).strip()
 
   # PART 2: get the question
-  # TODO: should reflect the content, including what issue is about judging by title
   question = "Summarize the content of this data, representing the number of open and closed pull requests in a GitHub repository"
 
   # PART 3: generate the summary
@@ -202,7 +199,7 @@ def summaries_num_all_prs(repo):
 
 
 # PRS 4
-def summaries_num_open_prs(repo):
+def summary_num_open_prs(repo):
   
   # PART 1: get the context
   if not repo.get("num_open_prs"):
@@ -211,7 +208,6 @@ def summaries_num_open_prs(repo):
     context = json.dumps(repo["num_open_prs"], indent=2).strip()
 
   # PART 2: get the question
-  # TODO: should reflect the content, including what issue is about judging by title
   question = "Summarize the content of this data, representing the number of open requests in a GitHub repository"
 
   # PART 3: generate the summary
@@ -221,7 +217,7 @@ def summaries_num_open_prs(repo):
 
 
 # PRS 5
-def summaries_num_closed_prs(repo):
+def summary_num_closed_prs(repo):
   
   # PART 1: get the context
   if not repo.get("num_closed_prs"):
@@ -230,8 +226,43 @@ def summaries_num_closed_prs(repo):
     context = json.dumps(repo["num_closed_prs"], indent=2).strip()
 
   # PART 2: get the question
-  # TODO: should reflect the content, including what issue is about judging by title
   question = "Summarize the content of this data, representing the number of closed requests in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+# COMMITS 1
+def summary_commits(repo):
+  
+  # PART 1: get the context
+  if not repo.get("commits"):
+    context = "No commits."
+  else:
+    context = json.dumps(repo["commits"], indent=2).strip()
+
+  # PART 2: get the question
+  question = "Summarize the content of this data, representing all of the commits in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+# COMMITS 2
+def summary_num_commits(repo):
+  
+  # PART 1: get the context
+  if not repo.get("num_commits"):
+    context = "No commits."
+  else:
+    context = json.dumps(repo["num_commits"], indent=2).strip()
+
+  # PART 2: get the question
+  question = "Summarize the content of this data, representing the number of commits in a GitHub repository"
 
   # PART 3: generate the summary
   response = chain.invoke({"context": context, "question": question})
@@ -248,17 +279,6 @@ if __name__ == '__main__':
 
   for repo in github_data:
 
-    # output:
-    # {
-    #   "summaries_issues_open": "No unresolved problems in the GitHub repository.",
-    #   "summaries_issues_closed": "No closed issues in the GitHub repository.",
-    #   "summaries_num_all_open_issues": "Total number of open issues in GitHub repository is 26.",
-    #   "summaries_num_weekly_open_issues": "Zero new open issues created this week.",
-    #   "summaries_num_weekly_closed_issues": "Zero issues closed in the GitHub repository this week.",
-    #   "summaries_issues_by_open_date": "The data represents a list of open issues in a GitHub repository related to the aio-libs/create-aio-app project. The issues are sorted by the amount of time they have been open, with the oldest issue being \"Once initial polish finished, update aiohttp docs and point users to this repository\" at 2086 days and the most recent being \"Let's put `create-aio-app` under the `aio-libs` org on PyPI\" at 172 days. The issues cover a range of topics such as documentation updates, deployment, testing, structure corrections, feature proposals, CI/CD improvements, and various bug fixes and enhancements.",
-    #   "summaries_issues_by_number_of_comments": "The data represents a list of open issues in a GitHub repository, sorted by the number of comments each issue has. The issues range from adding parameters to a makefile, updating requirements, adding sections to the readme file, moving functionality from backend to frontend, adding authorization, creating issue templates, correcting project structure, tracking available ports, integrating Sentry support, deploying to Heroku, proposing new features, resolving permission denied errors, organizing projects under specific organizations, managing requirements, handling build dependencies, updating credentials in CI configurations, following conventional commit practices, and improving CI testing."
-    # }
-
     summaries = {
       # "summaries_issues_open": summary_issues_open(repo),
       # "summaries_issues_closed": summary_issues_closed(repo),
@@ -268,11 +288,14 @@ if __name__ == '__main__':
       # "summaries_issues_by_open_date": summary_issues_by_open_date(repo),
       # "summaries_issues_by_number_of_comments": summary_issues_by_number_of_comments(repo),
 
-      # "summaries_open_pull_requests": summaries_open_pull_requests(repo),
-      # "summaries_closed_pull_requests": summaries_closed_pull_requests(repo),
-      # "summaries_num_all_prs": summaries_num_all_prs(repo),
-      # "summaries_num_open_prs": summaries_num_open_prs(repo),
-      # "summaries_num_closed_prs": summaries_num_closed_prs(repo),
+      # "summaries_open_pull_requests": summary_open_pull_requests(repo),
+      # "summaries_closed_pull_requests": summary_closed_pull_requests(repo),
+      # "summaries_num_all_prs": summary_num_all_prs(repo),
+      # "summaries_num_open_prs": summary_num_open_prs(repo),
+      # "summaries_num_closed_prs": summary_num_closed_prs(repo),
+
+      # "summaries_commits": summary_commits(repo),
+      # "summaries_num_commits": summary_num_commits(repo),
     }
     
   try:

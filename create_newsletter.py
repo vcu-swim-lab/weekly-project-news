@@ -144,6 +144,103 @@ def summary_issues_by_number_of_comments(repo):
   return response['text'].lstrip('\n"')
 
 
+# PRS 1
+def summaries_open_pull_requests(repo):
+  
+  # PART 1: get the context
+  if not repo.get("open_pull_requests"):
+    context = "No open pull requests."
+  else:
+    context = json.dumps(repo["open_pull_requests"], indent=2).strip()
+
+  # PART 2: get the question
+  # TODO: should reflect the content, including what issue is about judging by title
+  question = "Summarize the content of this data, representing the open pull requests in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+# PRS 2
+def summaries_closed_pull_requests(repo):
+  
+  # PART 1: get the context
+  if not repo.get("closed_pull_requests"):
+    context = "No closed pull requests."
+  else:
+    context = json.dumps(repo["closed_pull_requests"], indent=2).strip()
+
+  # PART 2: get the question
+  # TODO: should reflect the content, including what issue is about judging by title
+  question = "Summarize the content of this data, representing the closed pull requests in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+# PRS 3
+def summaries_num_all_prs(repo):
+  
+  # PART 1: get the context
+  if not repo.get("num_all_prs"):
+    context = "No pull requests."
+  else:
+    context = json.dumps(repo["num_all_prs"], indent=2).strip()
+
+  # PART 2: get the question
+  # TODO: should reflect the content, including what issue is about judging by title
+  question = "Summarize the content of this data, representing the number of open and closed pull requests in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+# PRS 4
+def summaries_num_open_prs(repo):
+  
+  # PART 1: get the context
+  if not repo.get("num_open_prs"):
+    context = "No open pull requests."
+  else:
+    context = json.dumps(repo["num_open_prs"], indent=2).strip()
+
+  # PART 2: get the question
+  # TODO: should reflect the content, including what issue is about judging by title
+  question = "Summarize the content of this data, representing the number of open requests in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+# PRS 5
+def summaries_num_closed_prs(repo):
+  
+  # PART 1: get the context
+  if not repo.get("num_closed_prs"):
+    context = "No closed pull requests."
+  else:
+    context = json.dumps(repo["num_closed_prs"], indent=2).strip()
+
+  # PART 2: get the question
+  # TODO: should reflect the content, including what issue is about judging by title
+  question = "Summarize the content of this data, representing the number of closed requests in a GitHub repository"
+
+  # PART 3: generate the summary
+  response = chain.invoke({"context": context, "question": question})
+
+  return response['text'].lstrip('\n"')
+
+
+
+
 
 if __name__ == '__main__':
   with open('github_data.json', 'r') as file:
@@ -163,13 +260,19 @@ if __name__ == '__main__':
     # }
 
     summaries = {
-      "summaries_issues_open": summary_issues_open(repo),
-      "summaries_issues_closed": summary_issues_closed(repo),
-      "summaries_num_all_open_issues": summary_num_all_open_issues(repo),
-      "summaries_num_weekly_open_issues": summary_num_weekly_open_issues(repo),
-      "summaries_num_weekly_closed_issues": summary_num_weekly_closed_issues(repo),
-      "summaries_issues_by_open_date": summary_issues_by_open_date(repo),
-      "summaries_issues_by_number_of_comments": summary_issues_by_number_of_comments(repo),
+      # "summaries_issues_open": summary_issues_open(repo),
+      # "summaries_issues_closed": summary_issues_closed(repo),
+      # "summaries_num_all_open_issues": summary_num_all_open_issues(repo),
+      # "summaries_num_weekly_open_issues": summary_num_weekly_open_issues(repo),
+      # "summaries_num_weekly_closed_issues": summary_num_weekly_closed_issues(repo),
+      # "summaries_issues_by_open_date": summary_issues_by_open_date(repo),
+      # "summaries_issues_by_number_of_comments": summary_issues_by_number_of_comments(repo),
+
+      # "summaries_open_pull_requests": summaries_open_pull_requests(repo),
+      # "summaries_closed_pull_requests": summaries_closed_pull_requests(repo),
+      # "summaries_num_all_prs": summaries_num_all_prs(repo),
+      # "summaries_num_open_prs": summaries_num_open_prs(repo),
+      # "summaries_num_closed_prs": summaries_num_closed_prs(repo),
     }
     
   try:

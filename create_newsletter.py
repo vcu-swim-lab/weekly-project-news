@@ -2,7 +2,8 @@ import json
 from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
-from langchain.chains import LLMChain
+# from langchain.chains import LLMChain
+from langchain_core.runnables import RunnableSequence
 from langchain.prompts import PromptTemplate
 
 load_dotenv()  
@@ -13,7 +14,8 @@ API_KEY = os.environ.get("OPENAI_KEY")
 prompt_template = "Context: {context}\nQuestion: {question}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
 llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
-chain = LLMChain(llm=llm, prompt=PROMPT)
+# chain = LLMChain(llm=llm, prompt=PROMPT)
+chain = PROMPT | llm
 
 
 # ISSUES 1
@@ -270,22 +272,28 @@ def summary_num_commits(repo):
   return response['text'].lstrip('\n"')
 
 
+
+
+
+
+
+def generate_summary(context, question):
+    response = chain.invoke({"context": context, "question": question})
+    return response.content
+
+
 # CONTRIBUTORS 1
 def summary_new_contributors(repo):
-  
-  # PART 1: get the context
-  if not repo.get("new_contributors"):
-    context = "No new contributors this week."
-  else:
-    context = json.dumps(repo["new_contributors"], indent=2).strip()
-
-  # PART 2: get the question
+  context = "No new contributors this week." if not repo.get("new_contributors") else json.dumps(repo["new_contributors"], indent=2).strip()
   question = "Summarize the content of this data, representing the number of new contributors in a GitHub repository"
+  return generate_summary(context, question)
 
-  # PART 3: generate the summary
-  response = chain.invoke({"context": context, "question": question})
 
-  return response['text'].lstrip('\n"')
+
+
+
+
+
 
 
 # CONTRIBUTORS 2
@@ -362,19 +370,20 @@ if __name__ == '__main__':
           # "summaries_num_commits": summary_num_commits(repo),
 
           "summaries_new_contributors": summary_new_contributors(repo),
-          "summaries_contributed_this_week": summary_contributed_this_week(repo),
-          "summaries_active_contributors": summary_active_contributors(repo)
+          # "summaries_contributed_this_week": summary_contributed_this_week(repo),
+          # "summaries_active_contributors": summary_active_contributors(repo)
         }
 
-        # get the project name (ex. tensorflow/tensorflow)
+        # get the project name (ex. tensorflow_tensorflow)
         project_name = filename.split('github_')[1].rsplit('.json')[0]
 
+        # get the file name in the output folder (ex. newsletter_tensorflow_tensorflow)
         newsletter_filename = os.path.join(newsletter_directory, f"newsletter_{project_name}.json")
 
         try:
             with open(newsletter_filename, "w") as outfile:
                 json.dump(summaries, outfile, indent=2)
-            print(f"Successfully saved newsletter for {project_name} in {newsletter_filename}")
+            print(f"Successfully added {project_name} to {newsletter_filename}")
         except Exception as e:
-            print(f"Error writing newsletter data for {project_name} to {newsletter_filename}")
+            print(f"Error writing {project_name} to {newsletter_filename}")
             print(f"Error code: {e}")

@@ -525,7 +525,7 @@ if __name__ == '__main__':
     
     
     # get all of the subscribers from subscribers.json
-    with open('subscribers.json') as file:
+    with open('test_subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -564,7 +564,6 @@ if __name__ == '__main__':
             continue
         
         repo = g.get_repo(PROJECT_NAME)
-        
         
         # Multiprocessing code
         # Maybe change issues_open and closed to open_issues and closed OR change open_pull_requests to pull_requests_open

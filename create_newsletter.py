@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 
-load_dotenv('public.env')  
+load_dotenv()  
 
 API_KEY = os.environ.get("OPENAI_KEY")
 
@@ -332,37 +332,49 @@ def summary_active_contributors(repo):
 
 
 if __name__ == '__main__':
-  with open('github_data.json', 'r') as file:
-    github_data = json.load(file)
-
-  for repo in github_data:
-
-    summaries = {
-      # "summaries_issues_open": summary_issues_open(repo),
-      # "summaries_issues_closed": summary_issues_closed(repo),
-      # "summaries_num_all_open_issues": summary_num_all_open_issues(repo),
-      # "summaries_num_weekly_open_issues": summary_num_weekly_open_issues(repo),
-      # "summaries_num_weekly_closed_issues": summary_num_weekly_closed_issues(repo),
-      # "summaries_issues_by_open_date": summary_issues_by_open_date(repo),
-      # "summaries_issues_by_number_of_comments": summary_issues_by_number_of_comments(repo),
-
-      # "summaries_open_pull_requests": summary_open_pull_requests(repo),
-      # "summaries_closed_pull_requests": summary_closed_pull_requests(repo),
-      # "summaries_num_all_prs": summary_num_all_prs(repo),
-      # "summaries_num_open_prs": summary_num_open_prs(repo),
-      # "summaries_num_closed_prs": summary_num_closed_prs(repo),
-
-      # "summaries_commits": summary_commits(repo),
-      # "summaries_num_commits": summary_num_commits(repo),
-
-      "summaries_new_contributors": summary_new_contributors(repo),
-      "summaries_contributed_this_week": summary_contributed_this_week(repo),
-      "summaries_active_contributors": summary_active_contributors(repo)
-    }
+  github_directory = 'github_data'
+  newsletter_directory = 'newsletter_data'
+  
+  if not os.path.exists(newsletter_directory):
+    os.makedirs(newsletter_directory)
     
-  try:
-      with open("newsletter_data.json", "w") as outfile:
-          json.dump(summaries, outfile, indent=2)
-          print(json.dumps(summaries, indent=4))
-  except Exception as e:
-      print(f"Error code: {e}")
+  for filename in os.listdir(github_directory):
+    if filename.startswith('github') and filename.endswith('.json'):
+      filepath = os.path.join(github_directory, filename)
+      with open(filepath, 'r') as file:
+        repo = json.load(file)
+        summaries = {
+          # "summaries_issues_open": summary_issues_open(repo),
+          # "summaries_issues_closed": summary_issues_closed(repo),
+          # "summaries_num_all_open_issues": summary_num_all_open_issues(repo),
+          # "summaries_num_weekly_open_issues": summary_num_weekly_open_issues(repo),
+          # "summaries_num_weekly_closed_issues": summary_num_weekly_closed_issues(repo),
+          # "summaries_issues_by_open_date": summary_issues_by_open_date(repo),
+          # "summaries_issues_by_number_of_comments": summary_issues_by_number_of_comments(repo),
+
+          # "summaries_open_pull_requests": summary_open_pull_requests(repo),
+          # "summaries_closed_pull_requests": summary_closed_pull_requests(repo),
+          # "summaries_num_all_prs": summary_num_all_prs(repo),
+          # "summaries_num_open_prs": summary_num_open_prs(repo),
+          # "summaries_num_closed_prs": summary_num_closed_prs(repo),
+
+          # "summaries_commits": summary_commits(repo),
+          # "summaries_num_commits": summary_num_commits(repo),
+
+          "summaries_new_contributors": summary_new_contributors(repo),
+          "summaries_contributed_this_week": summary_contributed_this_week(repo),
+          "summaries_active_contributors": summary_active_contributors(repo)
+        }
+
+        # get the project name (ex. tensorflow/tensorflow)
+        project_name = filename.split('github_')[1].rsplit('.json')[0]
+
+        newsletter_filename = os.path.join(newsletter_directory, f"newsletter_{project_name}.json")
+
+        try:
+            with open(newsletter_filename, "w") as outfile:
+                json.dump(summaries, outfile, indent=2)
+            print(f"Successfully saved newsletter for {project_name} in {newsletter_filename}")
+        except Exception as e:
+            print(f"Error writing newsletter data for {project_name} to {newsletter_filename}")
+            print(f"Error code: {e}")

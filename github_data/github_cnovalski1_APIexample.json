@@ -1,0 +1,189 @@
+[
+  {
+    "repo_name": "cnovalski1/APIexample",
+    "issues_open": [
+      {
+        "title": "Open issue 3",
+        "body": null,
+        "user": "cnovalski1",
+        "state": "open",
+        "comments": []
+      },
+      {
+        "title": "Open issue 2",
+        "body": null,
+        "user": "cnovalski1",
+        "state": "open",
+        "comments": [
+          {
+            "user": "cnovalski1",
+            "body": "Comment 1"
+          },
+          {
+            "user": "cnovalski1",
+            "body": "Comment 2"
+          }
+        ]
+      },
+      {
+        "title": "Open issue",
+        "body": null,
+        "user": "cnovalski1",
+        "state": "open",
+        "comments": [
+          {
+            "user": "cnovalski1",
+            "body": "Comment 1"
+          }
+        ]
+      }
+    ],
+    "issues_closed": [
+      {
+        "title": "Open issue",
+        "body": null,
+        "user": "cnovalski1",
+        "state": "closed",
+        "comments": []
+      },
+      {
+        "title": "Another issue",
+        "body": null,
+        "user": "cnovalski1",
+        "state": "closed",
+        "comments": [
+          {
+            "user": "cnovalski1",
+            "body": "Comment 1"
+          }
+        ]
+      },
+      {
+        "title": "Example of an issue.",
+        "body": null,
+        "user": "cnovalski1",
+        "state": "closed",
+        "comments": [
+          {
+            "user": "cnovalski1",
+            "body": "Comment 1"
+          },
+          {
+            "user": "cnovalski1",
+            "body": "Comment 2"
+          },
+          {
+            "user": "cnovalski1",
+            "body": "Comment 3"
+          },
+          {
+            "user": "cnovalski1",
+            "body": "Comment 4"
+          }
+        ]
+      }
+    ],
+    "num_all_open_issues": 3,
+    "num_weekly_open_issues": 3,
+    "num_weekly_closed_issues": 3,
+    "issues_by_open_date": [
+      {
+        "title": "Open issue",
+        "time_open": "3 days, 22 hours, 26 minutes",
+        "url": "https://github.com/cnovalski1/APIexample/issues/5"
+      },
+      {
+        "title": "Open issue 2",
+        "time_open": "1 days, 01 hours, 04 minutes",
+        "url": "https://github.com/cnovalski1/APIexample/issues/6"
+      },
+      {
+        "title": "Open issue 3",
+        "time_open": "1 days, 01 hours, 04 minutes",
+        "url": "https://github.com/cnovalski1/APIexample/issues/7"
+      }
+    ],
+    "issues_by_number_of_comments": [
+      {
+        "title": "Open issue 2",
+        "number_of_comments": 2,
+        "url": "https://github.com/cnovalski1/APIexample/issues/6"
+      },
+      {
+        "title": "Open issue",
+        "number_of_comments": 1,
+        "url": "https://github.com/cnovalski1/APIexample/issues/5"
+      }
+    ],
+    "open_pull_requests": [
+      {
+        "title": "Added changes, pushing to main",
+        "body": "Main branch pull",
+        "state": "open",
+        "user": "cnovalski1"
+      }
+    ],
+    "closed_pull_requests": [],
+    "num_all_prs": 1,
+    "num_open_prs": 1,
+    "num_closed_prs": 0,
+    "commits": [
+      {
+        "author": "stevenbui44",
+        "message": "Added steven_file.py"
+      },
+      {
+        "author": "Christian Novalski",
+        "message": "Example uploading a file."
+      }
+    ],
+    "num_commits": 2,
+    "new_contributors": [
+      {
+        "author": "stevenbui44"
+      },
+      {
+        "author": "cnovalski1"
+      },
+      {
+        "number_of_new_contributors": 2
+      }
+    ],
+    "contributed_this_week": [
+      {
+        "author": "stevenbui44",
+        "description": "contributed this week"
+      },
+      {
+        "author": "Christian Novalski",
+        "description": "contributed this week"
+      },
+      {
+        "number_of_weekly_contributors": 2
+      }
+    ],
+    "active_contributors": [
+      {
+        "author": "stevenbui44",
+        "commits": 1,
+        "pull_requests": 0,
+        "issues": 0
+      },
+      {
+        "author": "Christian Novalski",
+        "commits": 1,
+        "pull_requests": 0,
+        "issues": 0
+      },
+      {
+        "author": "cnovalski1",
+        "commits": 0,
+        "pull_requests": 1,
+        "issues": 4
+      },
+      {
+        "number_of_active_contributors": 3
+      }
+    ]
+  }
+]

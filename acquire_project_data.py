@@ -525,7 +525,7 @@ if __name__ == '__main__':
     
     
     # get all of the subscribers from subscribers.json
-    with open('test_subscribers.json') as file:
+    with open('subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -544,7 +544,7 @@ if __name__ == '__main__':
     limit = 100
 
     # Data array to be written to JSON
-    data = []
+    # data = []
     
     directory = 'github_data'
     if not os.path.exists(directory):
@@ -628,11 +628,11 @@ if __name__ == '__main__':
             "active_contributors": active_contributors.result()
         }
             
-        data.append(repo_data)
+        # data.append(repo_data)
 
         try:
             with open(filename, "w") as outfile:
-                json.dump(data, outfile, indent=2)
+                json.dump(repo_data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to {filename}")
         except Exception as e:
             print(f"Error writing data for {PROJECT_NAME} to {filename}")

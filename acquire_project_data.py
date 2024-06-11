@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 # Example of using est
 # est = pytz.timezone('America/New_York')
 
-load_dotenv()  
+load_dotenv('public.env')  
 
 # Checks the rate limit
 def rate_limit_check(g):
@@ -600,7 +600,7 @@ if __name__ == '__main__':
     
     
     # get all of the subscribers from subscribers.json
-    with open('subscribers.json') as file:
+    with open('test_subscribers.json') as file:
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
@@ -623,50 +623,50 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'monicahq/monica'
-        # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
+        # PROJECT_NAME = 'monicahq/monica'
+        PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         repo = g.get_repo(PROJECT_NAME)
         
         # saves one repo's data
-        pr_data_open = get_open_prs(g, repo, one_week_ago)
-        pr_data_closed = get_closed_prs(g, repo, one_week_ago)
-        weekly_open_issues = get_open_issues(g, repo, one_week_ago)
-        all_open_issues = sort_issues_open_date(g, repo, limit)
-        weekly_closed_issues = get_closed_issues(g, repo, one_week_ago)
-        commit_data = get_commit_messages(g, repo, one_week_ago)
+        # pr_data_open = get_open_prs(g, repo, one_week_ago)
+        # pr_data_closed = get_closed_prs(g, repo, one_week_ago)
+        # weekly_open_issues = get_open_issues(g, repo, one_week_ago)
+        # all_open_issues = sort_issues_open_date(g, repo, limit)
+        # weekly_closed_issues = get_closed_issues(g, repo, one_week_ago)
+        # commit_data = get_commit_messages(g, repo, one_week_ago)
         
         repo_data = {
             "repo_name": PROJECT_NAME,
 
-            "issues_open": get_open_issues(g, repo, one_week_ago),
-            "issues_closed": get_closed_issues(g, repo, one_week_ago),
-            "num_all_open_issues": get_num_open_issues_all(all_open_issues),
-            "num_weekly_open_issues": get_num_open_issues_weekly(weekly_open_issues),
-            "num_weekly_closed_issues": get_num_closed_issues_weekly(weekly_closed_issues),
-            "issues_by_open_date": all_open_issues,
-            "issues_by_number_of_comments": sort_issue_num_comments(g, repo, limit),
-            "open_pull_requests": pr_data_open,
-            "closed_pull_requests": pr_data_closed,
-            "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
-            "num_open_prs": get_num_open_prs(pr_data_open),
-            "num_closed_prs": get_num_closed_prs(pr_data_closed),
+            # "issues_open": get_open_issues(g, repo, one_week_ago),
+            # "issues_closed": get_closed_issues(g, repo, one_week_ago),
+            # "num_all_open_issues": get_num_open_issues_all(all_open_issues),
+            # "num_weekly_open_issues": get_num_open_issues_weekly(weekly_open_issues),
+            # "num_weekly_closed_issues": get_num_closed_issues_weekly(weekly_closed_issues),
+            # "issues_by_open_date": all_open_issues,
+            # "issues_by_number_of_comments": sort_issue_num_comments(g, repo, limit),
+            # "open_pull_requests": pr_data_open,
+            # "closed_pull_requests": pr_data_closed,
+            # "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
+            # "num_open_prs": get_num_open_prs(pr_data_open),
+            # "num_closed_prs": get_num_closed_prs(pr_data_closed),
 
-            "commits": commit_data,
-            "num_commits": get_num_commits(commit_data),
+            # "commits": commit_data,
+            # "num_commits": get_num_commits(commit_data),
 
-            "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-            "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
+            # "new_contributors": get_new_contributors(g, repo, one_week_ago),
+            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
+            # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
 
-        data.append(repo_data)
+        filename = f"github_{PROJECT_NAME.replace('/', '_')}.json"
 
         try:
-            with open("github_data.json", "w") as outfile:
+            with open(filename, "w") as outfile:
                 json.dump(data, outfile, indent=2)
-            print(f"Successfully added {PROJECT_NAME} to github_data.json")
+            print(f"Successfully added {PROJECT_NAME} to {filename}")
         except Exception as e:
-            print(f"Error writing data for {PROJECT_NAME} to github_data.json")
+            print(f"Error writing {PROJECT_NAME} to {filename}")
             print(f"Error code: {e}")
     
     # Check how long the function takes to run and print result

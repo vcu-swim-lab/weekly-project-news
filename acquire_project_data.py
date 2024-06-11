@@ -5,6 +5,8 @@ import json
 import os
 import requests
 from dotenv import load_dotenv
+import multiprocessing
+import concurrent.futures
 
 # If want to change time zone import this python package
 # import pytz
@@ -187,7 +189,7 @@ def sort_issues_open_date(g, repo, limit):
 
   
 # ISSUES 4: Gets all issues within one_week_ago, sorted by most comments first
-def sort_issue_num_comments(g, repo, limit):
+def sort_issues_num_comments(g, repo, limit):
     # Store the current time to compare later.
     start_time = time.time()
     
@@ -623,39 +625,74 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'monicahq/monica'
+        PROJECT_NAME = 'cnovalski1/APIexample'
         # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         repo = g.get_repo(PROJECT_NAME)
         
-        # saves one repo's data
-        pr_data_open = get_open_prs(g, repo, one_week_ago)
-        pr_data_closed = get_closed_prs(g, repo, one_week_ago)
-        weekly_open_issues = get_open_issues(g, repo, one_week_ago)
-        all_open_issues = sort_issues_open_date(g, repo, limit)
-        weekly_closed_issues = get_closed_issues(g, repo, one_week_ago)
-        commit_data = get_commit_messages(g, repo, one_week_ago)
+        
+        # Multiprocessing code
+        # Maybe change issues_open and closed to open_issues and closed OR change open_pull_requests to pull_requests_open
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            # List sorting issues first for proper access
+            issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)
+            
+            issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)
+            
+            issues_open = executor.submit(get_open_issues, g, repo, one_week_ago)
+            
+            issues_closed = executor.submit(get_closed_issues, g, repo, one_week_ago)
+            
+            num_all_open_issues = executor.submit(get_num_open_issues_all, issues_by_open_date.result())
+            
+            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, issues_open.result())
+            
+            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, issues_closed.result())
+            
+            open_pull_requests = executor.submit(get_open_prs, g, repo, one_week_ago)
+            
+            closed_pull_requests = executor.submit(get_closed_prs, g, repo, one_week_ago)
+            
+            num_all_prs = executor.submit(get_num_prs, open_pull_requests.result(), closed_pull_requests.result())
+            
+            num_open_prs = executor.submit(get_num_open_prs, open_pull_requests.result())
+            
+            num_closed_prs = executor.submit(get_num_closed_prs, closed_pull_requests.result())
+            
+            commits = executor.submit(get_commit_messages, g, repo, one_week_ago)
+            
+            num_commits = executor.submit(get_num_commits, commits.result())
+            
+            new_contributors = executor.submit(get_new_contributors, g, repo, one_week_ago)
+            
+            contributed_this_week = executor.submit(get_weekly_contributors, g, repo, one_week_ago)
+            
+            active_contributors = executor.submit(get_active_contributors, g, repo, one_week_ago, thirty_days_ago)
+            
+        
+        # TODO: all of the contributors (3 functions) have not been checked yet
+        
+        # Format and store data to write to JSON file
         repo_data = {
             "repo_name": PROJECT_NAME,
-            "issues_open": get_open_issues(g, repo, one_week_ago),
-            "issues_closed": get_closed_issues(g, repo, one_week_ago),
-            "num_all_open_issues": get_num_open_issues_all(all_open_issues),
-            "num_weekly_open_issues": get_num_open_issues_weekly(weekly_open_issues),
-            "num_weekly_closed_issues": get_num_closed_issues_weekly(weekly_closed_issues),
-            "issues_by_open_date": all_open_issues,
-            "issues_by_number_of_comments": sort_issue_num_comments(g, repo, limit),
-            "open_pull_requests": pr_data_open,
-            "closed_pull_requests": pr_data_closed,
-            "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
-            "num_open_prs": get_num_open_prs(pr_data_open),
-            "num_closed_prs": get_num_closed_prs(pr_data_closed),
-            "commits": commit_data,
-            "num_commits": get_num_commits(commit_data),
-            "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-            # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
+            "issues_open": issues_open.result(),
+            "issues_closed": issues_closed.result(),
+            "num_all_open_issues": num_all_open_issues.result(),
+            "num_weekly_open_issues": num_weekly_open_issues.result(),
+            "num_weekly_closed_issues": num_weekly_closed_issues.result(),
+            "issues_by_open_date": issues_by_open_date.result(),
+            "issues_by_number_of_comments": issues_by_number_of_comments.result(),
+            "open_pull_requests": open_pull_requests.result(),
+            "closed_pull_requests": closed_pull_requests.result(),
+            "num_all_prs": num_all_prs.result(),
+            "num_open_prs": num_open_prs.result(),
+            "num_closed_prs": num_closed_prs.result(),
+            "commits": commits.result(),
+            "num_commits": num_commits.result(),
+            "new_contributors":new_contributors.result() ,
+            "contributed_this_week": contributed_this_week.result(),
+            "active_contributors": active_contributors.result()
         }
-        # TODO: all of the contributors (3 functions) have not been checked yet
-
+            
         data.append(repo_data)
 
         try:
@@ -665,6 +702,8 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Error writing data for {PROJECT_NAME} to github_data.json")
             print(f"Error code: {e}")
+               
+        
     
     # Check how long the function takes to run and print result
     elapsed_time = time.time() - start_time

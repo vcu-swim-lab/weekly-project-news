@@ -627,6 +627,11 @@ if __name__ == '__main__':
         # Testing my own repo 
         # PROJECT_NAME = 'monicahq/monica'
         PROJECT_NAME = repo_url.split('https://github.com/')[-1]
+
+        filename = os.path.join(directory, f"github_{PROJECT_NAME.replace('/', '_')}.json")
+        if os.path.exists(filename):
+            continue
+
         repo = g.get_repo(PROJECT_NAME)
         
         # saves one repo's data
@@ -660,9 +665,6 @@ if __name__ == '__main__':
             # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
             # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
-
-        # filename = f"github_{PROJECT_NAME.replace('/', '_')}.json"
-        filename = os.path.join(directory, f"github_{PROJECT_NAME.replace('/', '_')}.json")
 
         try:
             with open(filename, "w") as outfile:

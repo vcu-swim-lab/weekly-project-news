@@ -634,8 +634,10 @@ if __name__ == '__main__':
         all_open_issues = sort_issues_open_date(g, repo, limit)
         weekly_closed_issues = get_closed_issues(g, repo, one_week_ago)
         commit_data = get_commit_messages(g, repo, one_week_ago)
+        
         repo_data = {
             "repo_name": PROJECT_NAME,
+
             "issues_open": get_open_issues(g, repo, one_week_ago),
             "issues_closed": get_closed_issues(g, repo, one_week_ago),
             "num_all_open_issues": get_num_open_issues_all(all_open_issues),
@@ -648,13 +650,14 @@ if __name__ == '__main__':
             "num_all_prs": get_num_prs(pr_data_open, pr_data_closed),
             "num_open_prs": get_num_open_prs(pr_data_open),
             "num_closed_prs": get_num_closed_prs(pr_data_closed),
+
             "commits": commit_data,
             "num_commits": get_num_commits(commit_data),
+
             "new_contributors": get_new_contributors(g, repo, one_week_ago),
-            # "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
-            # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
+            "contributed_this_week": get_weekly_contributors(g, repo, one_week_ago),
+            "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
-        # TODO: all of the contributors (3 functions) have not been checked yet
 
         data.append(repo_data)
 

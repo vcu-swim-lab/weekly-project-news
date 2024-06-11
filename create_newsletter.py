@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from langchain_core.runnables import RunnableSequence
 from langchain.prompts import PromptTemplate
 
-load_dotenv('public.env')  
+load_dotenv()  
 
 API_KEY = os.environ.get("OPENAI_KEY")
 

@@ -618,7 +618,9 @@ if __name__ == '__main__':
     # Limit the number of requests in certain pages (limits number of items in for loop)
     limit = 100
 
-    data = []
+    directory = 'github_data'
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
@@ -659,11 +661,12 @@ if __name__ == '__main__':
             # "active_contributors": get_active_contributors(g, repo, one_week_ago, thirty_days_ago)
         }
 
-        filename = f"github_{PROJECT_NAME.replace('/', '_')}.json"
+        # filename = f"github_{PROJECT_NAME.replace('/', '_')}.json"
+        filename = os.path.join(directory, f"github_{PROJECT_NAME.replace('/', '_')}.json")
 
         try:
             with open(filename, "w") as outfile:
-                json.dump(data, outfile, indent=2)
+                json.dump(repo_data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to {filename}")
         except Exception as e:
             print(f"Error writing {PROJECT_NAME} to {filename}")

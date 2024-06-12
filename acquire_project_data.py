@@ -240,7 +240,7 @@ def avg_issue_close_time(g, repo):
     if total_issues > 0:
         avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
    
-    return avg_close_time # Return the average time to close issues
+    return "{:.2f} days".format(avg_close_time) # Return the average time to close issues
 
 
 # ISSUES 8: Get average time to close issues in the last week 
@@ -265,7 +265,7 @@ def avg_issue_close_time_weekly(g, repo, one_week_ago):
     if total_issues > 0:
         avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
  
-    return avg_close_time # Return the average time to close issues in the last week
+    return "{:.2f} days".format(avg_close_time) # Return the average time to close issues in the last week
 
 
 # PRS 1: Gets open pull requests within one_week_ago
@@ -542,9 +542,6 @@ if __name__ == '__main__':
     
     # Limit the number of requests in certain pages (limits number of items in for loop)
     limit = 100
-
-    # Data array to be written to JSON
-    data = []
     
     directory = 'github_data'
     if not os.path.exists(directory):
@@ -569,7 +566,7 @@ if __name__ == '__main__':
         # Multiprocessing code
         # Maybe change issues_open and closed to open_issues and closed OR change open_pull_requests to pull_requests_open
         with concurrent.futures.ProcessPoolExecutor() as executor:
-            # List sorting issues first for proper access
+            # List sorting issues first for proper result access
             issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)
             
             issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)
@@ -583,6 +580,10 @@ if __name__ == '__main__':
             num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, issues_open.result())
             
             num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, issues_closed.result())
+            
+            average_issue_close_time = executor.submit(avg_issue_close_time, g, repo)
+            
+            average_issue_close_time_weekly = executor.submit(avg_issue_close_time_weekly, g, repo, one_week_ago)
             
             open_pull_requests = executor.submit(get_open_prs, g, repo, one_week_ago)
             
@@ -617,6 +618,8 @@ if __name__ == '__main__':
             "num_weekly_closed_issues": num_weekly_closed_issues.result(),
             "issues_by_open_date": issues_by_open_date.result(),
             "issues_by_number_of_comments": issues_by_number_of_comments.result(),
+            "average_issue_close_time": average_issue_close_time.result(),
+            "average_issue_close_time_weekly": average_issue_close_time_weekly.result(),
             "open_pull_requests": open_pull_requests.result(),
             "closed_pull_requests": closed_pull_requests.result(),
             "num_all_prs": num_all_prs.result(),
@@ -628,12 +631,11 @@ if __name__ == '__main__':
             "contributed_this_week": contributed_this_week.result(),
             "active_contributors": active_contributors.result()
         }
-            
-        data.append(repo_data)
+        
 
         try:
             with open(filename, "w") as outfile:
-                json.dump(data, outfile, indent=2)
+                json.dump(repo_data, outfile, indent=2)
             print(f"Successfully added {PROJECT_NAME} to {filename}")
         except Exception as e:
             print(f"Error writing data for {PROJECT_NAME} to {filename}")

@@ -28,18 +28,17 @@ def get_open_issues(g, repo, one_week_ago):
     issues = repo.get_issues(state='open', since=one_week_ago)
 
     for issue in issues:
-        # issue within one_week_ago
         # issue is not a pull request
         # issue is not a bot
-        if issue.created_at < one_week_ago or issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
             continue
         
-        # Retreive necessary data for each issue including title, body, user, state, and comments
+        # Retreive necessary data for each issue including title, body, user, labels, and comments
         issue_data = {
             "title": issue.title,
             "body": issue.body,
             "user": issue.user.login,
-            "state": issue.state,
+            "labels": [label.name for label in issue.get_labels()],
             "comments": []
         }
 
@@ -82,12 +81,11 @@ def get_closed_issues(g, repo, one_week_ago):
         if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
             continue
         
-        # Retreive necessary data for each issue including title, body, user, state, and comments
+        # Retreive necessary data for each issue including title, body, user, and comments
         issue_data = {
             "title": issue.title,
             "body": issue.body,
             "user": issue.user.login,
-            "state": issue.state,
             "comments": []
         }
 
@@ -136,9 +134,10 @@ def sort_issues_open_date(g, repo, limit):
         hours, remainder = divmod(time_open.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        # Store the issue title, time open in days, hours, and minutes, minutes open, and a link to the issue
+        # Store the issue title, time open in days, hours, and minutes, minutes open, labels, and a link to the issue
         issue_data = {
             "title": issue.title,
+            "labels": [label.name for label in issue.get_labels()],
             "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
             "url": issue.html_url
         }
@@ -177,6 +176,7 @@ def sort_issues_num_comments(g, repo, limit):
         # Otherwise, add the title and number of comments to the data array
         data = {
         "title": issue.title,
+        "labels": [label.name for label in issue.get_labels()],
         "number_of_comments": num_comments,
         "url": issue.html_url
         }
@@ -275,8 +275,7 @@ def get_active_issues(g, repo, one_week_ago):
             "title": issue.title,
             "body": issue.body,
             "user": issue.user.login,
-            "state": issue.state,
-            "labels": issue.labels,
+            "labels": [label.name for label in issue.get_labels()],
             "url": issue.html_url,
             "comments": []
         }

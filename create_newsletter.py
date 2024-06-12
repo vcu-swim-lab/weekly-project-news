@@ -195,3 +195,4 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Error writing {project_name} to {newsletter_filename}")
             print(f"Error code: {e}")
+

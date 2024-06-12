@@ -1,5 +1,5 @@
 from github import Github
-from datetime import datetime, timedelta, timezone, date
+from datetime import datetime, timedelta, timezone
 import time
 import json
 import os
@@ -19,46 +19,6 @@ def rate_limit_check(g):
         now = datetime.now(tz=timezone.utc)
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
-        
-
-# Starter code for defining our own API requests for issues
-def request_issues_open_date(repo_owner, repo_name, api_key):
-    # GitHub API URL for issues
-    url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/issues'
-
-    # Headers for the request, including the access token for authentication
-    headers = {
-        'Authorization': f'token {api_key}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
-
-    # Parameters for the request, e.g., state can be 'open', 'closed', or 'all'
-    params = {
-        'state': 'open',  # Change this to 'open' or 'closed' if needed
-        'per_page': 100,  # Number of results per page (max 100)
-        'page': 1,  # Page number to fetch
-        'sort': 'created',
-        'direction': 'asc'
-    }
-
-    all_issues = []
-    page = 1
-    while True:
-        response = requests.get(url, headers=headers, params=params)
-        if response.status_code != 200:
-            raise Exception(f'Error fetching issues: {response.status_code}')
-        
-        issues = response.json()
-        
-        if not issues:
-            break
-
-        all_issues.extend(issues)
-        params['page'] += 1
-    
-    return all_issues
-
-
 
 
 # ISSUES 1: Gets all open issues within one_week_ago
@@ -71,60 +31,89 @@ def get_open_issues(g, repo, one_week_ago):
         # issue within one_week_ago
         # issue is not a pull request
         # issue is not a bot
-        if issue.created_at > one_week_ago and not issue.pull_request and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
-            issue_data = {
-                "title": issue.title,
-                "body": issue.body,
-                "user": issue.user.login,
-                "state": issue.state,
-                "comments": []
+        if issue.created_at < one_week_ago or issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
+            continue
+        
+        # Retreive necessary data for each issue including title, body, user, state, and comments
+        issue_data = {
+            "title": issue.title,
+            "body": issue.body,
+            "user": issue.user.login,
+            "state": issue.state,
+            "comments": []
+        }
+
+        # Retreive comments from each issue 
+        comments = issue.get_comments()
+        
+        # Iterate through each comment
+        for comment in comments:
+            # Omits comments made by bots
+            if "[bot]" in comment.user.login.lower() or "bot" in comment.user.login.lower():
+                continue
+            
+            # Retreive user and body of each comment
+            comment_data = {
+                "user": comment.user.login,
+                "body": comment.body
             }
+            # Add to issue list
+            issue_data["comments"].append(comment_data)
 
-            comments = issue.get_comments()
-            for comment in comments:
-                if "[bot]" not in comment.user.login.lower() and "bot" not in comment.user.login.lower():
-                    comment_data = {
-                        "user": comment.user.login,
-                        "body": comment.body
-                    }
-                    issue_data["comments"].append(comment_data)
-
-            issue_data_open.append(issue_data)
+        # Add this issue to the issue data
+        issue_data_open.append(issue_data)
+        
         rate_limit_check(g)
     
+    # Return list of open issues
     return issue_data_open
 
 # ISSUES 2: Gets all closed issues within one_week_ago
 def get_closed_issues(g, repo, one_week_ago):
     # Array to store issue data
     issue_data_closed = []
+    
+    # API call to retreive closed issues within the last week
     issues = repo.get_issues(state='closed', since=one_week_ago)
 
+    # Iterate through each issue to retreive data
     for issue in issues:
-        # issue within one_week_ago
-        # issue is not a pull request
-        # issue is not a bot
-        if issue.created_at > one_week_ago and not issue.pull_request and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
-            issue_data = {
-                "title": issue.title,
-                "body": issue.body,
-                "user": issue.user.login,
-                "state": issue.state,
-                "comments": []
+        # Issue is not a pull request and issue is not a bot
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
+            continue
+        
+        # Retreive necessary data for each issue including title, body, user, state, and comments
+        issue_data = {
+            "title": issue.title,
+            "body": issue.body,
+            "user": issue.user.login,
+            "state": issue.state,
+            "comments": []
+        }
+
+        # Fetch comments from each issue
+        comments = issue.get_comments()
+        
+        # Iterate through each comment to fetch data
+        for comment in comments:
+            # Omits bot comments
+            if "[bot]" in comment.user.login.lower() or "bot" in comment.user.login.lower():
+                continue
+            
+            # Retreive user and body of each comment
+            comment_data = {
+                "user": comment.user.login,
+                "body": comment.body
             }
+            # Append to each issue data
+            issue_data["comments"].append(comment_data)
 
-            comments = issue.get_comments()
-            for comment in comments:
-                if "[bot]" not in comment.user.login.lower() and "bot" not in comment.user.login.lower():
-                    comment_data = {
-                        "user": comment.user.login,
-                        "body": comment.body
-                    }
-                    issue_data["comments"].append(comment_data)
-
-            issue_data_closed.append(issue_data)
+        # Add data from entire issue to issue_data_closed
+        issue_data_closed.append(issue_data)
+        
         rate_limit_check(g)
 
+    # Return list of closed issue data
     return issue_data_closed
   
 # ISSUES 3: Gets all issues, sorted by longest open date first
@@ -137,7 +126,6 @@ def sort_issues_open_date(g, repo, limit):
     issues = repo.get_issues(state='open', sort='created', direction='asc')
     
     for issue in issues:
-        # Check for bots, and filter out issues that are actually pull requests
         # Omits issues that are pull requests and/or made by bots
         if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
             continue
@@ -228,7 +216,8 @@ def avg_issue_close_time(g, repo):
     
     # Iterates through each issue and calculates the total close time in minutes for each issue
     for issue in issues:
-        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+        # Omits issues that are pull requests and/or made by bots
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
             continue
         
         time_open = issue.closed_at - issue.created_at
@@ -240,7 +229,7 @@ def avg_issue_close_time(g, repo):
     if total_issues > 0:
         avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
    
-    return "{:.2f} days".format(avg_close_time) # Return the average time to close issues
+    return "{:.2f} days".format(avg_close_time) # Return the average time to close issues formatted to 2 decimal places
 
 
 # ISSUES 8: Get average time to close issues in the last week 
@@ -265,7 +254,53 @@ def avg_issue_close_time_weekly(g, repo, one_week_ago):
     if total_issues > 0:
         avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
  
-    return "{:.2f} days".format(avg_close_time) # Return the average time to close issues in the last week
+    # Return the average time to close issues in the last week formatted to 2 decimals
+    return "{:.2f} days".format(avg_close_time)
+
+# ISSUES 9: Get list of "active" issues, which are issues commented on/updated within the last week
+# Also consider changing the parameters for "active" issues being issues.updated_at or comments.updated_at
+def get_active_issues(g, repo, one_week_ago):
+    # Retreive issues and set up variables
+    issues = repo.get_issues(state='open')
+    active_issue_data = []
+    
+    # Iterate through each issue and select "active" issues
+    for issue in issues:
+        # Check for bots and filter out pull requests
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
+            continue
+    
+        # Add necessary data to the issue data array
+        issue_data = {
+            "title": issue.title,
+            "body": issue.body,
+            "user": issue.user.login,
+            "state": issue.state,
+            "labels": issue.labels,
+            "url": issue.html_url,
+            "comments": []
+        }
+
+        # Get the issue comments
+        comments = issue.get_comments()
+        # Iterate through each comment and list
+        for comment in comments:
+            # Check for bots and make sure the comment was made within one week ago
+            # Keep same filtering conventions consistent. Created_at <= one_week_ago means older than one week ago
+            if "[bot]" in comment.user.login.lower() or "bot" in comment.user.login.lower() or comment.created_at < one_week_ago:
+                continue
+            else:
+                comment_data = {
+                    "user": comment.user.login,
+                    "body": comment.body
+                }
+                issue_data["comments"].append(comment_data)
+
+            active_issue_data.append(issue_data)
+        
+        rate_limit_check(g)
+    
+    return active_issue_data
 
 
 # PRS 1: Gets open pull requests within one_week_ago
@@ -563,23 +598,26 @@ if __name__ == '__main__':
         repo = g.get_repo(PROJECT_NAME)
         
         
-        # Multiprocessing code
-        # Maybe change issues_open and closed to open_issues and closed OR change open_pull_requests to pull_requests_open
+        # This runs all the data gathering functions concurrently using multiprocessing
+        # If adding to this code, make sure data is accessed from top to bottom correctly, or else it will break
+        # This "with" statement does NOT create any local scope, so variables can be accessed outside of it
         with concurrent.futures.ProcessPoolExecutor() as executor:
             # List sorting issues first for proper result access
             issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)
             
             issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)
             
-            issues_open = executor.submit(get_open_issues, g, repo, one_week_ago)
+            open_issues = executor.submit(get_open_issues, g, repo, one_week_ago)
             
-            issues_closed = executor.submit(get_closed_issues, g, repo, one_week_ago)
+            closed_issues = executor.submit(get_closed_issues, g, repo, one_week_ago)
+            
+            active_issues = executor.submit(get_active_issues, g, repo, one_week_ago)
             
             num_all_open_issues = executor.submit(get_num_open_issues_all, issues_by_open_date.result())
             
-            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, issues_open.result())
+            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, open_issues.result())
             
-            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, issues_closed.result())
+            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, open_issues.result())
             
             average_issue_close_time = executor.submit(avg_issue_close_time, g, repo)
             
@@ -611,8 +649,9 @@ if __name__ == '__main__':
         # Format and store data to write to JSON file
         repo_data = {
             "repo_name": PROJECT_NAME,
-            "issues_open": issues_open.result(),
-            "issues_closed": issues_closed.result(),
+            "open_issues": open_issues.result(),
+            "closed_issues": closed_issues.result(),
+            "active_issues": active_issues.result(),
             "num_all_open_issues": num_all_open_issues.result(),
             "num_weekly_open_issues": num_weekly_open_issues.result(),
             "num_weekly_closed_issues": num_weekly_closed_issues.result(),
@@ -632,7 +671,7 @@ if __name__ == '__main__':
             "active_contributors": active_contributors.result()
         }
         
-
+        # Write to JSON file
         try:
             with open(filename, "w") as outfile:
                 json.dump(repo_data, outfile, indent=2)

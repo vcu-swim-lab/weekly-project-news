@@ -651,8 +651,7 @@ if __name__ == '__main__':
             "contributed_this_week": contributed_this_week.result(),
             "active_contributors": active_contributors.result()
         }
-        
-        # Write to JSON file
+
         try:
             with open(filename, "w") as outfile:
                 json.dump(repo_data, outfile, indent=2)

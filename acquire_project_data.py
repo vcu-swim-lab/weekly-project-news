@@ -67,7 +67,7 @@ def get_open_issues(g, repo, one_week_ago):
     # Return list of open issues
     return issue_data_open
 
-# ISSUES 2: Gets all closed issues within one_week_ago
+# ISSUES 2: Gets all closed issues within one_week_ago AND gets the average close time for this week
 def get_closed_issues(g, repo, one_week_ago):
     # Array to store issue data
     issue_data_closed = []
@@ -86,25 +86,7 @@ def get_closed_issues(g, repo, one_week_ago):
             "title": issue.title,
             "body": issue.body,
             "user": issue.user.login,
-            "comments": []
         }
-
-        # Fetch comments from each issue
-        comments = issue.get_comments()
-        
-        # Iterate through each comment to fetch data
-        for comment in comments:
-            # Omits bot comments
-            if "[bot]" in comment.user.login.lower() or "bot" in comment.user.login.lower():
-                continue
-            
-            # Retreive user and body of each comment
-            comment_data = {
-                "user": comment.user.login,
-                "body": comment.body
-            }
-            # Append to each issue data
-            issue_data["comments"].append(comment_data)
 
         # Add data from entire issue to issue_data_closed
         issue_data_closed.append(issue_data)

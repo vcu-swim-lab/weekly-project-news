@@ -12,7 +12,8 @@ API_KEY = os.environ.get("OPENAI_KEY")
 # https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
 prompt_template = "Instructions: {instructions}\nJSON data: {data}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["instructions", "data"])
-llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
+# llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY, max_tokens=10)
 chain = PROMPT | llm
 
 
@@ -159,30 +160,10 @@ Output should be generated with markdown tags. Numbers in the output should be i
 
   data = repo['closed_pull_requests']
 
-  print('a')
-  print(instructions)
-  print('b')
-  print(data)
-  print('c')
-
-  raw_summary = generate_summary(instructions, data)
-
-  print('raw_summary:')
-  print(raw_summary)
-
-  return raw_summary
+  return generate_summary(instructions, data).strip()
 
 
 
-
-# # ISSUES 1
-# def summary_issues_open(repo):
-#   context = "No open issues." if not repo.get("issues_open") else json.dumps(repo["issues_open"], indent=2).strip()
-#   question = "Generate 10 words or fewer summarizing this data, representing open issues in a GitHub repository"
-#   return generate_summary(context, question)
-
-
-  
 
 
 if __name__ == '__main__':
@@ -207,7 +188,18 @@ if __name__ == '__main__':
 
         try:
           with open(newsletter_filename, "w") as outfile:
-            
+
+            # TODO: project_name is still something like monicahq_monica
+            title = f"# Report for {project_name}\n\n"
+            outfile.write(title)
+
+            # caption underneath the title
+            caption = ("Thank you for subscribing to our weekly newsletter! Each week, we " +
+                       "deliver a comprehensive summary of your GitHub project’s latest activity " +
+                       "right to your inbox, including an overview of your project’s issues, " +
+                       "pull requests, contributors, and commit activity.\n\n")
+            outfile.write(caption)
+
             # save results for each function
             result = test(repo)
             outfile.write(result)

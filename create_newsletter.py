@@ -2,7 +2,6 @@ import json
 from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
-# from langchain.chains import LLMChain
 from langchain_core.runnables import RunnableSequence
 from langchain.prompts import PromptTemplate
 
@@ -63,6 +62,18 @@ def summary_issues_by_open_date(repo):
 def summary_issues_by_number_of_comments(repo):
   context = "No open issues." if not repo.get("issues_by_number_of_comments") else json.dumps(repo["issues_by_number_of_comments"], indent=2).strip()
   question = "Summarize the content of this data, representing the open issues in a GitHub repository sorted by their number of comments"
+  return generate_summary(context, question)
+
+# ISSUES 8
+def summary_avg_issue_close_time(repo):
+  context = "No open issues." if not repo.get("average_issue_close_time") else json.dumps(repo["average_issue_close_time"], indent=2).strip()
+  question = "Summarize the content of this data, representing the average time it takes for an issue to close in a GitHub repository, regardless of its creation date"
+  return generate_summary(context, question)
+
+# ISSUES 9
+def summary_avg_issue_close_time_weekly(repo):
+  context = "No open issues." if not repo.get("average_issue_close_time_weekly") else json.dumps(repo["average_issue_close_time_weekly"], indent=2).strip()
+  question = "Summarize the content of this data, representing the average time it took for issues to close this week in a GitHub repository"
   return generate_summary(context, question)
 
 
@@ -154,6 +165,8 @@ if __name__ == '__main__':
           "summaries_num_weekly_closed_issues": summary_num_weekly_closed_issues(repo),
           "summaries_issues_by_open_date": summary_issues_by_open_date(repo),
           "summaries_issues_by_number_of_comments": summary_issues_by_number_of_comments(repo),
+          "summaries_avg_issue_close_time": summary_avg_issue_close_time(repo),
+          "summaries_avg_issue_close_time_weekly": summary_avg_issue_close_time_weekly(repo),
 
           "summaries_open_pull_requests": summary_open_pull_requests(repo),
           "summaries_closed_pull_requests": summary_closed_pull_requests(repo),
@@ -182,3 +195,4 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"Error writing {project_name} to {newsletter_filename}")
             print(f"Error code: {e}")
+

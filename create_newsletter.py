@@ -243,19 +243,67 @@ if __name__ == '__main__':
                        "pull requests, contributors, and commit activity.\n\n")
             outfile.write(caption)
 
+            outfile.write("***\n\n")
+
+
 
             # 1: Issues
-            outfile.write("# Issues\n")
+            outfile.write("# I. Issues\n")
 
             # 1.1: Open Issues
-            outfile.write("## Open Issues\n")
+            outfile.write("## 1.1 Open Issues\n")
 
             # 1.1.1 Open Issues This Week
-            outfile.write(f"**Open Issues This Week:** {repo.get('num_weekly_open_issues', None)}")
+            outfile.write(f"**Open Issues This Week:** {repo.get('num_weekly_open_issues', None)}\n\n")
 
             # 1.1.2 Issues
-            outfile.write("**Issues:\n**")
+            outfile.write("**Issues:**\n\n")
             # TODO get chatgpt to write a summary of the issues
+
+
+            # 1.2: Closed Issues
+            outfile.write("## 1.2 Closed Issues\n")
+
+            # 1.2.1 Closed Issues This Week
+            outfile.write(f"**Closed Issues This Week:** {repo.get('num_weekly_closed_issues', None)}\n\n")
+
+            # 1.2.2 Average Time to Close Issues This Week
+            outfile.write(f"**Average Issue Close Time (This Week):** {repo.get('average_issue_close_time_weekly', None)}\n\n")
+
+            # 1.2.3 Average Time to Close Issues All Time
+            outfile.write(f"**Average Issue Close Time (All Time):** {repo.get('average_issue_close_time', None)}\n\n")
+
+            # 1.2.4 Issues
+            outfile.write("**Issues:**\n\n")
+            # TODO get chatgpt to write a summary of the issues
+
+            outfile.write("***\n\n")
+
+
+
+            # 2: Pull Requests
+            outfile.write("# II. Pull Requests\n")
+
+            # 2.1: Open Pull Requests
+            outfile.write("## 2.1 Open Pull Requests\n")
+
+            # 2.1.1 Open Pull Requests This Week
+            outfile.write(f"**Open Pull Requests This Week:** {repo.get('num_open_prs', None)}\n\n")
+
+            # 2.1.2 Pull Requests
+            outfile.write("**Pull Requests:**\n\n")
+            # TODO get chatgpt to write a summary of the pull requests
+
+
+            # 2.2: Closed Pull Requests
+            outfile.write("## 2.2 Closed Pull Requests\n")
+
+            # 2.2.1 Closed Pull Requests This Week
+            outfile.write(f"**Closed Pull Requests This Week:** {repo.get('num_closed_prs', None)}\n\n")
+
+            # 2.2.2 Pull Requests
+            outfile.write("**Pull Requests:**\n\n")
+            # TODO get chatgpt to write a summary of the pull requests
 
 
 

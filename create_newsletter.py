@@ -46,38 +46,27 @@ def open_issues(repo):
   #   underneath the bullet point in indented bullet points. Issues with similar topics should be clumpted together
   # Next, we return the string from the function
 
-  # data = {
-  #   "num_all_open_issues": repo['num_all_open_issues'],
-  #   "num_weekly_open_issues": repo['num_weekly_open_issues'],
-  #   "num_weekly_closed_issues": repo['num_weekly_closed_issues'],
-  #   "open_issues": repo['open_issues']
-  # }
  
-  for repo in repo['open_issues']:
+  all_repos = ""
+ 
+  for repo in repo['closed_issues']:
     data = repo
-    data['body'] = re.sub(r'\r\n.*?\r\n.*?\r\n', '\r\n\r\n', data['body'])
+    data['body'] = re.sub(r'<img[^>]*>', '', data['body'])
+    for comment in data.get('comments', []):
+        comment['body'] = re.sub(r'<img[^>]*>', '', comment['body'])
+        
     instructions = "Above is JSON data describing an open issue from a GitHub project. Give only one detailed sentence describing what this issue is about, starting with 'This issue'"
 
-
-    print('data:', data)
-    print('instructions:', instructions)
+    # print('data:', data)
+    # print('instructions:', instructions)
     # response = generate_summary(data, instructions)
     # print('response:', response)
 
-  # instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-  # Create the newsletter section describing all of the total open issues, issues opened this week, and issues closed this week using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (numbers). If you do not know something, say you do not know instead of making something up. 
-  # Follow this structure: 
-  # Use '## Statistics' as the main header. 
-  # Use '### Total Open Issues' for the subheading.
-  # A bullet point with 2-3 sentences giving a description of the total open issues this week. 
-  # Use '### Issues Opened This Week' for the subheading.
-  # A bullet point with 2-3 sentences giving a description of the issues opened this week.
-  # Use '### Issues Closed This Week' for the subheading. 
-  # A bullet point with 2-3 sentences giving a description of the issues closed this week. 
-  # Use '### All Open Issues' for the subheading.
-  # A bullet point with 2-3 sentences giving a description of each open issue based on comments, body, and issue title. If there are more than 10 issues, cluster some bullet points together so there are at most 10 bullet points.
-  # Show the output with markdown tags in a code block. Do not just give regular output."""
+    issue_summary = data
+    # TODO: add the issue url to all_repos too once you add the URL back in
+    all_repos += f"{issue_summary}\n\n"
 
+  print(all_repos)
   # return generate_summary(data, instructions).strip()
 
   return "this is the return"

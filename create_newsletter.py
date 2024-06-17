@@ -305,6 +305,25 @@ if __name__ == '__main__':
             outfile.write("**Pull Requests:**\n\n")
             # TODO get chatgpt to write a summary of the pull requests
 
+            outfile.write("***\n\n")
+
+
+
+            # 3: Commits
+            outfile.write("# III. Commits\n")
+
+            # 3.1: Open Commits
+            outfile.write("## 3.1 Commits\n")
+
+            # 3.1.1 Open Commits This Week
+            outfile.write(f"**Commits This Week:** {repo.get('num_commits', None)}\n\n")
+
+            # 3.1.2 Commits
+            outfile.write("**Commits:**\n\n")
+            # TODO get chatgpt to write a summary of the commits
+
+            outfile.write("***\n\n")
+
 
 
 

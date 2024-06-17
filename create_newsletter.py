@@ -31,30 +31,33 @@ def generate_summary(data, instructions):
 # - Commits
 
 
-# 1 - Open Issues
-def open_issues(repo):
+# Game plan:
+# First, we get the repo data for open_issues
+# Next, we create a string variable to save the outputs
+# Next, we go through each of the issues in open issues and prompt the llm for a one sentence summary
+# Next, we add the URL to the string and add 2 newlines
+# Next, we repeat this process
+# Next, with the string containing all issues made, we prompt the llm to use the string as "data" and give it 
+#   "instructions" to generate a bulleted list in markdown where each bullet point starts with a topic in bold
+#   text, followed by a paragraph summary of the topic. The URLs of issues related to that topic should be listed
+#   underneath the bullet point in indented bullet points. Issues with similar topics should be clumpted together
+# Next, we return the string from the function
 
-  # Game plan:
-  # First, we get the repo data for open_issues
-  # Next, we create a string variable to save the outputs
-  # Next, we go through each of the issues in open issues and prompt the llm for a one sentence summary
-  # Next, we add the URL to the string and add 2 newlines
-  # Next, we repeat this process
-  # Next, with the string containing all issues made, we prompt the llm to use the string as "data" and give it 
-  #   "instructions" to generate a bulleted list in markdown where each bullet point starts with a topic in bold
-  #   text, followed by a paragraph summary of the topic. The URLs of issues related to that topic should be listed
-  #   underneath the bullet point in indented bullet points. Issues with similar topics should be clumpted together
-  # Next, we return the string from the function
 
- 
+# 2 - Closed Issues
+def closed_issues(repo):
+
+  # get summaries for each closed issue first
   all_repos = ""
- 
   for repo in repo['closed_issues']:
     data = repo
-    data['body'] = re.sub(r'<img[^>]*>', '', data['body'])
+    # data['body'] = re.sub(r'<img[^>]*>', '', data['body'])
+    # for comment in data.get('comments', []):
+    #     comment['body'] = re.sub(r'<img[^>]*>', '', comment['body'])
+
+    data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
     for comment in data.get('comments', []):
-        comment['body'] = re.sub(r'<img[^>]*>', '', comment['body'])
-        
+      comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
     instructions = "Above is JSON data describing an open issue from a GitHub project. Give only one detailed sentence describing what this issue is about, starting with 'This issue'"
 
     # print('data:', data)
@@ -67,6 +70,8 @@ def open_issues(repo):
     all_repos += f"{issue_summary}\n\n"
 
   print(all_repos)
+  instructions = ""
+
   # return generate_summary(data, instructions).strip()
 
   return "this is the return"
@@ -222,7 +227,7 @@ if __name__ == '__main__':
             outfile.write("***\n\n")
 
             
-            result = open_issues(repo)
+            result = closed_issues(repo)
             outfile.write(result)
 
 

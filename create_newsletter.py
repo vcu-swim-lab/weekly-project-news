@@ -4,22 +4,245 @@ import os
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableSequence
 from langchain.prompts import PromptTemplate
+import re
 
 load_dotenv()  
 
 API_KEY = os.environ.get("OPENAI_KEY")
 
 # https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
-prompt_template = "Instructions: {instructions}\nJSON data: {data}\n"
-PROMPT = PromptTemplate(template=prompt_template, input_variables=["instructions", "data"])
-llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY, max_tokens=50)
+prompt_template = "Data: {data}\nInstructions: {instructions}\n"
+PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
+llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
 
 # Generates the summary using ChatGPT given any context and question (prompt template above)
-def generate_summary(instructions, data):
-    response = chain.invoke({"instructions": instructions, "data": data})
+def generate_summary(data, instructions):
+    response = chain.invoke({"data": instructions, "instructions": data})
     return response.content
+
+
+# NOTE: Here is a list of all of the sections of the newsletter that would require ChatGPT:
+# - Open Issues
+# - Closed Issues
+# - Open Pull Requests
+# - Closed Pull Requests
+# - Commits
+
+
+# 1 - Open Issues
+def open_issues(repo):
+
+  # Game plan:
+  # First, we get the repo data for open_issues
+  # Next, we create a string variable to save the outputs
+  # Next, we go through each of the issues in open issues and prompt the llm for a one sentence summary
+  # Next, we add the URL to the string and add 2 newlines
+  # Next, we repeat this process
+  # Next, with the string containing all issues made, we prompt the llm to use the string as "data" and give it 
+  #   "instructions" to generate a bulleted list in markdown where each bullet point starts with a topic in bold
+  #   text, followed by a paragraph summary of the topic. The URLs of issues related to that topic should be listed
+  #   underneath the bullet point in indented bullet points. Issues with similar topics should be clumpted together
+  # Next, we return the string from the function
+
+  # data = {
+  #   "num_all_open_issues": repo['num_all_open_issues'],
+  #   "num_weekly_open_issues": repo['num_weekly_open_issues'],
+  #   "num_weekly_closed_issues": repo['num_weekly_closed_issues'],
+  #   "open_issues": repo['open_issues']
+  # }
+ 
+  for repo in repo['open_issues']:
+    data = repo
+    data['body'] = re.sub(r'\r\n.*?\r\n.*?\r\n', '\r\n\r\n', data['body'])
+    instructions = "Above is JSON data describing an open issue from a GitHub project. Give only one detailed sentence describing what this issue is about, starting with 'This issue'"
+
+
+    print('data:', data)
+    print('instructions:', instructions)
+    # response = generate_summary(data, instructions)
+    # print('response:', response)
+
+  # instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
+  # Create the newsletter section describing all of the total open issues, issues opened this week, and issues closed this week using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (numbers). If you do not know something, say you do not know instead of making something up. 
+  # Follow this structure: 
+  # Use '## Statistics' as the main header. 
+  # Use '### Total Open Issues' for the subheading.
+  # A bullet point with 2-3 sentences giving a description of the total open issues this week. 
+  # Use '### Issues Opened This Week' for the subheading.
+  # A bullet point with 2-3 sentences giving a description of the issues opened this week.
+  # Use '### Issues Closed This Week' for the subheading. 
+  # A bullet point with 2-3 sentences giving a description of the issues closed this week. 
+  # Use '### All Open Issues' for the subheading.
+  # A bullet point with 2-3 sentences giving a description of each open issue based on comments, body, and issue title. If there are more than 10 issues, cluster some bullet points together so there are at most 10 bullet points.
+  # Show the output with markdown tags in a code block. Do not just give regular output."""
+
+  # return generate_summary(data, instructions).strip()
+
+  return "this is the return"
+
+
+
+
+
+
+
+
+
+if __name__ == '__main__':
+
+  # folders to get data and output data
+  github_directory = 'github_data'
+  newsletter_directory = 'newsletter_data'
+  
+  # creates the output directory if it doesn't exist
+  if not os.path.exists(newsletter_directory):
+    os.makedirs(newsletter_directory)
+    
+  # generate a newsletter for each file in the github_data folder
+  for filename in os.listdir(github_directory):
+    if filename.startswith('github') and filename.endswith('.json'):
+
+      # saves the json contents into 'repo'
+      filepath = os.path.join(github_directory, filename)
+      with open(filepath, 'r') as file:
+        repo = json.load(file)
+
+        # creates name of file to output data (ex. newsletter_tensorflow_tensorflow)
+        project_name = filename.split('github_')[1].rsplit('.json')[0]
+        newsletter_filename = os.path.join(newsletter_directory, f"newsletter_{project_name}.txt")
+        
+        # creates the capitalized project name for the title in the newsletter
+        name = project_name.split('_')[-1]
+        capitalized_name = name[0].upper() + name[1:]
+
+        try:
+          with open(newsletter_filename, "w") as outfile:
+
+            # 0: Title
+            title = f"# Report for {capitalized_name}\n\n"
+            outfile.write(title)
+
+            # 0.1: Description underneath the title
+            caption = ("Thank you for subscribing to our weekly newsletter! Each week, we " +
+                       "deliver a comprehensive summary of your GitHub project's latest activity " +
+                       "right to your inbox, including an overview of your project's issues, " +
+                       "pull requests, contributors, and commit activity.\n\n")
+            outfile.write(caption)
+
+            outfile.write("***\n\n")
+
+
+
+            # 1: Issues
+            outfile.write("# I. Issues\n")
+
+            # 1.1: Open Issues
+            outfile.write("## 1.1 Open Issues\n")
+
+            # 1.1.1 Open Issues This Week
+            outfile.write(f"**Open Issues This Week:** {repo.get('num_weekly_open_issues', None)}\n\n")
+
+            # 1.1.2 Issues
+            outfile.write("**Summarized Issues:**\n\n")
+            # TODO get chatgpt to write a summary of the issues
+
+
+            # 1.2: Closed Issues
+            outfile.write("## 1.2 Closed Issues\n")
+
+            # 1.2.1 Closed Issues This Week
+            outfile.write(f"**Closed Issues This Week:** {repo.get('num_weekly_closed_issues', None)}\n\n")
+
+            # 1.2.2 Average Time to Close Issues This Week
+            outfile.write(f"**Average Issue Close Time (This Week):** {repo.get('average_issue_close_time_weekly', None)}\n\n")
+
+            # 1.2.3 Average Time to Close Issues All Time
+            outfile.write(f"**Average Issue Close Time (All Time):** {repo.get('average_issue_close_time', None)}\n\n")
+
+            # 1.2.4 Issues
+            outfile.write("**Summarized Issues:**\n\n")
+            # TODO get chatgpt to write a summary of the issues
+
+            outfile.write("***\n\n")
+
+
+
+            # 2: Pull Requests
+            outfile.write("# II. Pull Requests\n")
+
+            # 2.1: Open Pull Requests
+            outfile.write("## 2.1 Open Pull Requests\n")
+
+            # 2.1.1 Open Pull Requests This Week
+            outfile.write(f"**Open Pull Requests This Week:** {repo.get('num_open_prs', None)}\n\n")
+
+            # 2.1.2 Pull Requests
+            outfile.write("**Pull Requests:**\n\n")
+            # TODO get chatgpt to write a summary of the pull requests
+
+
+            # 2.2: Closed Pull Requests
+            outfile.write("## 2.2 Closed Pull Requests\n")
+
+            # 2.2.1 Closed Pull Requests This Week
+            outfile.write(f"**Closed Pull Requests This Week:** {repo.get('num_closed_prs', None)}\n\n")
+
+            # 2.2.2 Pull Requests
+            outfile.write("**Summarized Pull Requests:**\n\n")
+            # TODO get chatgpt to write a summary of the pull requests
+
+            outfile.write("***\n\n")
+
+
+
+            # 3: Commits
+            outfile.write("# III. Commits\n")
+
+            # 3.1: Open Commits
+            outfile.write("## 3.1 Commits\n")
+
+            # 3.1.1 Open Commits This Week
+            outfile.write(f"**Commits This Week:** {repo.get('num_commits', None)}\n\n")
+
+            # 3.1.2 Commits
+            outfile.write("**Summarized Commits:**\n\n")
+            # TODO get chatgpt to write a summary of the commits
+
+            outfile.write("***\n\n")
+
+
+
+            # 4: Contributors
+            outfile.write("# IV. Contributors\n")
+
+            # 4.1: Contributors
+            outfile.write("## 4.1 Contributors\n")
+
+            # 4.1.1 New Contributors
+            outfile.write(f"**New Contributors:** {repo.get('new_contributors', None)[0].get('number_of_new_contributors')}\n\n")
+
+            # 4.1.2 New Contributors
+            outfile.write(f"**Total Contributors This Week:** {repo.get('contributed_this_week', None)[0].get('number_of_weekly_contributors')}\n\n")
+
+            # 4.1.4 Active Contributors
+            outfile.write("**Active Contributors:**\n\n")
+            # TODO get chatgpt to write a summary of the active contributors
+
+            outfile.write("***\n\n")
+
+            
+            result = open_issues(repo)
+            outfile.write(result)
+
+
+          print(f"Successfully added {project_name} to {newsletter_filename}")
+        
+        except Exception as e:
+          print(f"Error writing {project_name} to {newsletter_filename}")
+          print(f"Error code: {e}")
+
 
 
 # # 1 - ISSUES: Statistics
@@ -191,169 +414,10 @@ def generate_summary(instructions, data):
 #   return generate_summary(instructions, data).strip()
 
 
-def test(repo):
-  instructions = """Just say something
-  nice about me please"""
+# def test(repo):
+#   instructions = """Just say something
+#   nice about me please"""
 
-  data = "Perhaps about how I look"
+#   data = "Perhaps about how I look"
 
-  return generate_summary(instructions, data).strip()
-
-
-
-
-if __name__ == '__main__':
-
-  # folders to get data and output data
-  github_directory = 'github_data'
-  newsletter_directory = 'newsletter_data'
-  
-  # creates the output directory if it doesn't exist
-  if not os.path.exists(newsletter_directory):
-    os.makedirs(newsletter_directory)
-    
-  # generate a newsletter for each file in the github_data folder
-  for filename in os.listdir(github_directory):
-    if filename.startswith('github') and filename.endswith('.json'):
-
-      # saves the json contents into 'repo'
-      filepath = os.path.join(github_directory, filename)
-      with open(filepath, 'r') as file:
-        repo = json.load(file)
-
-        # creates name of file to output data (ex. newsletter_tensorflow_tensorflow)
-        project_name = filename.split('github_')[1].rsplit('.json')[0]
-        newsletter_filename = os.path.join(newsletter_directory, f"newsletter_{project_name}.txt")
-        
-        # creates the capitalized project name for the title in the newsletter
-        name = project_name.split('_')[-1]
-        capitalized_name = name[0].upper() + name[1:]
-
-        try:
-          with open(newsletter_filename, "w") as outfile:
-
-            # 0: Title
-            title = f"# Report for {capitalized_name}\n\n"
-            outfile.write(title)
-
-            # 0.1: Description underneath the title
-            caption = ("Thank you for subscribing to our weekly newsletter! Each week, we " +
-                       "deliver a comprehensive summary of your GitHub project's latest activity " +
-                       "right to your inbox, including an overview of your project's issues, " +
-                       "pull requests, contributors, and commit activity.\n\n")
-            outfile.write(caption)
-
-            outfile.write("***\n\n")
-
-
-
-            # 1: Issues
-            outfile.write("# I. Issues\n")
-
-            # 1.1: Open Issues
-            outfile.write("## 1.1 Open Issues\n")
-
-            # 1.1.1 Open Issues This Week
-            outfile.write(f"**Open Issues This Week:** {repo.get('num_weekly_open_issues', None)}\n\n")
-
-            # 1.1.2 Issues
-            outfile.write("**Issues:**\n\n")
-            # TODO get chatgpt to write a summary of the issues
-
-
-            # 1.2: Closed Issues
-            outfile.write("## 1.2 Closed Issues\n")
-
-            # 1.2.1 Closed Issues This Week
-            outfile.write(f"**Closed Issues This Week:** {repo.get('num_weekly_closed_issues', None)}\n\n")
-
-            # 1.2.2 Average Time to Close Issues This Week
-            outfile.write(f"**Average Issue Close Time (This Week):** {repo.get('average_issue_close_time_weekly', None)}\n\n")
-
-            # 1.2.3 Average Time to Close Issues All Time
-            outfile.write(f"**Average Issue Close Time (All Time):** {repo.get('average_issue_close_time', None)}\n\n")
-
-            # 1.2.4 Issues
-            outfile.write("**Issues:**\n\n")
-            # TODO get chatgpt to write a summary of the issues
-
-            outfile.write("***\n\n")
-
-
-
-            # 2: Pull Requests
-            outfile.write("# II. Pull Requests\n")
-
-            # 2.1: Open Pull Requests
-            outfile.write("## 2.1 Open Pull Requests\n")
-
-            # 2.1.1 Open Pull Requests This Week
-            outfile.write(f"**Open Pull Requests This Week:** {repo.get('num_open_prs', None)}\n\n")
-
-            # 2.1.2 Pull Requests
-            outfile.write("**Pull Requests:**\n\n")
-            # TODO get chatgpt to write a summary of the pull requests
-
-
-            # 2.2: Closed Pull Requests
-            outfile.write("## 2.2 Closed Pull Requests\n")
-
-            # 2.2.1 Closed Pull Requests This Week
-            outfile.write(f"**Closed Pull Requests This Week:** {repo.get('num_closed_prs', None)}\n\n")
-
-            # 2.2.2 Pull Requests
-            outfile.write("**Pull Requests:**\n\n")
-            # TODO get chatgpt to write a summary of the pull requests
-
-            outfile.write("***\n\n")
-
-
-
-            # 3: Commits
-            outfile.write("# III. Commits\n")
-
-            # 3.1: Open Commits
-            outfile.write("## 3.1 Commits\n")
-
-            # 3.1.1 Open Commits This Week
-            outfile.write(f"**Commits This Week:** {repo.get('num_commits', None)}\n\n")
-
-            # 3.1.2 Commits
-            outfile.write("**Commits:**\n\n")
-            # TODO get chatgpt to write a summary of the commits
-
-            outfile.write("***\n\n")
-
-
-
-            # 4: Contributors
-            outfile.write("# IV. Contributors\n")
-
-            # 4.1: Contributors
-            outfile.write("## 4.1 Contributors\n")
-
-            # 4.1.1 New Contributors
-            outfile.write(f"**New Contributors:** {repo.get('new_contributors', None)[0].get('number_of_new_contributors')}\n\n")
-
-            # 4.1.2 New Contributors
-            outfile.write(f"**Total Contributors This Week:** {repo.get('contributed_this_week', None)[0].get('number_of_weekly_contributors')}\n\n")
-
-            # 4.1.4 Active Contributors
-            outfile.write("**Active Contributors:**\n\n")
-            # TODO get chatgpt to write a summary of the active contributors
-
-            outfile.write("***\n\n")
-
-
-
-
-
-
-
-            
-
-          print(f"Successfully added {project_name} to {newsletter_filename}")
-        
-        except Exception as e:
-          print(f"Error writing {project_name} to {newsletter_filename}")
-          print(f"Error code: {e}")
+#   return generate_summary(instructions, data).strip()

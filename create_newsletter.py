@@ -326,6 +326,26 @@ if __name__ == '__main__':
 
 
 
+            # 4: Contributors
+            outfile.write("# IV. Contributors\n")
+
+            # 4.1: Contributors
+            outfile.write("## 4.1 Contributors\n")
+
+            # 4.1.1 New Contributors
+            outfile.write(f"**New Contributors:** {repo.get('new_contributors', None)[0].get('number_of_new_contributors')}\n\n")
+
+            # 4.1.2 New Contributors
+            outfile.write(f"**Total Contributors This Week:** {repo.get('contributed_this_week', None)[0].get('number_of_weekly_contributors')}\n\n")
+
+            # 4.1.4 Active Contributors
+            outfile.write("**Active Contributors:**\n\n")
+            # TODO get chatgpt to write a summary of the active contributors
+
+            outfile.write("***\n\n")
+
+
+
 
 
 

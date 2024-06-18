@@ -13,8 +13,22 @@ API_KEY = os.environ.get("OPENAI_KEY")
 # https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
-llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
+
+# param 1: "a closed issue"
+# param 2: "issue"
+# param 3: "issue"
+def individual_instructions(param1, param2, param3):
+  return f"Above is JSON data describing {param1} from a GitHub project. Give only one detailed sentence describing what this {param2} is about, starting with 'This {param3}'"
+overall_instructions = "Generate a bulleted list in markdown where each bullet point starts with a concise topic covered by multiple issues in bold text, followed by a colon, followed by a one paragraph summary that must contain 3 sentences describing the topic's issues. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. After each bullet point, there should be indented bullet points giving just the URLs of the issues that the topic covers, no other text. You must clump issues with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block."
+
+# OLD: old instructions back when i wanted to use gpt-3.5-turbo but it is horrible at producing output
+# overall_instructions = """First, group the issues above into concise topics. You must clump issues with similar topics together, so there are fewer topics than issues.
+# Then, create 3 sentences describing the topic's issues. These sentences should not be generic, but rather they should specifically describe the issues of each topic that you clumped together.
+# Then, generate a bulleted list in markdown (where each bullet starts with '-'). The bullet point includes with the concise topic in bold text, then a colon on the same line, and then the 3 sentences that you made still on the same line after the colon. Make sure that there are 3 sentences, and they are each full sentences too. You must give 3 full sentences specifically about the topic's issues, nothing fewer.
+# After each bullet point, there should be indented bullet points giving just the URLs of the issues that the topic covers, no other text. Show the output in markdown in a code block.
+# """
 
 
 # Generates the summary using ChatGPT given any context and question (prompt template above)
@@ -32,49 +46,83 @@ def generate_summary(data, instructions):
 
 
 # Game plan:
-# First, we get the repo data for open_issues
-# Next, we create a string variable to save the outputs
-# Next, we go through each of the issues in open issues and prompt the llm for a one sentence summary
-# Next, we add the URL to the string and add 2 newlines
-# Next, we repeat this process
-# Next, with the string containing all issues made, we prompt the llm to use the string as "data" and give it 
-#   "instructions" to generate a bulleted list in markdown where each bullet point starts with a topic in bold
-#   text, followed by a paragraph summary of the topic. The URLs of issues related to that topic should be listed
-#   underneath the bullet point in indented bullet points. Issues with similar topics should be clumpted together
-# Next, we return the string from the function
+# x First, we get the repo data for open_issues
+# x Next, we create a string variable to save the outputs
+# x Next, we go through each of the issues in open issues and prompt the llm for a one sentence summary
+# x Next, we add the URL to the string and add 2 newlines
+# x Next, we repeat this process
+#   Next, with the string containing all issues made, we prompt the llm to use the string as "data" and give it 
+#     "instructions" to generate a bulleted list in markdown where each bullet point starts with a topic in bold
+#     text, followed by a paragraph summary of the topic. The URLs of issues related to that topic should be listed
+#     underneath the bullet point in indented bullet points. Issues with similar topics should be clumpted together
+#   Next, we return the string from the function
 
 
 # 2 - Closed Issues
 def closed_issues(repo):
 
-  # get summaries for each closed issue first
   all_repos = ""
+  issue_instructions = individual_instructions("a closed issue", "issue", "issue")
+
+  # Step 1: get summaries for each closed issue first from the llm
   for repo in repo['closed_issues']:
     data = repo
-    # data['body'] = re.sub(r'<img[^>]*>', '', data['body'])
-    # for comment in data.get('comments', []):
-    #     comment['body'] = re.sub(r'<img[^>]*>', '', comment['body'])
-
+   
     data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
     for comment in data.get('comments', []):
       comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
-    instructions = "Above is JSON data describing an open issue from a GitHub project. Give only one detailed sentence describing what this issue is about, starting with 'This issue'"
+    
+    # issue_summary = data
+    issue_summary = generate_summary(data, issue_instructions)
+    issue_url = f"URL: {repo.get('url')}"
+    # issue_number = '/' + issue_url.split('/')[-1]
+    all_repos += f"{issue_summary}\n{issue_url}\n\n"
 
-    # print('data:', data)
-    # print('instructions:', instructions)
-    # response = generate_summary(data, instructions)
-    # print('response:', response)
+#   all_repos = """
+# This issue involves updating API methods and controller methods in a GitHub project to utilize Spring Security for authentication and current user checks.
+# URL: https://github.com/stevenbui44/flashcode/issues/16
 
-    issue_summary = data
-    # TODO: add the issue url to all_repos too once you add the URL back in
-    all_repos += f"{issue_summary}\n\n"
+# This issue addresses functions that are broken after adding Spring Security, specifically mentioning issues with deleting and updating assortments.
+# URL: https://github.com/stevenbui44/flashcode/issues/15
 
-  print(all_repos)
-  instructions = ""
+# This issue addresses a bug where users can still view other users' assortments by accessing the /assortments/id/study endpoint despite a fix on the /assortments/id endpoint.
+# URL: https://github.com/stevenbui44/flashcode/issues/13
 
-  # return generate_summary(data, instructions).strip()
+# This issue is about a user being able to see assortments that they should not have access to by changing the id of the browser URL.
+# URL: https://github.com/stevenbui44/flashcode/issues/12
 
-  return "this is the return"
+# This issue is about new assortments not showing up on the screen or being saved into the database when created by users in a GitHub project.
+# URL: https://github.com/stevenbui44/flashcode/issues/11
+
+# This issue is about ensuring that users only see their own assortments when they log in, rather than all assortments ever made.
+# URL: https://github.com/stevenbui44/flashcode/issues/10
+
+# This issue involves creating specific user roles in FlashcodeApplication to test the functionality of displaying only a user's own assortments on the /assortments page.
+# URL: https://github.com/stevenbui44/flashcode/issues/8
+
+# This issue is about adding a logout button on the header of the page to allow users to log out of their account and navigate to the login screen.
+# URL: https://github.com/stevenbui44/flashcode/issues/7
+
+# This issue is about updating the top header in the project to display the user's username for debugging and convenience purposes.
+# URL: https://github.com/stevenbui44/flashcode/issues/6
+
+# This issue involves adding a @OneToMany tag for a user to have many assortments, allowing users to see only their assortments when they go to /assortments.
+# URL: https://github.com/stevenbui44/flashcode/issues/5
+
+# This issue pertains to users not being able to see /assortments when logging in, despite having the necessary permissions.
+# URL: https://github.com/stevenbui44/flashcode/issues/4
+# """
+
+  print("\n", all_repos)
+  
+  # Step 2: get markdown output for all closed issues 
+  overall_summary = generate_summary(all_repos, overall_instructions)
+  if overall_summary.startswith("```") and overall_summary.endswith("```"):
+    overall_summary = overall_summary[3:-3]
+  if overall_summary.startswith("markdown"):
+    overall_summary = overall_summary[len("markdown"):].lstrip()
+  return overall_summary + "\n"
+
 
 
 
@@ -157,7 +205,8 @@ if __name__ == '__main__':
 
             # 1.2.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            # TODO get chatgpt to write a summary of the issues
+            result = closed_issues(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -227,8 +276,8 @@ if __name__ == '__main__':
             outfile.write("***\n\n")
 
             
-            result = closed_issues(repo)
-            outfile.write(result)
+            # result = closed_issues(repo)
+            # outfile.write(result)
 
 
           print(f"Successfully added {project_name} to {newsletter_filename}")

@@ -17,7 +17,6 @@ class Database:
             open_issues JSON, \
             closed_issues JSON, \
             active_issues JSON, \
-            num_all_open_issues INT, \
             num_weekly_open_issues INT, \
             num_weekly_closed_issues INT, \
             issues_by_open_date JSON, \
@@ -26,7 +25,6 @@ class Database:
             average_issue_close_time_weekly VARCHAR(255), \
             open_pull_requests JSON, \
             closed_pull_requests JSON, \
-            num_all_prs INT, \
             num_open_prs INT, \
             num_closed_prs INT, \
             commits JSON, \
@@ -47,7 +45,6 @@ class Database:
             json.dumps(safe_get(json_data, "open_issues")) if safe_get(json_data, "open_issues") is not None else None,
             json.dumps(safe_get(json_data, "closed_issues")) if safe_get(json_data, "closed_issues") is not None else None,
             json.dumps(safe_get(json_data, "active_issues")) if safe_get(json_data, "active_issues") is not None else None,
-            safe_get(json_data, "num_all_open_issues"),
             safe_get(json_data, "num_weekly_open_issues"),
             safe_get(json_data, "num_weekly_closed_issues"),
             json.dumps(safe_get(json_data, "issues_by_open_date")) if safe_get(json_data, "issues_by_open_date") is not None else None,
@@ -56,7 +53,6 @@ class Database:
             safe_get(json_data, "average_issue_close_time_weekly"),
             json.dumps(safe_get(json_data, "open_pull_requests")) if safe_get(json_data, "open_pull_requests") is not None else None,
             json.dumps(safe_get(json_data, "closed_pull_requests")) if safe_get(json_data, "closed_pull_requests") is not None else None,
-            safe_get(json_data, "num_all_prs"),
             safe_get(json_data, "num_open_prs"),
             safe_get(json_data, "num_closed_prs"),
             json.dumps(safe_get(json_data, "commits")) if safe_get(json_data, "commits") is not None else None,
@@ -72,7 +68,6 @@ class Database:
                 open_issues, \
                 closed_issues, \
                 active_issues, \
-                num_all_open_issues, \
                 num_weekly_open_issues, \
                 num_weekly_closed_issues, \
                 issues_by_open_date, \
@@ -81,14 +76,13 @@ class Database:
                 average_issue_close_time_weekly, \
                 open_pull_requests, \
                 closed_pull_requests, \
-                num_all_prs, \
                 num_open_prs, \
                 num_closed_prs, \
                 commits, \
                 num_commits, \
                 new_contributors, \
                 contributed_this_week, \
-                active_contributors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                active_contributors) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 data_to_insert,)
             self.conn.commit()
             print("Inserted repository")

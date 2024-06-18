@@ -21,7 +21,7 @@ def individual_instructions(param1, param2, param3):
   return f"Above is JSON data describing {param1} from a GitHub project. Give only one detailed sentence describing what this {param2} is about, starting with 'This {param3}'"
 
 # param1-4: "issues"
-def overall_instructions(param1, param2, param3, param4):
+def general_instructions(param1, param2, param3, param4):
   return f"Generate a bulleted list in markdown where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain 3 sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block."
 
 # OLD: old instructions back when i wanted to use gpt-3.5-turbo but it is horrible at producing output
@@ -56,7 +56,10 @@ def open_issues(repo):
 
   all_repos = ""
   issue_instructions = individual_instructions("an open issue", "issue", "issue")
-  overall_instructions = overall_instructions("issues", "issues", "issues", "issues")
+  overall_instructions = general_instructions("issues", "issues", "issues", "issues")
+
+  if repo['open_issues'] == [] :
+    return "As of our latest update, there are no open issues for the project this week. This indicates that all reported bugs, feature requests, or other concerns have been addressed or are not currently being actively pursued.\n\n"
 
   # Step 1: get summaries for each open issue first from the llm
   for repo in repo['open_issues']:
@@ -90,6 +93,10 @@ def closed_issues(repo):
 
   all_repos = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue")
+  overall_instructions = general_instructions("issues", "issues", "issues", "issues")
+
+  if repo['closed_issues'] == []:
+    return "As of our latest update, there are no closed issues for the project this week.\n\n"
 
   # Step 1: get summaries for each closed issue first from the llm
   for repo in repo['closed_issues']:
@@ -113,6 +120,49 @@ def closed_issues(repo):
   if overall_summary.startswith("markdown"):
     overall_summary = overall_summary[len("markdown"):].lstrip()
   return overall_summary + "\n"
+
+
+# 3 - Open Pull Requests
+def open_pull_requests(repo):
+
+  all_repos = ""
+  pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request")
+  overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests")
+
+  if repo['open_pull_requests'] == []:
+    return "As of our latest update, there are no open pull requests for the project this week. This indicates that all proposed changes have been reviewed and either merged into the main branch or closed.\n\n"
+
+  # Step 1: get summaries for each open pull request first from the llm
+  for repo in repo['open_pull_requests']:
+    data = repo
+
+    print(data)
+   
+    data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
+    for comment in data.get('comments', []):
+      comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
+
+    print(data, "\n")
+    
+    pull_request_summary = data
+    # pull_request_summary = generate_summary(data, pull_request_instructions)
+    pull_request_url = f"URL: {repo.get('url')}"
+    all_repos += f"{pull_request_summary}\n{pull_request_url}\n\n"
+
+  print("\n", all_repos, "\n\n\n")
+  
+  # # Step 2: get markdown output for all open pull requests 
+  # overall_summary = generate_summary(all_repos, overall_instructions)
+  # print("\n", overall_summary, "\n\n\n")
+  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[3:-3]
+  # print("\n", overall_summary, "\n\n\n")
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  # print("\n", overall_summary, "\n\n\n")
+  # return overall_summary + "\n"
+
+  return "there goes the boy\n"
 
 
 
@@ -216,6 +266,8 @@ if __name__ == '__main__':
             # 2.1.2 Pull Requests
             outfile.write("**Pull Requests:**\n\n")
             # TODO get chatgpt to write a summary of the pull requests
+            result = open_pull_requests(repo)
+            outfile.write(result)
 
 
             # 2.2: Closed Pull Requests

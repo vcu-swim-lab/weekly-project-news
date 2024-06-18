@@ -65,9 +65,10 @@ def open_issues(repo):
   for repo in repo['open_issues']:
     data = repo
    
-    data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
-    for comment in data.get('comments', []):
-      comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
+    if (data['body']):
+      data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
+      for comment in data.get('comments', []):
+        comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
     
     # issue_summary = data
     issue_summary = generate_summary(data, issue_instructions)
@@ -102,9 +103,10 @@ def closed_issues(repo):
   for repo in repo['closed_issues']:
     data = repo
    
-    data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
-    for comment in data.get('comments', []):
-      comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
+    if (data['body']):
+      data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
+      for comment in data.get('comments', []):
+        comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
     
     # issue_summary = data
     issue_summary = generate_summary(data, issue_instructions)
@@ -123,46 +125,81 @@ def closed_issues(repo):
 
 
 # 3 - Open Pull Requests
-def open_pull_requests(repo):
+# def open_pull_requests(repo):
+
+#   all_repos = ""
+#   pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request")
+#   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests")
+
+#   if repo['open_pull_requests'] == []:
+#     return "As of our latest update, there are no open pull requests for the project this week. This indicates that all proposed changes have been reviewed and either merged into the main branch or closed.\n\n"
+
+#   # Step 1: get summaries for each open pull request first from the llm
+#   for repo in repo['open_pull_requests']:
+#     data = repo
+
+#     print(data)
+   
+    # if (data['body']):
+    #   data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
+    #   for comment in data.get('comments', []):
+    #     comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
+
+#     print(data, "\n")
+    
+#     pull_request_summary = data
+#     # pull_request_summary = generate_summary(data, pull_request_instructions)
+#     pull_request_url = f"URL: {repo.get('url')}"
+#     all_repos += f"{pull_request_summary}\n{pull_request_url}\n\n"
+
+#   print("\n", all_repos, "\n\n\n")
+  
+#   # # Step 2: get markdown output for all open pull requests 
+#   # overall_summary = generate_summary(all_repos, overall_instructions)
+#   # print("\n", overall_summary, "\n\n\n")
+#   # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+#   #   overall_summary = overall_summary[3:-3]
+#   # print("\n", overall_summary, "\n\n\n")
+#   # if overall_summary.startswith("markdown"):
+#   #   overall_summary = overall_summary[len("markdown"):].lstrip()
+#   # print("\n", overall_summary, "\n\n\n")
+#   # return overall_summary + "\n"
+
+#   return "there goes the boy\n"
+
+
+# 4 - Closed Pull Requests
+def closed_pull_requests(repo):
 
   all_repos = ""
-  pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request")
+  pull_request_instructions = individual_instructions("a closed pull request", "pull request", "pull request")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests")
 
-  if repo['open_pull_requests'] == []:
-    return "As of our latest update, there are no open pull requests for the project this week. This indicates that all proposed changes have been reviewed and either merged into the main branch or closed.\n\n"
+  if repo['closed_pull_requests'] == []:
+    return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
 
-  # Step 1: get summaries for each open pull request first from the llm
-  for repo in repo['open_pull_requests']:
+  # Step 1: get summaries for each closed pull request first from the llm
+  for repo in repo['closed_pull_requests']:
     data = repo
-
-    print(data)
    
-    data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
-    for comment in data.get('comments', []):
-      comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
+    if (data['body']):
+      data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
-    print(data, "\n")
-    
-    pull_request_summary = data
-    # pull_request_summary = generate_summary(data, pull_request_instructions)
+    # pull_request_summary = data
+    pull_request_summary = generate_summary(data, pull_request_instructions)
     pull_request_url = f"URL: {repo.get('url')}"
     all_repos += f"{pull_request_summary}\n{pull_request_url}\n\n"
 
   print("\n", all_repos, "\n\n\n")
-  
-  # # Step 2: get markdown output for all open pull requests 
-  # overall_summary = generate_summary(all_repos, overall_instructions)
-  # print("\n", overall_summary, "\n\n\n")
-  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
-  #   overall_summary = overall_summary[3:-3]
-  # print("\n", overall_summary, "\n\n\n")
-  # if overall_summary.startswith("markdown"):
-  #   overall_summary = overall_summary[len("markdown"):].lstrip()
-  # print("\n", overall_summary, "\n\n\n")
-  # return overall_summary + "\n"
 
-  return "there goes the boy\n"
+  # Step 2: get markdown output for all closed pull requests 
+  overall_summary = generate_summary(all_repos, overall_instructions)
+  if overall_summary.startswith("```") and overall_summary.endswith("```"):
+    overall_summary = overall_summary[3:-3]
+  if overall_summary.startswith("markdown"):
+    overall_summary = overall_summary[len("markdown"):].lstrip()
+  return overall_summary + "\n"
+
 
 
 
@@ -266,8 +303,8 @@ if __name__ == '__main__':
             # 2.1.2 Pull Requests
             outfile.write("**Pull Requests:**\n\n")
             # TODO get chatgpt to write a summary of the pull requests
-            result = open_pull_requests(repo)
-            outfile.write(result)
+            # result = open_pull_requests(repo)
+            # outfile.write(result)
 
 
             # 2.2: Closed Pull Requests
@@ -279,6 +316,8 @@ if __name__ == '__main__':
             # 2.2.2 Pull Requests
             outfile.write("**Summarized Pull Requests:**\n\n")
             # TODO get chatgpt to write a summary of the pull requests
+            result = closed_pull_requests(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 

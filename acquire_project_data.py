@@ -7,7 +7,8 @@ import requests
 from dotenv import load_dotenv
 import concurrent.futures
 import multiprocessing
-
+import asyncio
+import aiohttp
 
 load_dotenv()
 
@@ -322,7 +323,7 @@ def get_closed_prs(g, repo, one_week_ago):
 
     return pr_data_closed
 
-# PRS 4: Get NUMBER of OPEN pull requests made within one_week_ago
+# PRS 3: Get NUMBER of OPEN pull requests made within one_week_ago
 def get_num_open_prs(pr_data_open):
     return len(pr_data_open)
 
@@ -402,7 +403,6 @@ def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
     
     return new_contributor_data
-
 
 # CONTRIBUTORS 2: Gets NUMBER of contributors who made any commits within one_week_ago
 def get_weekly_contributors(g, repo, one_week_ago):
@@ -525,7 +525,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
     
 
 
-# Main 
+# # Main 
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
@@ -557,7 +557,7 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'cnovalski1/APIexample'
+        PROJECT_NAME = 'monicahq/monica'
         # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         
         
@@ -575,41 +575,32 @@ if __name__ == '__main__':
         # This "with" statement does NOT create any local scope, so variables can be accessed outside of it
         with concurrent.futures.ProcessPoolExecutor() as executor:
             # List sorting issues first for proper result access
-            issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)
-            
-            issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)
-            
-            open_issues = executor.submit(get_open_issues, g, repo, one_week_ago)
-            
-            closed_issues = executor.submit(get_closed_issues, g, repo, one_week_ago)
-            
-            active_issues = executor.submit(get_active_issues, g, repo, one_week_ago)
-            
-            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, open_issues.result())
-            
-            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, closed_issues.result())
-            
-            average_issue_close_time = executor.submit(avg_issue_close_time, g, repo)
-            
+            # ISSUES
+            issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)            
+            issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)            
+            open_issues = executor.submit(get_open_issues, g, repo, one_week_ago)           
+            closed_issues = executor.submit(get_closed_issues, g, repo, one_week_ago)            
+            active_issues = executor.submit(get_active_issues, g, repo, one_week_ago)            
+            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, open_issues.result())            
+            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, closed_issues.result())            
+            average_issue_close_time = executor.submit(avg_issue_close_time, g, repo)        
             average_issue_close_time_weekly = executor.submit(avg_issue_close_time_weekly, g, repo, one_week_ago)
             
-            open_pull_requests = executor.submit(get_open_prs, g, repo, one_week_ago)
-            
-            closed_pull_requests = executor.submit(get_closed_prs, g, repo, one_week_ago)
-            
-            num_open_prs = executor.submit(get_num_open_prs, open_pull_requests.result())
-            
+            # PRS
+            open_pull_requests = executor.submit(get_open_prs, g, repo, one_week_ago)            
+            closed_pull_requests = executor.submit(get_closed_prs, g, repo, one_week_ago)            
+            num_open_prs = executor.submit(get_num_open_prs, open_pull_requests.result())            
             num_closed_prs = executor.submit(get_num_closed_prs, closed_pull_requests.result())
             
-            commits = executor.submit(get_commit_messages, g, repo, one_week_ago)
-            
+            # COMMITS
+            commits = executor.submit(get_commit_messages, g, repo, one_week_ago)            
             num_commits = executor.submit(get_num_commits, commits.result())
-            
-            new_contributors = executor.submit(get_new_contributors, g, repo, one_week_ago)
-            
-            contributed_this_week = executor.submit(get_weekly_contributors, g, repo, one_week_ago)
-            
+
+            # CONTRIBUTORS
+            new_contributors = executor.submit(get_new_contributors, g, repo, one_week_ago)            
+            contributed_this_week = executor.submit(get_weekly_contributors, g, repo, one_week_ago)           
             active_contributors = executor.submit(get_active_contributors, g, repo, one_week_ago, thirty_days_ago)
+            
             
         
         # TODO: all of the contributors (3 functions) have not been checked yet
@@ -655,3 +646,121 @@ if __name__ == '__main__':
         print("This entire program took {:.2f} seconds to run".format(elapsed_time))
     
     g.close()
+    
+    
+# async def fetch_json(url):
+#     async with aiohttp.ClientSession() as session:
+#         async with session.get(url) as response:
+#             return await response.json()
+
+
+
+# async def get_repo_data(g, repo_name, one_week_ago, thirty_days_ago, limit=100):
+#     try:
+#         repo = g.get_repo(repo_name)
+
+#         issues_by_open_date = await asyncio.to_thread(sort_issues_open_date, g, repo, limit)
+#         issues_by_number_of_comments = await asyncio.to_thread(sort_issues_num_comments, g, repo, limit)
+#         open_issues = await asyncio.to_thread(get_open_issues, g, repo, one_week_ago)
+#         closed_issues = await asyncio.to_thread(get_closed_issues, g, repo, one_week_ago)
+#         active_issues = await asyncio.to_thread(get_active_issues, g, repo, one_week_ago)
+#         num_weekly_open_issues = await asyncio.to_thread(get_num_open_issues_weekly, open_issues)
+#         num_weekly_closed_issues = await asyncio.to_thread(get_num_closed_issues_weekly, closed_issues)
+#         average_issue_close_time = await asyncio.to_thread(avg_issue_close_time, g, repo)
+#         average_issue_close_time_weekly = await asyncio.to_thread(avg_issue_close_time_weekly, g, repo, one_week_ago)
+
+#         open_pull_requests = await asyncio.to_thread(get_open_prs, g, repo, one_week_ago)
+#         closed_pull_requests = await asyncio.to_thread(get_closed_prs, g, repo, one_week_ago)
+#         num_open_prs = await asyncio.to_thread(get_num_open_prs, open_pull_requests)
+#         num_closed_prs = await asyncio.to_thread(get_num_closed_prs, closed_pull_requests)
+
+#         commits = await asyncio.to_thread(get_commit_messages, g, repo, one_week_ago)
+#         num_commits = await asyncio.to_thread(get_num_commits, commits)
+
+#         new_contributors = await asyncio.to_thread(get_new_contributors, g, repo, one_week_ago)
+#         contributed_this_week = await asyncio.to_thread(get_weekly_contributors, g, repo, one_week_ago)
+#         active_contributors = await asyncio.to_thread(get_active_contributors, g, repo, one_week_ago, thirty_days_ago)
+
+#         return {
+#             "repo_name": repo_name,
+#             "open_issues": open_issues,
+#             "closed_issues": closed_issues,
+#             "active_issues": active_issues,
+#             "num_weekly_open_issues": num_weekly_open_issues,
+#             "num_weekly_closed_issues": num_weekly_closed_issues,
+#             "issues_by_open_date": issues_by_open_date,
+#             "issues_by_number_of_comments": issues_by_number_of_comments,
+#             "average_issue_close_time": average_issue_close_time,
+#             "average_issue_close_time_weekly": average_issue_close_time_weekly,
+#             "open_pull_requests": open_pull_requests,
+#             "closed_pull_requests": closed_pull_requests,
+#             "num_open_prs": num_open_prs,
+#             "num_closed_prs": num_closed_prs,
+#             "commits": commits,
+#             "num_commits": num_commits,
+#             "new_contributors": new_contributors,
+#             "contributed_this_week": contributed_this_week,
+#             "active_contributors": active_contributors
+#         }
+
+#     except Exception as e:
+#         print(f"Error processing repo {repo_name}: {e}")
+#         return None
+
+
+# async def main():
+#     # pygithub
+#     g = Github(os.environ['GITHUB_API_KEY'])
+
+#     with open('subscribers.json') as file:
+#         subscribers_data = json.load(file)
+
+#     repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
+#     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+#     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+#     directory = 'github_data'
+
+#     if not os.path.exists(directory):
+#         os.makedirs(directory)
+
+#     tasks = []
+#     for repo_name in repo_names:
+#         filename = os.path.join(directory, f"github_{repo_name.replace('/', '_')}.json")
+#         if os.path.exists(filename):
+#             continue
+#         tasks.append(get_repo_data(g, repo_name, one_week_ago, thirty_days_ago))
+
+#     repo_data_list = await asyncio.gather(*tasks)
+
+#     for repo_data in repo_data_list:
+#         if repo_data:
+#             try:
+#                 with open(filename, "w") as outfile:
+#                     json.dump(repo_data, outfile, indent=2)
+#                 print(f"Successfully added {repo_data['repo_name']} to {filename}")
+#             except Exception as e:
+#                 print(f"Error writing data for {repo_data['repo_name']} to {filename}: {e}")
+    
+#     g.close()
+
+
+
+
+
+# if __name__ == '__main__':
+#     start_time = time.time()
+
+#     asyncio.create_task(main())
+
+#     try:
+#         asyncio.get_event_loop().run_forever()
+#     except KeyboardInterrupt:
+#         pass
+#     finally:
+#         elapsed_time = time.time() - start_time
+#         if elapsed_time >= 60:
+#             print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+#         else:
+#             print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+
+

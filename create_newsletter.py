@@ -37,14 +37,6 @@ def generate_summary(data, instructions):
     return response.content
 
 
-# NOTE: Here is a list of all of the sections of the newsletter that would require ChatGPT:
-# - Open Issues
-# - Closed Issues
-# - Open Pull Requests
-# - Closed Pull Requests
-# - Commits
-
-
 # Game plan:
 # x First, we get the repo data for open_issues
 # x Next, we create a string variable to save the outputs
@@ -56,6 +48,39 @@ def generate_summary(data, instructions):
 #     text, followed by a paragraph summary of the topic. The URLs of issues related to that topic should be listed
 #     underneath the bullet point in indented bullet points. Issues with similar topics should be clumpted together
 #   Next, we return the string from the function
+
+
+# 1 - Open Issues
+def open_issues(repo):
+
+  all_repos = ""
+  issue_instructions = individual_instructions("an open issue", "issue", "issue")
+
+  # Step 1: get summaries for each open issue first from the llm
+  for repo in repo['open_issues']:
+    data = repo
+   
+    data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
+    for comment in data.get('comments', []):
+      comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
+    
+    # issue_summary = data
+    issue_summary = generate_summary(data, issue_instructions)
+    issue_url = f"URL: {repo.get('url')}"
+    all_repos += f"{issue_summary}\n{issue_url}\n\n"
+
+  print("\n", all_repos, "\n\n\n")
+  
+  # Step 2: get markdown output for all open issues 
+  overall_summary = generate_summary(all_repos, overall_instructions)
+  print("\n", overall_summary, "\n\n\n")
+  if overall_summary.startswith("```") and overall_summary.endswith("```"):
+    overall_summary = overall_summary[3:-3]
+  print("\n", overall_summary, "\n\n\n")
+  if overall_summary.startswith("markdown"):
+    overall_summary = overall_summary[len("markdown"):].lstrip()
+  print("\n", overall_summary, "\n\n\n")
+  return overall_summary + "\n"
 
 
 # 2 - Closed Issues
@@ -189,6 +214,8 @@ if __name__ == '__main__':
             # 1.1.2 Issues
             outfile.write("**Summarized Issues:**\n\n")
             # TODO get chatgpt to write a summary of the issues
+            result = open_issues(repo)
+            outfile.write(result)
 
 
             # 1.2: Closed Issues
@@ -205,8 +232,8 @@ if __name__ == '__main__':
 
             # 1.2.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            result = closed_issues(repo)
-            outfile.write(result)
+            # result = closed_issues(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 

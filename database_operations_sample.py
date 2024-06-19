@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
-from tables.repository import Repository
+from tables.repository import Repository, RepositoryAuthor
 from tables.issue import Issue, IssueLabel, IssueComment
 from tables.pull_request import PullRequest, PullRequestLabel, PullRequestComment
 from tables.commit import Commit, CommitComment

@@ -22,3 +22,15 @@ class Repository(Base):
 
     def __repr__(self):
         return f"<Repository(id={self.id}, full_name={self.full_name})>"
+
+class RepositoryAuthor(Base):
+    __tablename__ = 'repository_authors'
+
+    repository_id = Column(Integer, primary_key=True)
+    author_login = Column(String, primary_key=True)
+    author_association = Column(String)
+    last_updated_at = Column(DateTime)
+    commit_count = Column(Integer)
+    issue_count = Column(Integer)
+    pull_request_count = Column(Integer)
+

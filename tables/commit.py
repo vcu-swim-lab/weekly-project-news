@@ -23,3 +23,16 @@ class Commit(Base):
 
     def __repr__(self):
         return f"<Commit(sha={self.sha}, url={self.url})>"
+
+class CommitComment(Base):
+    __tablename__ = 'commit_comments'
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    html_url = Column(String)
+    body = Column(Text)
+    user_login = Column(String)
+    author_association = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+    commit_id = Column(Integer)

@@ -36,3 +36,16 @@ class IssueLabel(Base):
     __tablename__ = 'issue_labels'
     issue_id = Column(Integer, ForeignKey('issues.id'), primary_key=True)
     label_name = Column(Integer, ForeignKey('labels.name'), primary_key=True)
+
+class IssueComment(Base):
+    __tablename__ = 'issue_comments'
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    html_url = Column(String)
+    body = Column(Text)
+    user_login = Column(String)
+    author_association = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+    issue_id = Column(Integer)

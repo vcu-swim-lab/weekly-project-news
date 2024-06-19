@@ -38,3 +38,16 @@ class PullRequestLabel(Base):
     __tablename__ = 'pull_request_labels'
     pull_request_id = Column(Integer, ForeignKey('pull_requests.id'), primary_key=True)
     label_name = Column(Integer, ForeignKey('labels.name'), primary_key=True)
+
+class PullRequestComment(Base):
+    __tablename__ = 'pull_request_comments'
+    id = Column(Integer, primary_key=True)
+    url = Column(String)
+    html_url = Column(String)
+    body = Column(Text)
+    user_login = Column(String)
+    author_association = Column(String)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
+    pull_request_id = Column(Integer)

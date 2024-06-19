@@ -1,9 +1,9 @@
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
 from tables.repository import Repository
-from tables.issue import Issue, IssueLabel
-from tables.pull_request import PullRequest, PullRequestLabel
-from tables.commit import Commit
+from tables.issue import Issue, IssueLabel, IssueComment
+from tables.pull_request import PullRequest, PullRequestLabel, PullRequestComment
+from tables.commit import Commit, CommitComment
 from tables.label import Label
 from tables.user import User
 # from tables.team import Team
@@ -175,7 +175,6 @@ def load_commit_from_json(data):
 
     filtered_data['repository_full_name'] = filter_repo_full_name(data['url'])
 
-
     # Create and add the repository to the session
     new_repo = Commit(**filtered_data)
     session.add(new_repo)
@@ -203,7 +202,6 @@ load_issue_from_json(data)
 
 for repo in session.query(Issue).all():
     print(repo)
-
 
 with open('json_data/pull_request.json', 'r') as file:
     data = json.load(file)

@@ -159,12 +159,61 @@ def insert_issue(data):
     session.commit()
 
 
+def insert_pull_request(data):
+    pull_fields = {column.name for column in PullRequest.__table__.columns}
+    filtered_data = {key: value for key, value in data.items() if key in pull_fields}
+
+    # Handle nested user object
+    if 'user' in data:
+        user_data = data['user']
+        user = session.query(User).filter_by(login=user_data['login']).first()
+        if not user:
+            insert_user(user_data)
+        user = session.query(User).filter_by(login=user_data['login']).first()
+        filtered_data['user_login'] = user.login
+
+    if 'head' in data:
+        repo_data = data['head']
+        repo_data = repo_data['repo']
+        repository = session.query(Repository).filter_by(full_name=repo_data['full_name']).first()
+        filtered_data['repository_full_name'] = repository.full_name
+
+    # Handle labels
+    if 'labels' in data:
+        labels_data = data['labels']
+        labels = []
+        for label_data in labels_data:
+            label = session.query(Label).filter_by(name=label_data['name']).first()
+            if not label:
+                label = Label(name=label_data['name'],)
+                session.add(label)
+                session.commit()
+            labels.append(label)
+        filtered_data['labels'] = labels
+
+    # Convert datetime fields
+    datetime_fields = ['created_at', 'updated_at', 'closed_at']
+    for field in datetime_fields:
+        if field in filtered_data:
+            if filtered_data[field] is None:
+                filtered_data[field] = None
+            else:
+                filtered_data[field] = datetime.strptime(filtered_data[field], "%Y-%m-%dT%H:%M:%SZ")
+
+    new_pr = PullRequest(**filtered_data)
+    session.add(new_pr)
+    session.commit()
+
+
 # Example usage
 owner = 'cnovalski1'
 repo = 'APIexample'
 issues_array = get_issues(owner, repo)
 for issue in issues_array:
-    insert_issue(issue)
+    if 'pull_request' in issue.keys():
+        insert_pull_request(issue)
+    else:
+        insert_issue(issue)
 
 
 # Example usage
@@ -172,4 +221,7 @@ owner = 'danny-avila'
 repo = 'LibreChat'
 issues_array = get_issues(owner, repo)
 for issue in issues_array:
-    insert_issue(issue)
+    if 'pull_request' in issue.keys():
+        insert_pull_request(issue)
+    else:
+        insert_issue(issue)

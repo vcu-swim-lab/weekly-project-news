@@ -107,8 +107,6 @@ def load_pull_request_from_json(data):
         repo_data = data['head']
         repo_data = repo_data['repo']
         repository = session.query(Repository).filter_by(full_name=repo_data['full_name']).first()
-        if not repository:
-            load_user_from_json(repo_data)
         repository = session.query(Repository).filter_by(full_name=repo_data['full_name']).first()
         filtered_data['repository_full_name'] = repository.full_name
 

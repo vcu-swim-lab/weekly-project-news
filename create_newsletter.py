@@ -20,9 +20,13 @@ chain = PROMPT | llm
 def individual_instructions(param1, param2, param3):
   return f"Above is JSON data describing {param1} from a GitHub project. Give only one detailed sentence describing what this {param2} is about, starting with 'This {param3}'"
 
-# param1-4: "issues"
-def general_instructions(param1, param2, param3, param4):
-  return f"Generate a bulleted list in markdown where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain 3 sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block."
+# param1-4: "issues", param5: true if should include in instructions
+def general_instructions(param1, param2, param3, param4, param5, param6):
+  instructions = f"Generate a bulleted list in markdown where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. "
+  if param5:
+    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. "
+  instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
+  return instructions
 
 # OLD: old instructions back when i wanted to use gpt-3.5-turbo but it is horrible at producing output
 # overall_instructions = """First, group the issues above into concise topics. You must clump issues with similar topics together, so there are fewer topics than issues.
@@ -56,7 +60,7 @@ def open_issues(repo):
 
   all_repos = ""
   issue_instructions = individual_instructions("an open issue", "issue", "issue")
-  overall_instructions = general_instructions("issues", "issues", "issues", "issues")
+  overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
 
   if repo['open_issues'] == [] :
     return "As of our latest update, there are no open issues for the project this week. This indicates that all reported bugs, feature requests, or other concerns have been addressed or are not currently being actively pursued.\n\n"
@@ -94,7 +98,7 @@ def closed_issues(repo):
 
   all_repos = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue")
-  overall_instructions = general_instructions("issues", "issues", "issues", "issues")
+  overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
 
   if repo['closed_issues'] == []:
     return "As of our latest update, there are no closed issues for the project this week.\n\n"
@@ -129,7 +133,7 @@ def open_pull_requests(repo):
 
   all_repos = ""
   pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request")
-  overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests")
+  overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
 
   if repo['open_pull_requests'] == []:
     return "As of our latest update, there are no open pull requests for the project this week.\n\n"
@@ -162,7 +166,7 @@ def closed_pull_requests(repo):
 
   all_repos = ""
   pull_request_instructions = individual_instructions("a closed pull request", "pull request", "pull request")
-  overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests")
+  overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
 
   if repo['closed_pull_requests'] == []:
     return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
@@ -188,6 +192,61 @@ def closed_pull_requests(repo):
   if overall_summary.startswith("markdown"):
     overall_summary = overall_summary[len("markdown"):].lstrip()
   return overall_summary + "\n"
+
+
+# 5 - Commits
+def commits(repo):
+
+  all_repos = ""
+  commit_instructions = individual_instructions("a commit", "commit", "commit")
+  overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
+
+  if repo['commits'] == []:
+    return "As of our latest update, there are no commits for the project this week.\n\n"
+
+  # Step 1: get summaries for each commit first from the llm
+  # for repo in repo['commits']:
+  #   data = repo
+   
+  #   if (data['message']):
+  #     data['message'] = re.sub(r'<img[^>]*>|\r\n', '', data['message'])
+
+  #   # commit_summary = data
+  #   commit_summary = generate_summary(data, commit_instructions)
+  #   all_repos += f"{commit_summary}\n\n"
+
+  # print("\n", all_repos, "\n\n\n")
+
+  all_repos = """
+This commit involves testing the process of pushing changes to the development branch after having previously pushed changes to a different project using Visual Studio Code.
+
+This commit involves testing the process of adding changes to a GitHub repository that has recently been made public, as it was previously private.
+
+This commit involves the author, stevenbui44, testing the functionality of pushing changes to GitHub by removing and re-adding the project to their workspace.
+
+This commit introduces a new HTML page named "file-study.html" that outlines the content displayed when the "Study" button is clicked from an assortment page, adds a corresponding endpoint to the MappingController, and includes previous and next buttons on the study page for navigating through flash cards.
+
+This commit addresses a bug fix by ensuring that the assortment's title and description update automatically in the browser view, and restores the expected functionality of the "View Cards" and "Delete" actions, albeit with a brief pause between resetting and updating the title/description.
+
+This commit updates the HTML and API endpoint to allow for editing an assortment's title and description, introduces a modal for these edits, but notes a bug where the updated name does not immediately display and the Delete and View Cards buttons are non-functional until a page refresh.
+
+This commit involves the removal of an assortment by adding HTML code and an API endpoint for deletion, as well as implementing a confirmation modal to ensure the user wants to proceed with the deletion.
+
+This commit by stevenbui44 adds functionality to display the assortment description below the title of each assortment in an HTML project, although the ability to update the description is not yet implemented.
+"""
+
+  # Step 2: get markdown output for all commits
+  # overall_summary = generate_summary(all_repos, overall_instructions)
+  # print(overall_summary, "\n\n\n")
+  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[3:-3]
+  # print(overall_summary, "\n\n\n")
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  # print(overall_summary, "\n\n\n")
+  # return overall_summary + "\n"
+
+  return "The dog is lit\n"
 
 
 
@@ -291,8 +350,8 @@ if __name__ == '__main__':
 
             # 2.1.2 Pull Requests
             outfile.write("**Pull Requests:**\n\n")
-            result = open_pull_requests(repo)
-            outfile.write(result)
+            # result = open_pull_requests(repo)
+            # outfile.write(result)
 
 
             # 2.2: Closed Pull Requests
@@ -321,7 +380,8 @@ if __name__ == '__main__':
 
             # 3.1.2 Commits
             outfile.write("**Summarized Commits:**\n\n")
-            # TODO get chatgpt to write a summary of the commits
+            result = commits(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 

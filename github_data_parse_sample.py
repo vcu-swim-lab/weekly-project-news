@@ -56,8 +56,8 @@ def insert_repository(data):
     session.add(new_repo)
     session.commit()
 
-owner = 'octocat'
-repo = 'Hello-World'
+owner = 'tensorflow'
+repo = 'tensorflow'
 repo_data = get_a_repository(owner, repo)
 insert_repository(repo_data)
 
@@ -219,6 +219,17 @@ for issue in issues_array:
 # Example usage
 owner = 'danny-avila'
 repo = 'LibreChat'
+issues_array = get_issues(owner, repo)
+for issue in issues_array:
+    if 'pull_request' in issue.keys():
+        insert_pull_request(issue)
+    else:
+        insert_issue(issue)
+
+
+# Example usage
+owner = 'tensorflow'
+repo = 'tensorflow'
 issues_array = get_issues(owner, repo)
 for issue in issues_array:
     if 'pull_request' in issue.keys():

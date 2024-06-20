@@ -83,13 +83,10 @@ def open_issues(repo):
   
   # Step 2: get markdown output for all open issues 
   overall_summary = generate_summary(all_repos, overall_instructions)
-  print("\n", overall_summary, "\n\n\n")
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
-  print("\n", overall_summary, "\n\n\n")
   if overall_summary.startswith("markdown"):
     overall_summary = overall_summary[len("markdown"):].lstrip()
-  print("\n", overall_summary, "\n\n\n")
   return overall_summary + "\n"
 
 
@@ -117,7 +114,7 @@ def closed_issues(repo):
     issue_url = f"URL: {repo.get('url')}"
     all_repos += f"{issue_summary}\n{issue_url}\n\n"
 
-  print("\n", all_repos)
+  print("\n", all_repos, "\n\n\n")
   
   # Step 2: get markdown output for all closed issues 
   overall_summary = generate_summary(all_repos, overall_instructions)
@@ -205,49 +202,80 @@ def commits(repo):
     return "As of our latest update, there are no commits for the project this week.\n\n"
 
   # Step 1: get summaries for each commit first from the llm
-  # for repo in repo['commits']:
-  #   data = repo
+  for repo in repo['commits']:
+    data = repo
    
-  #   if (data['message']):
-  #     data['message'] = re.sub(r'<img[^>]*>|\r\n', '', data['message'])
+    if (data['message']):
+      data['message'] = re.sub(r'<img[^>]*>|\r\n', '', data['message'])
 
-  #   # commit_summary = data
-  #   commit_summary = generate_summary(data, commit_instructions)
-  #   all_repos += f"{commit_summary}\n\n"
+    # commit_summary = data
+    commit_summary = generate_summary(data, commit_instructions)
+    all_repos += f"{commit_summary}\n\n"
 
-  # print("\n", all_repos, "\n\n\n")
-
-  all_repos = """
-This commit involves testing the process of pushing changes to the development branch after having previously pushed changes to a different project using Visual Studio Code.
-
-This commit involves testing the process of adding changes to a GitHub repository that has recently been made public, as it was previously private.
-
-This commit involves the author, stevenbui44, testing the functionality of pushing changes to GitHub by removing and re-adding the project to their workspace.
-
-This commit introduces a new HTML page named "file-study.html" that outlines the content displayed when the "Study" button is clicked from an assortment page, adds a corresponding endpoint to the MappingController, and includes previous and next buttons on the study page for navigating through flash cards.
-
-This commit addresses a bug fix by ensuring that the assortment's title and description update automatically in the browser view, and restores the expected functionality of the "View Cards" and "Delete" actions, albeit with a brief pause between resetting and updating the title/description.
-
-This commit updates the HTML and API endpoint to allow for editing an assortment's title and description, introduces a modal for these edits, but notes a bug where the updated name does not immediately display and the Delete and View Cards buttons are non-functional until a page refresh.
-
-This commit involves the removal of an assortment by adding HTML code and an API endpoint for deletion, as well as implementing a confirmation modal to ensure the user wants to proceed with the deletion.
-
-This commit by stevenbui44 adds functionality to display the assortment description below the title of each assortment in an HTML project, although the ability to update the description is not yet implemented.
-"""
+  print("\n", all_repos, "\n\n\n")
 
   # Step 2: get markdown output for all commits
-  # overall_summary = generate_summary(all_repos, overall_instructions)
-  # print(overall_summary, "\n\n\n")
-  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
-  #   overall_summary = overall_summary[3:-3]
-  # print(overall_summary, "\n\n\n")
-  # if overall_summary.startswith("markdown"):
-  #   overall_summary = overall_summary[len("markdown"):].lstrip()
-  # print(overall_summary, "\n\n\n")
-  # return overall_summary + "\n"
+  overall_summary = generate_summary(all_repos, overall_instructions)
+  if overall_summary.startswith("```") and overall_summary.endswith("```"):
+    overall_summary = overall_summary[3:-3]
+  if overall_summary.startswith("markdown"):
+    overall_summary = overall_summary[len("markdown"):].lstrip()
+  return overall_summary + "\n"
 
-  return "The dog is lit\n"
 
+# 6 - Active Contributors
+def active_contributors(repo):
+
+  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past week. \n\n"
+ 
+  if repo['active_contributors'] == []:
+    overall_summary += "As of our latest update, there are no active contributors for the project this week.\n\n"
+    return overall_summary
+
+  overall_summary += "Contributor | Commits | Pull Requests | Issues \n"
+  overall_summary += "---|---|---|---\n"
+
+  # Step 1: filter out non-contributor entries and aggregate data
+  contributors = []
+  for contributor in repo['active_contributors']:
+    if 'author' in contributor:  # Skip entries without 'author'
+      total_activity = contributor['commits'] + contributor['pull_requests'] + contributor['issues']
+      contributor['total_activity'] = total_activity
+      contributors.append(contributor)
+
+  print(contributors)
+
+  # Step 2: sort contributors by total_activity in descending order
+  sorted_contributors = sorted(contributors, key=lambda x: x['total_activity'], reverse=True)
+
+  print(sorted_contributors)
+
+  # Step 3: generate markdown output for all active contributors
+  for contributor in sorted_contributors:
+    overall_summary += contributor['author'] + " | "
+    overall_summary += f"{contributor['commits']}" + " | "
+    overall_summary += f"{contributor['pull_requests']}" + " | "
+    overall_summary += f"{contributor['issues']}" + " | \n"
+
+    print(overall_summary)
+    
+  return overall_summary
+
+
+
+  # # Step 1: get markdown output for all active contributors
+  # for contributor in repo['active_contributors']:
+  #   # if the author key exists (aka to skip number_of_active_contributors)
+  #   if 'author' in contributor:
+
+  #     overall_summary += contributor['author'] + " | "
+  #     overall_summary += f"{contributor['commits']}" + " | "
+  #     overall_summary += f"{contributor['pull_requests']}" + " | "
+  #     overall_summary += f"{contributor['issues']}" + " | \n"
+
+  # print(overall_summary)
+    
+  # return overall_summary
 
 
 
@@ -380,8 +408,8 @@ if __name__ == '__main__':
 
             # 3.1.2 Commits
             outfile.write("**Summarized Commits:**\n\n")
-            result = commits(repo)
-            outfile.write(result)
+            # result = commits(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -401,7 +429,8 @@ if __name__ == '__main__':
 
             # 4.1.4 Active Contributors
             outfile.write("**Active Contributors:**\n\n")
-            # TODO get chatgpt to write a summary of the active contributors
+            result = active_contributors(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 

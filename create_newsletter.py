@@ -58,7 +58,7 @@ def generate_summary(data, instructions):
 # 1 - Open Issues
 def open_issues(repo):
 
-  all_repos = ""
+  all_open_issues = ""
   issue_instructions = individual_instructions("an open issue", "issue", "issue")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
 
@@ -66,8 +66,8 @@ def open_issues(repo):
     return "As of our latest update, there are no open issues for the project this week. This indicates that all reported bugs, feature requests, or other concerns have been addressed or are not currently being actively pursued.\n\n"
 
   # Step 1: get summaries for each open issue first from the llm
-  for repo in repo['open_issues']:
-    data = repo
+  for open_issue in repo['open_issues']:
+    data = open_issue
    
     if (data['body']):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
@@ -76,13 +76,13 @@ def open_issues(repo):
     
     # issue_summary = data
     issue_summary = generate_summary(data, issue_instructions)
-    issue_url = f"URL: {repo.get('url')}"
-    all_repos += f"{issue_summary}\n{issue_url}\n\n"
+    issue_url = f"URL: {open_issue.get('url')}"
+    all_open_issues += f"{issue_summary}\n{issue_url}\n\n"
 
-  print("\n", all_repos, "\n\n\n")
+  print("\n", all_open_issues, "\n\n\n")
   
   # Step 2: get markdown output for all open issues 
-  overall_summary = generate_summary(all_repos, overall_instructions)
+  overall_summary = generate_summary(all_open_issues, overall_instructions)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -93,7 +93,7 @@ def open_issues(repo):
 # 2 - Closed Issues
 def closed_issues(repo):
 
-  all_repos = ""
+  all_closed_issues = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
 
@@ -101,8 +101,8 @@ def closed_issues(repo):
     return "As of our latest update, there are no closed issues for the project this week.\n\n"
 
   # Step 1: get summaries for each closed issue first from the llm
-  for repo in repo['closed_issues']:
-    data = repo
+  for closed_issue in repo['closed_issues']:
+    data = closed_issue
    
     if (data['body']):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
@@ -111,13 +111,13 @@ def closed_issues(repo):
     
     # issue_summary = data
     issue_summary = generate_summary(data, issue_instructions)
-    issue_url = f"URL: {repo.get('url')}"
-    all_repos += f"{issue_summary}\n{issue_url}\n\n"
+    issue_url = f"URL: {closed_issue.get('url')}"
+    all_closed_issues += f"{issue_summary}\n{issue_url}\n\n"
 
-  print("\n", all_repos, "\n\n\n")
+  print("\n", all_closed_issues, "\n\n\n")
   
   # Step 2: get markdown output for all closed issues 
-  overall_summary = generate_summary(all_repos, overall_instructions)
+  overall_summary = generate_summary(all_closed_issues, overall_instructions)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -128,7 +128,7 @@ def closed_issues(repo):
 # 3 - Open Pull Requests
 def open_pull_requests(repo):
 
-  all_repos = ""
+  all_pull_requests = ""
   pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
 
@@ -136,21 +136,21 @@ def open_pull_requests(repo):
     return "As of our latest update, there are no open pull requests for the project this week.\n\n"
 
   # Step 1: get summaries for each open pull request first from the llm
-  for repo in repo['open_pull_requests']:
-    data = repo
+  for pull_request in repo['open_pull_requests']:
+    data = pull_request
    
     if (data['body']):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
     # pull_request_summary = data
     pull_request_summary = generate_summary(data, pull_request_instructions)
-    pull_request_url = f"URL: {repo.get('url')}"
-    all_repos += f"{pull_request_summary}\n{pull_request_url}\n\n"
+    pull_request_url = f"URL: {pull_request.get('url')}"
+    all_pull_requests += f"{pull_request_summary}\n{pull_request_url}\n\n"
 
-  print("\n", all_repos, "\n\n\n")
+  print("\n", all_pull_requests, "\n\n\n")
 
   # Step 2: get markdown output for all open pull requests 
-  overall_summary = generate_summary(all_repos, overall_instructions)
+  overall_summary = generate_summary(all_pull_requests, overall_instructions)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -161,7 +161,7 @@ def open_pull_requests(repo):
 # 4 - Closed Pull Requests
 def closed_pull_requests(repo):
 
-  all_repos = ""
+  all_pull_requests = ""
   pull_request_instructions = individual_instructions("a closed pull request", "pull request", "pull request")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
 
@@ -169,21 +169,21 @@ def closed_pull_requests(repo):
     return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
 
   # Step 1: get summaries for each closed pull request first from the llm
-  for repo in repo['closed_pull_requests']:
-    data = repo
+  for pull_request in repo['closed_pull_requests']:
+    data = pull_request
    
     if (data['body']):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
     # pull_request_summary = data
     pull_request_summary = generate_summary(data, pull_request_instructions)
-    pull_request_url = f"URL: {repo.get('url')}"
-    all_repos += f"{pull_request_summary}\n{pull_request_url}\n\n"
+    pull_request_url = f"URL: {pull_request.get('url')}"
+    all_pull_requests += f"{pull_request_summary}\n{pull_request_url}\n\n"
 
-  print("\n", all_repos, "\n\n\n")
+  print("\n", all_pull_requests, "\n\n\n")
 
   # Step 2: get markdown output for all closed pull requests 
-  overall_summary = generate_summary(all_repos, overall_instructions)
+  overall_summary = generate_summary(all_pull_requests, overall_instructions)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -194,7 +194,7 @@ def closed_pull_requests(repo):
 # 5 - Commits
 def commits(repo):
 
-  all_repos = ""
+  all_commits = ""
   commit_instructions = individual_instructions("a commit", "commit", "commit")
   overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
 
@@ -202,20 +202,20 @@ def commits(repo):
     return "As of our latest update, there are no commits for the project this week.\n\n"
 
   # Step 1: get summaries for each commit first from the llm
-  for repo in repo['commits']:
-    data = repo
+  for commit in repo['commits']:
+    data = commit
    
     if (data['message']):
       data['message'] = re.sub(r'<img[^>]*>|\r\n', '', data['message'])
 
     # commit_summary = data
     commit_summary = generate_summary(data, commit_instructions)
-    all_repos += f"{commit_summary}\n\n"
+    all_commits += f"{commit_summary}\n\n"
 
-  print("\n", all_repos, "\n\n\n")
+  print("\n", all_commits, "\n\n\n")
 
   # Step 2: get markdown output for all commits
-  overall_summary = generate_summary(all_repos, overall_instructions)
+  overall_summary = generate_summary(all_commits, overall_instructions)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -255,21 +255,6 @@ def active_contributors(repo):
     
   return overall_summary
 
-
-
-  # # Step 1: get markdown output for all active contributors
-  # for contributor in repo['active_contributors']:
-  #   # if the author key exists (aka to skip number_of_active_contributors)
-  #   if 'author' in contributor:
-
-  #     overall_summary += contributor['author'] + " | "
-  #     overall_summary += f"{contributor['commits']}" + " | "
-  #     overall_summary += f"{contributor['pull_requests']}" + " | "
-  #     overall_summary += f"{contributor['issues']}" + " | \n"
-
-  # print(overall_summary)
-    
-  # return overall_summary
 
 
 
@@ -438,182 +423,3 @@ if __name__ == '__main__':
         except Exception as e:
           print(f"Error writing {project_name} to {newsletter_filename}")
           print(f"Error code: {e}")
-
-
-
-# # 1 - ISSUES: Statistics
-# def issues_statistics(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all of the total open issues, issues opened this week, and issues closed this week using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (numbers). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Statistics' as the main header. 
-#   Use '### Total Open Issues' for the subheading.
-#   A bullet point with 2-3 sentences giving a description of the total open issues this week. 
-#   Use '### Issues Opened This Week' for the subheading.
-#   A bullet point with 2-3 sentences giving a description of the issues opened this week.
-#   Use '### Issues Closed This Week' for the subheading. 
-#   A bullet point with 2-3 sentences giving a description of the issues closed this week. 
-#   Use '### All Open Issues' for the subheading.
-#   A bullet point with 2-3 sentences giving a description of each open issue based on comments, body, and issue title. If there are more than 10 issues, cluster some bullet points together so there are at most 10 bullet points.
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = {
-#     "num_all_open_issues": repo['num_all_open_issues'],
-#     "num_weekly_open_issues": repo['num_weekly_open_issues'],
-#     "num_weekly_closed_issues": repo['num_weekly_closed_issues'],
-#     "open_issues": repo['open_issues']
-#   }
-
-#   return generate_summary(instructions, data).strip()
-
-
-# 2 - ISSUES: Active Open Issues in the Past Week
-# def issues_active_open_issues_in_the_past_week(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all active issues opened this week (indicated by number of comments) using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (title, number of comments). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Active Open Issues in the Past Week' as the main header. 
-#   Use '### Issue: ' + (title of issue) for each subheading. 
-#   A bullet point giving a link to the active issue, then a bullet point with 2-3 sentences giving a description of each active issue. If there are more than 10 issues, cluster some issues together so there are at most 10 bullet points.
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = repo['issues_by_number_of_comments']
-
-#   return generate_summary(instructions, data).strip()
-
-
-# # 3 - ISSUES: Quiet Open Issues Currently
-# def issues_quiet_open_issues_currently(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all issues that have gone quiet (indicated by time still opened) using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (title, time open). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Quiet Open Issues Currently' as the main header. 
-#   Use '### Issue: ' + (title of issue) for each subheading. 
-#   A bullet point giving a link to the open issue, then a bullet point with 2-3 sentences giving a description of each open issue. If there are more than 10 issues, only list the top 10 oldest open issues.
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = repo['issues_by_open_date']
-  
-#   return generate_summary(instructions, data).strip()
-
-
-# # 4 - ISSUES: Closed Issues
-# def issues_closed_issues(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all issues that have been closed this week using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (title, body, any comments). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Closed Issues' as the main header. 
-#   Use '### Issue: ' + (title of issue) for each subheading. 
-#   A bullet point giving a link to the closed issue, then a bullet point with 2-3 sentences giving a description of each closed issue. If there are more than 10 issues, only list 10 issues.
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = repo['issues_closed']
-
-#   return generate_summary(instructions, data).strip()
-
-
-# # 5 - PULL REQUESTS: Statistics
-# def pull_requests_statistics(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all of the open and closed pull requests this week using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (title, body). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Statistics' as the main header. 
-#   Use '### Total Open and Closed PRs' for the subheading. 
-#   A bullet point with 2-3 sentences giving a description of the total open and closed issues this week. 
-#   Use '### PRs Opened This Week' for the subheading. 
-#   A bullet point with 2-3 sentences giving a description of the PRs opened this week. 
-#   Use '### PRs Closed This Week' for the subheading. 
-#   A bullet point with 2-3 sentences giving a description of the PRs closed this week. 
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = {
-#     "num_all_prs": repo['num_all_prs'],
-#     "num_open_prs": repo['num_open_prs'],
-#     "num_closed_prs": repo['num_closed_prs']
-#   }
-
-#   return generate_summary(instructions, data).strip()
-
-
-# # 6 - PULL REQUESTS: Open PRS
-# def pull_requests_open_prs(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all of the open pull requests this week using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (title, body). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Open PRs' as the main header. 
-#   Use '### PR: ' + (title of pull request) for each subheading. 
-#   A bullet point with 2-3 sentences giving a description of each open PR. If there are more than 10 PRs, cluster some PRs together so there are at most 10 bullet points.
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = repo['open_pull_requests']
-
-#   return generate_summary(instructions, data).strip()
-
-
-# # 7 - PULL REQUESTS: Closed PRs
-# def pull_requests_closed_prs(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all of the closed pull requests this week using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (title, body). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Closed PRs' as the main header. 
-#   Use '### PR: ' + (title of pull request) for each subheading. 
-#   Use a bullet point with 2-3 sentences giving a description of each closed PR. If there are more than 10 PRs, cluster some PRs together so there are at most 10 bullet points.
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = repo['closed_pull_requests']
-  
-#   return generate_summary(instructions, data).strip()
-
-
-# # 8 - COMMITS: Statistics
-# def commits_statistics(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all of the commits made this week using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (commit message). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Commits' as the main header. 
-#   Use '### Number of Commits' for the subheading. 
-#   A bullet point with 2-3 sentences giving a description of the number of commits this week. 
-#   Use '### Commits Summary' for the subheading. 
-#   Multiple bullet points with 2-3 sentences each clumping commit messages together and describing what the commits are about based on their messages. You should have no more than 10 bullet points for this section.
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = {
-#     "num_commits": repo['num_commits'],
-#     "commits": repo['commits']
-#   }
-
-#   return generate_summary(instructions, data).strip()
-
-
-# # 9 - CONTRIBUTORS: Statistics
-# def contributors_statistics(repo):
-#   instructions = """You are a GitHub project maintainer writing a newsletter that gives a summary of your project's issues, pull requests, commits, contributors, and statistics. 
-#   Create the newsletter section describing all of the new contributors this week, total contributors this week, and active contributors in the project using the JSON data below. The output should be informational, descriptive, and only based on the JSON data given (numbers of contributors). If you do not know something, say you do not know instead of making something up. 
-#   Follow this structure: 
-#   Use '## Contributors' as the main header. 
-#   Use '### New Contributors' for the subheading. 
-#   A bullet point with 2-3 sentences giving a description of the number of new contributors this week. 
-#   A bullet point listing some of the new contributors. This should only be one bullet point in total, and you do not need to name all new contributors.
-#   Use '### Weekly Contributors' for the subheading. 
-#   A bullet point with 2-3 sentences giving a description of the number of total contributors this week. 
-#   A bullet point listing some of the contributors. This should only be one bullet point in total, and you do not need to name all contributors.
-#   Use '### Active Contributors' for the subheading. A bullet point with 2-3 sentences giving a description of the number of active contributors in the project. 
-#   A bullet point listing some of the active contributors. This should only be one bullet point in total, and you do not need to name all contributors.
-#   Show the output with markdown tags in a code block. Do not just give regular output."""
-
-#   data = {
-#     "new_contributors": repo['new_contributors'],
-#     "contributed_this_week": repo['contributed_this_week'],
-#     "active_contributors": repo['active_contributors']
-#   }
-
-#   return generate_summary(instructions, data).strip()
-
-
-# def test(repo):
-#   instructions = """Just say something
-#   nice about me please"""
-
-#   data = "Perhaps about how I look"
-
-#   return generate_summary(instructions, data).strip()

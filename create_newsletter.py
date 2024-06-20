@@ -77,7 +77,35 @@ def open_issues(repo):
   return overall_summary + "\n"
 
 
-# 1.1 - Open Issues (Quiet)
+# 1.1 - Open Issues (Active)
+def active_issues(repo):
+
+  markdown = "We consider active issues to be issues that have generated much discussion in the issue's comments. \n\n"
+  issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
+  issues = repo['issues_by_number_of_comments']
+  size = min(len(issues), 5)
+
+  for i in range(size):
+    data = issues[i]
+    issue_title = data.get('title')
+    issue_summary = generate_summary(data, issue_instructions)
+
+    # Start each issue on a numbered list
+    markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
+    markdown += f"   - Open for {data.get('time_open')}\n"
+    markdown += f"   - {data.get('url')}\n\n"
+
+  if (size == 0):
+    markdown += "Since there were no open issues for the project this week, no active issues could be listed.\n\n"
+  elif (size < 5):
+    markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
+
+  print("\n", markdown, "\n\n\n")
+  return markdown
+
+
+
+# 1.2 - Open Issues (Quiet)
 def quiet_issues(repo):
 
   markdown = "We consider quiet issues to be issues that have been opened in this project for the longest time. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
@@ -95,29 +123,13 @@ def quiet_issues(repo):
     markdown += f"   - Open for {data.get('time_open')}\n"
     markdown += f"   - {data.get('url')}\n\n"
 
-  if (size < 5):
+  if (size == 0):
+    markdown += "Since there were no open issues for the project this week, no active issues could be listed.\n\n"
+  elif (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
 
   print("\n", markdown, "\n\n\n")
   return markdown
-
-  # Step 1: get summaries for each open issue first from the llm
-  # for active_issue in repo['issues_by_open_date']:
-
-  #   data = active_issue
-  #   issue_number = data.get('url').split("/")[-1]
-  #   issue_summary = "This is an issue"
-  #   # issue_summary = generate_summary(data, issue_instructions)
-
-  #   markdown += f"- **Issue #{issue_number}**: {issue_summary}\n"
-  #   markdown += f"  - Open for {data.get('time_open')}\n"
-  #   markdown += f"  - {data.get('url')}\n\n"
-
-  #   # print('issue: ', issue_summary)
-
-  # print("\n", markdown, "\n\n\n")
-
-  # return markdown
 
 
 
@@ -363,17 +375,16 @@ if __name__ == '__main__':
 
 
 
+
             # 1.2 Top 5 Active Issues
             outfile.write("## 1.2 Top 5 Active Issues:\n")
+            # result = active_issues(repo)
+            # outfile.write(result)
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n")
-            result = quiet_issues(repo)
-
-            print('result:')
-            print(result)
-
-            outfile.write(result)
+            # result = quiet_issues(repo)
+            # outfile.write(result)
 
 
 

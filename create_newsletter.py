@@ -16,9 +16,9 @@ PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "inst
 llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
-# param1: "a closed issue", param2-3: "issue"
-def individual_instructions(param1, param2, param3):
-  return f"Above is JSON data describing {param1} from a GitHub project. Give only one detailed sentence describing what this {param2} is about, starting with 'This {param3}'"
+# param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
+def individual_instructions(param1, param2, param3, param4):
+  return f"Above is JSON data describing {param1} from a GitHub project. Give {param4} describing what this {param2} is about, starting with 'This {param3}'"
 
 # param1-4: "issues", param5: true if should include in instructions
 def general_instructions(param1, param2, param3, param4, param5, param6):
@@ -42,24 +42,11 @@ def generate_summary(data, instructions):
     return response.content
 
 
-# Game plan:
-# x First, we get the repo data for open_issues
-# x Next, we create a string variable to save the outputs
-# x Next, we go through each of the issues in open issues and prompt the llm for a one sentence summary
-# x Next, we add the URL to the string and add 2 newlines
-# x Next, we repeat this process
-#   Next, with the string containing all issues made, we prompt the llm to use the string as "data" and give it 
-#     "instructions" to generate a bulleted list in markdown where each bullet point starts with a topic in bold
-#     text, followed by a paragraph summary of the topic. The URLs of issues related to that topic should be listed
-#     underneath the bullet point in indented bullet points. Issues with similar topics should be clumpted together
-#   Next, we return the string from the function
-
-
 # 1 - Open Issues
 def open_issues(repo):
 
   all_open_issues = ""
-  issue_instructions = individual_instructions("an open issue", "issue", "issue")
+  issue_instructions = individual_instructions("an open issue", "issue", "issue", "only one detailed sentence")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
 
   if repo['open_issues'] == [] :
@@ -90,11 +77,56 @@ def open_issues(repo):
   return overall_summary + "\n"
 
 
+# 1.1 - Open Issues (Active)
+def active_issues(repo):
+
+  markdown = ""
+  issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
+  issues = repo['issues_by_open_date']
+  size = min(len(issues), 5)
+
+  for i in range(size):
+    data = issues[i]
+    issue_title = data.get('title')
+    issue_summary = generate_summary(data, issue_instructions)
+
+    # Start each issue on a numbered list
+    markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
+    markdown += f"   - Open for {data.get('time_open')}\n"
+    markdown += f"   - {data.get('url')}\n\n"
+
+  print("\n", markdown, "\n\n\n")
+  return markdown
+
+  # Step 1: get summaries for each open issue first from the llm
+  # for active_issue in repo['issues_by_open_date']:
+
+  #   data = active_issue
+  #   issue_number = data.get('url').split("/")[-1]
+  #   issue_summary = "This is an issue"
+  #   # issue_summary = generate_summary(data, issue_instructions)
+
+  #   markdown += f"- **Issue #{issue_number}**: {issue_summary}\n"
+  #   markdown += f"  - Open for {data.get('time_open')}\n"
+  #   markdown += f"  - {data.get('url')}\n\n"
+
+  #   # print('issue: ', issue_summary)
+
+  # print("\n", markdown, "\n\n\n")
+
+  # return markdown
+
+
+
+
+
+
+
 # 2 - Closed Issues
 def closed_issues(repo):
 
   all_closed_issues = ""
-  issue_instructions = individual_instructions("a closed issue", "issue", "issue")
+  issue_instructions = individual_instructions("a closed issue", "issue", "issue", "only one detailed sentence")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
 
   if repo['closed_issues'] == []:
@@ -129,7 +161,7 @@ def closed_issues(repo):
 def open_pull_requests(repo):
 
   all_pull_requests = ""
-  pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request")
+  pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
 
   if repo['open_pull_requests'] == []:
@@ -162,7 +194,7 @@ def open_pull_requests(repo):
 def closed_pull_requests(repo):
 
   all_pull_requests = ""
-  pull_request_instructions = individual_instructions("a closed pull request", "pull request", "pull request")
+  pull_request_instructions = individual_instructions("a closed pull request", "pull request", "pull request", "only one detailed sentence")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
 
   if repo['closed_pull_requests'] == []:
@@ -195,7 +227,7 @@ def closed_pull_requests(repo):
 def commits(repo):
 
   all_commits = ""
-  commit_instructions = individual_instructions("a commit", "commit", "commit")
+  commit_instructions = individual_instructions("a commit", "commit", "commit", "only one detailed sentence")
   overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
 
   if repo['commits'] == []:
@@ -325,19 +357,37 @@ if __name__ == '__main__':
             # outfile.write(result)
 
 
-            # 1.2: Closed Issues
-            outfile.write("## 1.2 Closed Issues\n")
 
-            # 1.2.1 Closed Issues This Week
+
+
+            # 1.2 Top 5 Active Issues
+            outfile.write("## 1.2 Top 5 Active Issues:\n")
+            result = active_issues(repo)
+
+            print('result:')
+            print(result)
+
+            outfile.write(result)
+
+            # 1.3 Top 5 Quiet Issues
+            outfile.write("## 1.3 Top 5 Quiet Issues:\n")
+
+
+
+
+            # 1.4: Closed Issues
+            outfile.write("## 1.4 Closed Issues\n")
+
+            # 1.4.1 Closed Issues This Week
             outfile.write(f"**Closed Issues This Week:** {repo.get('num_weekly_closed_issues', None)}\n\n")
 
-            # 1.2.2 Average Time to Close Issues This Week
+            # 1.4.2 Average Time to Close Issues This Week
             outfile.write(f"**Average Issue Close Time (This Week):** {repo.get('average_issue_close_time_weekly', None)}\n\n")
 
-            # 1.2.3 Average Time to Close Issues All Time
+            # 1.4.3 Average Time to Close Issues All Time
             outfile.write(f"**Average Issue Close Time (All Time):** {repo.get('average_issue_close_time', None)}\n\n")
 
-            # 1.2.4 Issues
+            # 1.4.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
             # result = closed_issues(repo)
             # outfile.write(result)

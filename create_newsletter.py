@@ -243,12 +243,8 @@ def active_contributors(repo):
       contributor['total_activity'] = total_activity
       contributors.append(contributor)
 
-  print(contributors)
-
   # Step 2: sort contributors by total_activity in descending order
   sorted_contributors = sorted(contributors, key=lambda x: x['total_activity'], reverse=True)
-
-  print(sorted_contributors)
 
   # Step 3: generate markdown output for all active contributors
   for contributor in sorted_contributors:
@@ -256,8 +252,6 @@ def active_contributors(repo):
     overall_summary += f"{contributor['commits']}" + " | "
     overall_summary += f"{contributor['pull_requests']}" + " | "
     overall_summary += f"{contributor['issues']}" + " | \n"
-
-    print(overall_summary)
     
   return overall_summary
 
@@ -422,10 +416,10 @@ if __name__ == '__main__':
             outfile.write("## 4.1 Contributors\n")
 
             # 4.1.1 New Contributors
-            outfile.write(f"**New Contributors:** {repo.get('new_contributors', None)[0].get('number_of_new_contributors')}\n\n")
+            outfile.write(f"**New Contributors:** {repo.get('new_contributors')[-1].get('number_of_new_contributors')}\n\n")
 
             # 4.1.2 New Contributors
-            outfile.write(f"**Total Contributors This Week:** {repo.get('contributed_this_week', None)[0].get('number_of_weekly_contributors')}\n\n")
+            outfile.write(f"**Total Contributors This Week:** {repo.get('contributed_this_week')[-1].get('number_of_weekly_contributors')}\n\n")
 
             # 4.1.4 Active Contributors
             outfile.write("**Active Contributors:**\n\n")

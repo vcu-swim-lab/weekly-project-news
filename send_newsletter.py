@@ -17,8 +17,8 @@ BASE_URL = "https://api.buttondown.email"
 # TODO: Basic Plan allows you to schedule emails
 
 
-# /subscribers/{id_or_email}/emails/{email_id}: Send email to
-#   NOTE: This might mean sending an already existing email to a subscriber (BOOOOOOO)
+# POST /subscribers/{id_or_email}/emails/{email_id}: Send email to
+# NOTE: This might mean sending an already existing email to a subscriber (do below first)
 def send_subscriber_email(subscriber_id, subject, content):
     url = f"{BASE_URL}/subscribers/{subscriber_id}/emails"
     print('url:', url)
@@ -51,6 +51,30 @@ def send_subscriber_email(subscriber_id, subject, content):
     #     print(f"Status code: {response.status_code}")
     #     print(f"Response: {response.text}")
     #     return None
+
+
+# POST /emails: Create email
+def send_newsletter(email, subject, content):
+    url = f"{BASE_URL}/v1/emails"
+
+    data = {
+        "subject": subject,
+        "body": content
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    
+    if response.status_code == 201:
+        response_data = response.json()
+        print(f"Email queued successfully for {email}")
+        print(f"Status: {response_data['status']}")
+        print(f"Email ID: {response_data['id']}")
+        return response_data
+    else:
+        print(f"Failed to queue email for {email}")
+        print(f"Status code: {response.status_code}")
+        print(f"Response: {response.text}")
+        return None
     
 
     
@@ -84,27 +108,16 @@ for subscriber in subscribers_data['results']:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             subject = f"Weekly GitHub Report for {github_repo.split('/')[-1].capitalize()} - {timestamp}"
 
-            # STEP 4: get the subscriber ID and email ID for the API (/subscribers/{id_or_email}/emails/{email_id})
-            subscriber_id = subscriber['id']
+            # STEP 4: create the email first to get an email ID
+            response = send_newsletter(email, subject, content)
+            print('response:', response)
+
+
+
+
+            # STEP 5: get the subscriber ID and email ID for the API (/subscribers/{id_or_email}/emails/{email_id})
+            # subscriber_id = subscriber['id']
             
-            if (subscriber_id):
-                response = send_subscriber_email(subscriber_id, subject, content)
-                print('response:', response)
-
-            # response = send_newsletter(email, subject, content)
-
-            # print(response)
-            # print('code:', response['code'])
-            # print('detail:', response['detail'])
-
-
-            # status_code, response_text = send_newsletter(email, subject, content)
-    #         if status_code == 201:
-    #             print(f"Successfully sent newsletter to {email} for repository {github_repo}")
-    #         else:
-    #             print(f"Failed to send newsletter to {email} for repository {github_repo}")
-    #             print(f"Error: {status_code} - {response_text}")
-    #     else:
-    #         print(f"Newsletter file {newsletter_filepath} not found for repository {github_repo}")
-    # else:
-    #     print(f"No GitHub repository specified for subscriber {email}")
+            # if (subscriber_id):
+            #     response = send_subscriber_email(subscriber_id, subject, content)
+            #     print('response:', response)

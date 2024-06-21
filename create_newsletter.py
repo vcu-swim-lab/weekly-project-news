@@ -28,18 +28,11 @@ def general_instructions(param1, param2, param3, param4, param5, param6):
   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
   return instructions
 
-# OLD: old instructions back when i wanted to use gpt-3.5-turbo but it is horrible at producing output
-# overall_instructions = """First, group the issues above into concise topics. You must clump issues with similar topics together, so there are fewer topics than issues.
-# Then, create 3 sentences describing the topic's issues. These sentences should not be generic, but rather they should specifically describe the issues of each topic that you clumped together.
-# Then, generate a bulleted list in markdown (where each bullet starts with '-'). The bullet point includes with the concise topic in bold text, then a colon on the same line, and then the 3 sentences that you made still on the same line after the colon. Make sure that there are 3 sentences, and they are each full sentences too. You must give 3 full sentences specifically about the topic's issues, nothing fewer.
-# After each bullet point, there should be indented bullet points giving just the URLs of the issues that the topic covers, no other text. Show the output in markdown in a code block.
-# """
-
-
 # Generates the summary using ChatGPT given any context and question (prompt template above)
 def generate_summary(data, instructions):
     response = chain.invoke({"data": instructions, "instructions": data})
     return response.content
+
 
 
 # 1 - Open Issues
@@ -77,7 +70,7 @@ def open_issues(repo):
   return overall_summary + "\n"
 
 
-# 1.1 - Open Issues (Active)
+# 2 - Open Issues (Active)
 def active_issues(repo):
 
   markdown = "We consider active issues to be issues that have generated much discussion in the issue's comments. \n\n"
@@ -105,7 +98,7 @@ def active_issues(repo):
 
 
 
-# 1.2 - Open Issues (Quiet)
+# 3 - Open Issues (Quiet)
 def quiet_issues(repo):
 
   markdown = "We consider quiet issues to be issues that have been opened in this project for the longest time. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
@@ -133,11 +126,7 @@ def quiet_issues(repo):
 
 
 
-
-
-
-
-# 2 - Closed Issues
+# 4 - Closed Issues
 def closed_issues(repo):
 
   all_closed_issues = ""
@@ -172,7 +161,7 @@ def closed_issues(repo):
   return overall_summary + "\n"
 
 
-# 3 - Open Pull Requests
+# 5 - Open Pull Requests
 def open_pull_requests(repo):
 
   all_pull_requests = ""
@@ -205,7 +194,7 @@ def open_pull_requests(repo):
   return overall_summary + "\n"
 
 
-# 4 - Closed Pull Requests
+# 6 - Closed Pull Requests
 def closed_pull_requests(repo):
 
   all_pull_requests = ""
@@ -238,7 +227,7 @@ def closed_pull_requests(repo):
   return overall_summary + "\n"
 
 
-# 5 - Commits
+# 7 - Commits
 def commits(repo):
 
   all_commits = ""
@@ -270,7 +259,7 @@ def commits(repo):
   return overall_summary + "\n"
 
 
-# 6 - Active Contributors
+# 8 - Active Contributors
 def active_contributors(repo):
 
   overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past week. \n\n"
@@ -343,7 +332,7 @@ if __name__ == '__main__':
           with open(newsletter_filename, "w") as outfile:
 
             # 0: Title
-            title = f"# Report for {capitalized_name}\n\n"
+            title = f"# Weekly GitHub Report for {capitalized_name}\n\n"
             outfile.write(title)
 
             # 0.1: Description underneath the title
@@ -372,21 +361,16 @@ if __name__ == '__main__':
             # outfile.write(result)
 
 
-
-
-
-
             # 1.2 Top 5 Active Issues
             outfile.write("## 1.2 Top 5 Active Issues:\n")
             # result = active_issues(repo)
             # outfile.write(result)
 
+
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n")
             # result = quiet_issues(repo)
             # outfile.write(result)
-
-
 
 
             # 1.4: Closed Issues
@@ -476,10 +460,6 @@ if __name__ == '__main__':
             outfile.write(result)
 
             outfile.write("***\n\n")
-
-            
-            # result = closed_issues(repo)
-            # outfile.write(result)
 
 
           print(f"Successfully added {project_name} to {newsletter_filename}")

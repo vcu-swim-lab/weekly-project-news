@@ -14,64 +14,45 @@ BASE_URL = "https://api.buttondown.email"
 
 # https://docs.buttondown.email/scheduling-emails-via-the-api
 # https://api.buttondown.email/v1/docs
-# TODO: Basic Plan allows you to schedule emails
 
 
 # POST /subscribers/{id_or_email}/emails/{email_id}: Send email to
 # NOTE: This might mean sending an already existing email to a subscriber (do below first)
-def send_subscriber_email(subscriber_id, subject, content):
+def send_email_to_subscriber(subscriber_id, subject, content):
     url = f"{BASE_URL}/subscribers/{subscriber_id}/emails"
     print('url:', url)
     data = {
         "subject": subject,
         "body": content
     }
-
-    response = requests.get(BASE_URL + "/subscribers/stevenbui44@gmail.com", headers=headers, data=json.dumps(data))
+    # 201: sends correctly (if subject different)
+    # 400: if duplicate (error, cannot send)
+    response = requests.post(url, headers=headers, data=json.dumps(data))
     print(response)
 
 
-    # 201: sends correctly (if subject different)
-    # 400: if duplicate (error, cannot send)
-    # response = requests.post(url, headers=headers, data=json.dumps(data))
-    # print(response)
 
 
-    # if response.status_code == 201:
-    #     response_data = response.json()
-
-    #     print('response_data:', response_data)
-
-    #     print(f"Email queued successfully for {email}")
-    #     print(f"Status: {response_data['status']}")
-    #     print(f"Email ID: {response_data['id']}")
-    #     return response_data
-    # else:
-    #     print(f"Failed to queue email for {email}")
-    #     print(f"Status code: {response.status_code}")
-    #     print(f"Response: {response.text}")
-    #     return None
-
-
-# POST /emails: Create email
-def send_newsletter(email, subject, content):
+# POST /emails: DRAFT an email, not sending it out yet but getting an email ID
+def draft_newsletter(subject, content):
     url = f"{BASE_URL}/v1/emails"
 
     data = {
         "subject": subject,
-        "body": content
+        "body": content,
+        "status": "draft"
     }
 
     response = requests.post(url, headers=headers, json=data)
+    print('response:', response)
+    print('response.data:', response.json())
     
     if response.status_code == 201:
         response_data = response.json()
-        print(f"Email queued successfully for {email}")
         print(f"Status: {response_data['status']}")
         print(f"Email ID: {response_data['id']}")
         return response_data
     else:
-        print(f"Failed to queue email for {email}")
         print(f"Status code: {response.status_code}")
         print(f"Response: {response.text}")
         return None
@@ -108,9 +89,12 @@ for subscriber in subscribers_data['results']:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             subject = f"Weekly GitHub Report for {github_repo.split('/')[-1].capitalize()} - {timestamp}"
 
-            # STEP 4: create the email first to get an email ID
-            response = send_newsletter(email, subject, content)
+            # STEP 4: DRAFT the email first to get an email ID (NOT sending it)
+            response = draft_newsletter(subject, content)
             print('response:', response)
+
+            email_id = response['id']
+            print('email_id:', email_id)
 
 
 
@@ -121,3 +105,5 @@ for subscriber in subscribers_data['results']:
             # if (subscriber_id):
             #     response = send_subscriber_email(subscriber_id, subject, content)
             #     print('response:', response)
+
+            print("\n\n\n")

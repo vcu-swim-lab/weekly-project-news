@@ -30,7 +30,7 @@ def draft_email(subject, content):
     print("1: draft_email")
     print('response.data:', response.json(), '\n')
     
-    if response.status_code == 200:
+    if response.status_code >= 200 and response.status_code < 300:
         response_data = response.json()
         # print(f"Status: {response_data['status']}")
         # print(f"Email ID: {response_data['id']}")
@@ -50,7 +50,7 @@ def get_draft_email(email_id):
     print('2: get_draft_email')
     print('response.data:', response.json(), '\n')
 
-    if response.status_code == 200:
+    if response.status_code >= 200 and response.status_code < 300:
         return response.json()
     else:
         print(f"Failed to get draft. Status code: {response.status_code}")
@@ -71,8 +71,8 @@ def send_email_to_subscriber(subscriber_id, email_id, subject, content):
     print('3: send_email_to_subscriber')
     print(response)
 
-    if response.status_code == 201:
-        return response.json()
+    if response.status_code >= 200 and response.status_code < 300:
+        return response
     else:
         print(f"Failed to send email. Status code: {response.status_code}")
         print(f"Response: {response.text}")
@@ -93,58 +93,44 @@ for subscriber in subscribers_data['results']:
     github_repo = subscriber.get('metadata', {}).get('repo_name')
     
     if github_repo:
+        
         # STEP 1: get the subscriber's markdown file from the folder
         project_name = github_repo.split('github.com/')[-1].replace('/', '_')
         newsletter_filepath = f"newsletter_data/newsletter_{project_name}.txt"
-
         if os.path.exists(newsletter_filepath):
+            
             # STEP 2: get the contents of the markdown file
             with open(newsletter_filepath, 'r') as newsletter_file:
                 content = newsletter_file.read()
 
             # STEP 3: make the subject line for the email
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            subject = f"Weekly GitHub Report for {github_repo.split('/')[-1].capitalize()}"
+            subject = f"Weekly GitHub Report for {github_repo.split('/')[-1].capitalize()} - {timestamp}"
 
             # STEP 4: DRAFT the email first to get an email ID (NOT sending it)
-            print('\n\n\na')
-            print(content)
-            print('b\n\n\n')
             response = draft_email(subject, content)
-            # print('response:', response)
-
+            
             if response:
-
               email_id = response['id']
-              # print('email_id:', email_id)
 
               # STEP 5: GET the draft email itself
-              draft_email = get_draft_email(email_id)
-              # print(draft_email)
-
-              if draft_email:
+              email_draft = get_draft_email(email_id)
+              if email_draft:
                   subscriber_id = subscriber['id']
-                  # print('subscriber_id:', subscriber_id)
 
                   # STEP 6: SEND the email to the subscriber
-
-
-                  # send_response = send_email_to_subscriber(subscriber_id, email_id, f"{draft_email['subject']} - {timestamp}", draft_email['body'])
-                  # # print('send_response:', send_response)
-
-                  # if send_response:
-                  #     print(f"Email sent to subscriber. Email ID: {send_response['id']}")
-                  # else:
-                  #     print("Failed to send email to subscriber.")
+                  send_response = send_email_to_subscriber(subscriber_id, email_id, email_draft['subject'], email_draft['body'])
+                  if send_response:
+                      print(f"Email sent to subscriber.")
+                  else:
+                      print("Failed to send email to subscriber.")
 
 
 
+              else:
+                  print('email_draft does not exist')
 
-            # STEP 5: get the subscriber ID and email ID for the API (/subscribers/{id_or_email}/emails/{email_id})
-            # subscriber_id = subscriber['id']
-            
-            # if (subscriber_id):
-            #     response = send_subscriber_email(subscriber_id, subject, content)
-            #     print('response:', response)
+            else:
+                print('respnse does not exist')
 
             print("\n\n\n")

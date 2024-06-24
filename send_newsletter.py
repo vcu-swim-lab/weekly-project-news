@@ -40,24 +40,6 @@ def draft_email(subject, content):
         return None
     
 
-# Function 2
-# GET /emails/{id}: Retrieves an email given its id
-def get_draft_email(email_id):
-    url = f"{BASE_URL}/v1/emails/{email_id}"
-    
-    response = requests.get(url, headers=headers)
-    print('2: get_draft_email')
-    print('response.data:', response.json(), '\n')
-
-    if response.status_code >= 200 and response.status_code < 300:
-        return response.json()
-    else:
-        print("\nError in get_draft_email()")
-        print(f"Failed to get draft. Status code: {response.status_code}")
-        print(f"Response: {response.text}\n")
-        return None
-    
-
 # Function 3
 # POST /subscribers/{id_or_email}/emails/{email_id}: Send existing email to subscriber
 def send_email_to_subscriber(subscriber_id, email_id):
@@ -140,32 +122,20 @@ for subscriber in subscribers_data['results']:
             # STEP 3: make the subject line for the email
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             subject = f"Weekly GitHub Report for {github_repo.split('/')[-1].capitalize()} - {timestamp}"
-            # subject = f"Weekly GitHub Report for {github_repo.split('/')[-1].capitalize()}"
 
             # STEP 4: DRAFT the email first to get an email ID (NOT sending it)
             response = draft_email(subject, content)
             
             if response:
                 email_id = response['id']
+                subscriber_id = subscriber['id']
 
-                # STEP 5: GET the draft email itself
-                email_draft = get_draft_email(email_id)
-
-
-                if email_draft:
-                    subscriber_id = subscriber['id']
-
-                    # print('would be send. wait.')
-                    # # STEP 6: SEND the email to the subscriber
-                    send_response = send_email_to_subscriber(subscriber_id, email_id)
-                    # send_response = send_email_to_subscriber(subscriber_id, email_draft)
-                    if send_response:
-                        print(f"Email sent to subscriber.")
-                    else:
-                        print("Failed to send email to subscriber.")
-
+                # STEP 5: SEND the email to the subscriber
+                send_response = send_email_to_subscriber(subscriber_id, email_id)
+                if send_response:
+                    print(f"Email sent to subscriber.")
                 else:
-                    print('email_draft does not exist')
+                    print("Failed to send email to subscriber.")
 
             else:
                 print('respnse does not exist')

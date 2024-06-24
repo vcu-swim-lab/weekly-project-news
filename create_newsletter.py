@@ -167,12 +167,12 @@ def closed_issues(repo):
 
 # 5 - Open Pull Requests
 def open_pull_requests(repo):
+  if repo['open_pull_requests'] == []:
+    return "As of our latest update, there are no open pull requests for the project this week.\n\n"
+
   all_pull_requests = ""
   pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
-
-  if repo['open_pull_requests'] == []:
-    return "As of our latest update, there are no open pull requests for the project this week.\n\n"
 
   # Step 1: get summaries for each open pull request first from the llm
   for pull_request in repo['open_pull_requests']:
@@ -199,13 +199,12 @@ def open_pull_requests(repo):
 
 # 6 - Closed Pull Requests
 def closed_pull_requests(repo):
+  if repo['closed_pull_requests'] == []:
+    return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
 
   all_pull_requests = ""
   pull_request_instructions = individual_instructions("a closed pull request", "pull request", "pull request", "only one detailed sentence")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
-
-  if repo['closed_pull_requests'] == []:
-    return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
 
   # Step 1: get summaries for each closed pull request first from the llm
   for pull_request in repo['closed_pull_requests']:
@@ -232,13 +231,12 @@ def closed_pull_requests(repo):
 
 # 7 - Commits
 def commits(repo):
+  if repo['commits'] == []:
+    return "As of our latest update, there are no commits for the project this week.\n\n"
 
   all_commits = ""
   commit_instructions = individual_instructions("a commit", "commit", "commit", "only one detailed sentence")
   overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
-
-  if repo['commits'] == []:
-    return "As of our latest update, there are no commits for the project this week.\n\n"
 
   # Step 1: get summaries for each commit first from the llm
   for commit in repo['commits']:
@@ -264,10 +262,8 @@ def commits(repo):
 
 # 8 - Active Contributors
 def active_contributors(repo):
-
   overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past week. \n\n"
- 
-  if repo['active_contributors'] == []:
+  if repo['active_contributors'][-1]['number_of_active_contributors'] == 0:
     overall_summary += "As of our latest update, there are no active contributors for the project this week.\n\n"
     return overall_summary
 
@@ -408,8 +404,8 @@ if __name__ == '__main__':
 
             # 2.1.2 Pull Requests
             outfile.write("**Pull Requests:**\n\n")
-            # result = open_pull_requests(repo)
-            # outfile.write(result)
+            result = open_pull_requests(repo)
+            outfile.write(result)
 
 
             # 2.2: Closed Pull Requests
@@ -420,8 +416,8 @@ if __name__ == '__main__':
 
             # 2.2.2 Pull Requests
             outfile.write("**Summarized Pull Requests:**\n\n")
-            # result = closed_pull_requests(repo)
-            # outfile.write(result)
+            result = closed_pull_requests(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -438,8 +434,8 @@ if __name__ == '__main__':
 
             # 3.1.2 Commits
             outfile.write("**Summarized Commits:**\n\n")
-            # result = commits(repo)
-            # outfile.write(result)
+            result = commits(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -459,8 +455,8 @@ if __name__ == '__main__':
 
             # 4.1.4 Active Contributors
             outfile.write("**Active Contributors:**\n\n")
-            # result = active_contributors(repo)
-            # outfile.write(result)
+            result = active_contributors(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 

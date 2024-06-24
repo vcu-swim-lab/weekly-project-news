@@ -37,13 +37,12 @@ def generate_summary(data, instructions):
 
 # 1 - Open Issues
 def open_issues(repo):
+  if repo['open_issues'] == [] :
+    return "As of our latest update, there are no open issues for the project this week.\n\n"
 
   all_open_issues = ""
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "only one detailed sentence")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
-
-  if repo['open_issues'] == [] :
-    return "As of our latest update, there are no open issues for the project this week. This indicates that all reported bugs, feature requests, or other concerns have been addressed or are not currently being actively pursued.\n\n"
 
   # Step 1: get summaries for each open issue first from the llm
   for open_issue in repo['open_issues']:
@@ -72,8 +71,11 @@ def open_issues(repo):
 
 # 2 - Open Issues (Active)
 def active_issues(repo):
-
   markdown = "We consider active issues to be issues that have generated much discussion in the issue's comments. \n\n"
+  if repo['issues_by_number_of_comments'] == []:
+    markdown += "As of our latest update, there are no active issues with ongoing comments this week. \n\n"
+    return markdown
+
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
   issues = repo['issues_by_number_of_comments']
   size = min(len(issues), 5)
@@ -100,8 +102,11 @@ def active_issues(repo):
 
 # 3 - Open Issues (Quiet)
 def quiet_issues(repo):
-
   markdown = "We consider quiet issues to be issues that have been opened in this project for the longest time. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
+  if repo['issues_by_open_date'] == []:
+    markdown += "As of our latest update, there are no open issues for the project this week. \n\n"
+    return markdown
+
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
   issues = repo['issues_by_open_date']
   size = min(len(issues), 5)
@@ -128,13 +133,12 @@ def quiet_issues(repo):
 
 # 4 - Closed Issues
 def closed_issues(repo):
+  if repo['closed_issues'] == []:
+    return "As of our latest update, there are no closed issues for the project this week.\n\n"
 
   all_closed_issues = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue", "only one detailed sentence")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
-
-  if repo['closed_issues'] == []:
-    return "As of our latest update, there are no closed issues for the project this week.\n\n"
 
   # Step 1: get summaries for each closed issue first from the llm
   for closed_issue in repo['closed_issues']:
@@ -163,7 +167,6 @@ def closed_issues(repo):
 
 # 5 - Open Pull Requests
 def open_pull_requests(repo):
-
   all_pull_requests = ""
   pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
@@ -357,20 +360,20 @@ if __name__ == '__main__':
 
             # 1.1.2 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            # result = open_issues(repo)
-            # outfile.write(result)
+            result = open_issues(repo)
+            outfile.write(result)
 
 
             # 1.2 Top 5 Active Issues
             outfile.write("## 1.2 Top 5 Active Issues:\n")
-            # result = active_issues(repo)
-            # outfile.write(result)
+            result = active_issues(repo)
+            outfile.write(result)
 
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n")
-            # result = quiet_issues(repo)
-            # outfile.write(result)
+            result = quiet_issues(repo)
+            outfile.write(result)
 
 
             # 1.4: Closed Issues
@@ -387,8 +390,8 @@ if __name__ == '__main__':
 
             # 1.4.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            # result = closed_issues(repo)
-            # outfile.write(result)
+            result = closed_issues(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -456,8 +459,8 @@ if __name__ == '__main__':
 
             # 4.1.4 Active Contributors
             outfile.write("**Active Contributors:**\n\n")
-            result = active_contributors(repo)
-            outfile.write(result)
+            # result = active_contributors(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 

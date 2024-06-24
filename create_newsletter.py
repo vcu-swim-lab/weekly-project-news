@@ -24,7 +24,7 @@ def individual_instructions(param1, param2, param3, param4):
 def general_instructions(param1, param2, param3, param4, param5, param6):
   instructions = f"Generate a bulleted list in markdown where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. "
   if param5:
-    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. "
+    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must start with 'github.com', so no https or anything. "
   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
   return instructions
 
@@ -88,7 +88,10 @@ def active_issues(repo):
     # Start each issue on a numbered list
     markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
     markdown += f"   - Open for {data.get('time_open')}\n"
-    markdown += f"   - {data.get('url')}\n\n"
+
+    original_url = data.get('url')
+    modified_url = re.sub(r'^(https?://)?(www\.)?', '', original_url)
+    markdown += f"   - {modified_url}\n\n"
 
   if (size == 0):
     markdown += "Since there were no open issues for the project this week, no active issues could be listed.\n\n"
@@ -114,12 +117,16 @@ def quiet_issues(repo):
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
-    issue_summary = generate_summary(data, issue_instructions)
+    # issue_summary = generate_summary(data, issue_instructions)
 
     # Start each issue on a numbered list
-    markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
+    # markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
     markdown += f"   - Open for {data.get('time_open')}\n"
-    markdown += f"   - {data.get('url')}\n\n"
+    # markdown += f"   - {data.get('url')}\n\n"
+
+    original_url = data.get('url')
+    modified_url = re.sub(r'^(https?://)?(www\.)?', '', original_url)
+    markdown += f"   - {modified_url}\n\n"
 
   if (size == 0):
     markdown += "Since there were no open issues for the project this week, no active issues could be listed.\n\n"
@@ -458,7 +465,7 @@ if __name__ == '__main__':
             result = active_contributors(repo)
             outfile.write(result)
 
-            outfile.write("***\n\n")
+            outfile.write("\n\n")
 
 
           print(f"Successfully added {project_name} to {newsletter_filename}")

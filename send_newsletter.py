@@ -118,7 +118,7 @@ for subscriber in subscribers_data['results']:
     subscriber_id = subscriber['id']
     send_response = send_email_to_subscriber(subscriber_id, email_id)
     if send_response:
-        print(f"Email sent to subscriber.")
+        print(f"Email sent to subscriber: {email}")
     else:
         print("Failed to send email to subscriber.")
 

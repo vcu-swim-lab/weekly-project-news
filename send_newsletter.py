@@ -23,7 +23,7 @@ def draft_email(subject, content):
     data = {
         "subject": subject,
         "body": content,
-        # "status": "draft"
+        "status": "about_to_send"
     }
 
     response = requests.post(url, headers=headers, json=data)
@@ -60,28 +60,53 @@ def get_draft_email(email_id):
 
 # Function 3
 # POST /subscribers/{id_or_email}/emails/{email_id}: Send existing email to subscriber
-def send_email_to_subscriber(subscriber_id, email_id, subject, content):
+def send_email_to_subscriber(subscriber_id, email_id):
 
     url = f"{BASE_URL}/v1/subscribers/{subscriber_id}/emails/{email_id}"
-    data = {
-        "subject": subject,
-        "body": content
-    }
+    # data = {
+    #     "subject": subject,
+    #     "body": content,
+    # }
     
     print('subscriber_id:', subscriber_id)
     print('email_id:', email_id)
-    print('subject', data['subject'])
-    print('body:', data['body'])
+    # print('subject:', data['subject'])
+    # print('body:', data['body'])
   
-    response = requests.post(url, headers=headers, json=data)
+    response = requests.post(url, headers=headers)
     print('3: send_email_to_subscriber')
-    print(response)
+    print('RESPONSE:', response, "\n")
 
     if response.status_code >= 200 and response.status_code < 300:
+
+        update_response = update_email_status(email_id, "sent")
+        print("update_response:", update_response)
+
         return response
     else:
         print("\nError in send_email_to_subscriber()")
         print(f"Failed to send email. Status code: {response.status_code}")
+        print(f"Response: {response.text}\n")
+        return None
+    
+
+# Function 4: Update email status to "sent"
+def update_email_status(email_id, status):
+    url = f"{BASE_URL}/v1/emails/{email_id}"
+    data = {
+        "subject": subject,
+        "body": content,
+        "status": "sent"
+    }
+    
+    response = requests.patch(url, headers=headers, json=data)
+    print(f'4: update_email_status - Status: {response.status_code}')
+    print(f'RESPONSE: {response.text}\n')
+
+    if response.status_code >= 200 and response.status_code < 300:
+        return response
+    else:
+        print(f"\nError in update_email_status() - Status code: {response.status_code}")
         print(f"Response: {response.text}\n")
         return None
 
@@ -115,6 +140,7 @@ for subscriber in subscribers_data['results']:
             # STEP 3: make the subject line for the email
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             subject = f"Weekly GitHub Report for {github_repo.split('/')[-1].capitalize()} - {timestamp}"
+            # subject = f"Weekly GitHub Report for {github_repo.split('/')[-1].capitalize()}"
 
             # STEP 4: DRAFT the email first to get an email ID (NOT sending it)
             response = draft_email(subject, content)
@@ -131,7 +157,7 @@ for subscriber in subscribers_data['results']:
 
                     # print('would be send. wait.')
                     # # STEP 6: SEND the email to the subscriber
-                    send_response = send_email_to_subscriber(subscriber_id, email_id, email_draft['subject'], email_draft['body'])
+                    send_response = send_email_to_subscriber(subscriber_id, email_id)
                     # send_response = send_email_to_subscriber(subscriber_id, email_draft)
                     if send_response:
                         print(f"Email sent to subscriber.")

@@ -169,7 +169,19 @@ def closed_issues(repo):
   return overall_summary + "\n\n"
 
 
-# 5 - Open Pull Requests
+
+# 5 - Issue Discussion Insights
+def issue_discussion_insights(repo):
+  markdown = "This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
+  if repo['active_issues'] == []:
+    markdown += "As of our last update, there are no open issues with discussions going on within the past week. \n\n"
+    return markdown
+  
+
+
+
+
+# 6 - Open Pull Requests
 def open_pull_requests(repo):
   if repo['open_pull_requests'] == []:
     return "As of our latest update, there are no open pull requests for the project this week.\n\n"
@@ -201,7 +213,7 @@ def open_pull_requests(repo):
   return overall_summary + "\n"
 
 
-# 6 - Closed Pull Requests
+# 7 - Closed Pull Requests
 def closed_pull_requests(repo):
   if repo['closed_pull_requests'] == []:
     return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
@@ -233,7 +245,7 @@ def closed_pull_requests(repo):
   return overall_summary + "\n\n"
 
 
-# 7 - Commits
+# 8 - Commits
 def commits(repo):
   if repo['commits'] == []:
     return "As of our latest update, there are no commits for the project this week.\n\n"
@@ -264,7 +276,7 @@ def commits(repo):
   return overall_summary + "\n\n"
 
 
-# 8 - Active Contributors
+# 9 - Active Contributors
 def active_contributors(repo):
   overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past week. \n\n"
   if repo['active_contributors'][-1]['number_of_active_contributors'] == 0:
@@ -391,6 +403,12 @@ if __name__ == '__main__':
             # 1.4.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
             result = closed_issues(repo)
+            outfile.write(result)
+
+
+            # 1.5 Issue Discussion Insights
+            outfile.write("## 1.5 Issue Discussion Insights")
+            result = issue_discussion_insights(repo)
             outfile.write(result)
 
             outfile.write("***\n\n")

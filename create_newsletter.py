@@ -28,6 +28,16 @@ def general_instructions(param1, param2, param3, param4, param5, param6):
   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
   return instructions
 
+
+# param1: "issue"
+def discussion_summary_instructions(param1):
+  return f"Given the JSON data about a GitHub {param1} and its comment section above, write a short summary capturing the trajectory of this conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. Start your answer with 'This GitHub conversation'"
+
+# param1: 
+def discussion_score_instructions():
+  return "On a 0 to 1 scale, give only a single number to 2 decimal points describing the possibility of toxicity occurring in the future of this conversation, where 0 is not likely and 1 is very likely. Do not output anything else."
+
+
 # Generates the summary using ChatGPT given any context and question (prompt template above)
 def generate_summary(data, instructions):
     response = chain.invoke({"data": instructions, "instructions": data})
@@ -177,6 +187,54 @@ def issue_discussion_insights(repo):
     markdown += "As of our last update, there are no open issues with discussions going on within the past week. \n\n"
     return markdown
   
+  # Step 1: get each issue from active_issues
+  for active_issue in repo['active_issues']:
+    comments = active_issue['comments']
+    print('comments:')
+    print(comments)
+    
+    # Step 2: Ask ChatGPT to analyze this by 1. asking how likely is this conversation to derail? or 2. Imagine how the rest of this conversation is going to go. Is it likely to derail?
+
+    # Step 3: Given the summary, generate a number 0.0 - 1.0 to know which conversations are worth printing to the newsletter
+
+  return markdown + "\n\n"
+  
+
+
+
+
+
+# def open_issues(repo):
+#   all_open_issues = ""
+#   issue_instructions = individual_instructions("an open issue", "issue", "issue", "only one detailed sentence")
+#   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
+
+#   # Step 1: get summaries for each open issue first from the llm
+#   for open_issue in repo['open_issues']:
+#     data = open_issue
+   
+#     if (data['body']):
+#       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
+#       for comment in data.get('comments', []):
+#         comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
+    
+#     # issue_summary = data
+#     issue_summary = generate_summary(data, issue_instructions)
+#     issue_url = f"URL: {open_issue.get('url')}"
+#     all_open_issues += f"{issue_summary}\n{issue_url}\n\n"
+
+#   print("\n", all_open_issues, "\n\n\n")
+  
+#   # Step 2: get markdown output for all open issues 
+#   overall_summary = generate_summary(all_open_issues, overall_instructions)
+#   if overall_summary.startswith("```") and overall_summary.endswith("```"):
+#     overall_summary = overall_summary[3:-3]
+#   if overall_summary.startswith("markdown"):
+#     overall_summary = overall_summary[len("markdown"):].lstrip()
+#   return overall_summary + "\n"
+
+
+
 
 
 
@@ -372,20 +430,20 @@ if __name__ == '__main__':
 
             # 1.1.2 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            result = open_issues(repo)
-            outfile.write(result)
+            # result = open_issues(repo)
+            # outfile.write(result)
 
 
             # 1.2 Top 5 Active Issues
             outfile.write("## 1.2 Top 5 Active Issues:\n\n")
-            result = active_issues(repo)
-            outfile.write(result)
+            # result = active_issues(repo)
+            # outfile.write(result)
 
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-            result = quiet_issues(repo)
-            outfile.write(result)
+            # result = quiet_issues(repo)
+            # outfile.write(result)
 
 
             # 1.4: Closed Issues
@@ -402,12 +460,12 @@ if __name__ == '__main__':
 
             # 1.4.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            result = closed_issues(repo)
-            outfile.write(result)
+            # result = closed_issues(repo)
+            # outfile.write(result)
 
 
             # 1.5 Issue Discussion Insights
-            outfile.write("## 1.5 Issue Discussion Insights")
+            outfile.write("## 1.5 Issue Discussion Insights\n\n")
             result = issue_discussion_insights(repo)
             outfile.write(result)
 
@@ -426,8 +484,8 @@ if __name__ == '__main__':
 
             # 2.1.2 Pull Requests
             outfile.write("**Pull Requests:**\n\n")
-            result = open_pull_requests(repo)
-            outfile.write(result)
+            # result = open_pull_requests(repo)
+            # outfile.write(result)
 
 
             # 2.2: Closed Pull Requests
@@ -438,8 +496,8 @@ if __name__ == '__main__':
 
             # 2.2.2 Pull Requests
             outfile.write("**Summarized Pull Requests:**\n\n")
-            result = closed_pull_requests(repo)
-            outfile.write(result)
+            # result = closed_pull_requests(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -456,8 +514,8 @@ if __name__ == '__main__':
 
             # 3.1.2 Commits
             outfile.write("**Summarized Commits:**\n\n")
-            result = commits(repo)
-            outfile.write(result)
+            # result = commits(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -477,8 +535,8 @@ if __name__ == '__main__':
 
             # 4.1.4 Active Contributors
             outfile.write("**Active Contributors:**\n\n")
-            result = active_contributors(repo)
-            outfile.write(result)
+            # result = active_contributors(repo)
+            # outfile.write(result)
 
             outfile.write("\n\n")
 

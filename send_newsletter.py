@@ -109,7 +109,6 @@ for subscriber in subscribers_data['results']:
     capitalized_name = name[0].upper() + name[1:]
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     subject = f"Weekly GitHub Report for {capitalized_name} - {timestamp}"
-    print('Subject: ', subject)
 
     # STEP 4: DRAFT the email using the content and subject to get an email ID (NOT sending it yet)
     response = draft_email(subject, content)
@@ -119,10 +118,10 @@ for subscriber in subscribers_data['results']:
     # STEP 5: SEND the email to the subscriber
     email_id = response['id']
     subscriber_id = subscriber['id']
-    # send_response = send_email_to_subscriber(subscriber_id, email_id)
-    # if send_response:
-    #     print(f"Email sent to subscriber: {email}")
-    # else:
-    #     print("Failed to send email to subscriber.")
+    send_response = send_email_to_subscriber(subscriber_id, email_id)
+    if send_response:
+        print(f"Email sent to subscriber: {email}")
+    else:
+        print("Failed to send email to subscriber.")
 
     print("\n\n\n")

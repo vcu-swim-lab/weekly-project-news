@@ -80,6 +80,7 @@ def active_issues(repo):
   issues = repo['issues_by_number_of_comments']
   size = min(len(issues), 5)
 
+  # We are only summarizing the top 5 open issues (active)
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
@@ -87,15 +88,13 @@ def active_issues(repo):
 
     # Start each issue on a numbered list
     markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
-    markdown += f"   - Open for {data.get('time_open')}\n"
+    markdown += f"   - Number of comments: {data.get('number_of_comments')}\n"
 
     original_url = data.get('url')
     modified_url = re.sub(r'^(https?://)?(www\.)?', '', original_url)
     markdown += f"   - {modified_url}\n\n"
 
-  if (size == 0):
-    markdown += "Since there were no open issues for the project this week, no active issues could be listed.\n\n"
-  elif (size < 5):
+  if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
 
   print("\n", markdown, "\n\n\n")
@@ -114,23 +113,21 @@ def quiet_issues(repo):
   issues = repo['issues_by_open_date']
   size = min(len(issues), 5)
 
+  # We are only summarizing the top 5 open issues (quiet)
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
-    # issue_summary = generate_summary(data, issue_instructions)
+    issue_summary = generate_summary(data, issue_instructions)
 
     # Start each issue on a numbered list
-    # markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
+    markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
     markdown += f"   - Open for {data.get('time_open')}\n"
-    # markdown += f"   - {data.get('url')}\n\n"
 
     original_url = data.get('url')
     modified_url = re.sub(r'^(https?://)?(www\.)?', '', original_url)
     markdown += f"   - {modified_url}\n\n"
 
-  if (size == 0):
-    markdown += "Since there were no open issues for the project this week, no active issues could be listed.\n\n"
-  elif (size < 5):
+  if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
 
   print("\n", markdown, "\n\n\n")
@@ -363,8 +360,8 @@ if __name__ == '__main__':
 
             # 1.1.2 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            result = open_issues(repo)
-            outfile.write(result)
+            # result = open_issues(repo)
+            # outfile.write(result)
 
 
             # 1.2 Top 5 Active Issues
@@ -375,8 +372,8 @@ if __name__ == '__main__':
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n")
-            result = quiet_issues(repo)
-            outfile.write(result)
+            # result = quiet_issues(repo)
+            # outfile.write(result)
 
 
             # 1.4: Closed Issues
@@ -393,8 +390,8 @@ if __name__ == '__main__':
 
             # 1.4.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            result = closed_issues(repo)
-            outfile.write(result)
+            # result = closed_issues(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -411,8 +408,8 @@ if __name__ == '__main__':
 
             # 2.1.2 Pull Requests
             outfile.write("**Pull Requests:**\n\n")
-            result = open_pull_requests(repo)
-            outfile.write(result)
+            # result = open_pull_requests(repo)
+            # outfile.write(result)
 
 
             # 2.2: Closed Pull Requests
@@ -423,8 +420,8 @@ if __name__ == '__main__':
 
             # 2.2.2 Pull Requests
             outfile.write("**Summarized Pull Requests:**\n\n")
-            result = closed_pull_requests(repo)
-            outfile.write(result)
+            # result = closed_pull_requests(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -441,8 +438,8 @@ if __name__ == '__main__':
 
             # 3.1.2 Commits
             outfile.write("**Summarized Commits:**\n\n")
-            result = commits(repo)
-            outfile.write(result)
+            # result = commits(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -462,8 +459,8 @@ if __name__ == '__main__':
 
             # 4.1.4 Active Contributors
             outfile.write("**Active Contributors:**\n\n")
-            result = active_contributors(repo)
-            outfile.write(result)
+            # result = active_contributors(repo)
+            # outfile.write(result)
 
             outfile.write("\n\n")
 

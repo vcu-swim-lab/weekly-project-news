@@ -33,7 +33,6 @@ def general_instructions(param1, param2, param3, param4, param5, param6):
 def discussion_summary_instructions(param1):
   return f"Given the JSON data about a GitHub {param1} and its comment section above, write a short summary capturing the trajectory of this conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. Start your answer with 'This GitHub conversation'"
 
-# param1: 
 def discussion_score_instructions():
   return "On a 0 to 1 scale, give only a single number to 2 decimal points describing the possibility of toxicity occurring in the future of this conversation, where 0 is not likely and 1 is very likely. Do not output anything else."
 
@@ -189,9 +188,16 @@ def issue_discussion_insights(repo):
   
   # Step 1: get each issue from active_issues
   for active_issue in repo['active_issues']:
-    comments = active_issue['comments']
-    print('comments:')
-    print(comments)
+    print(active_issue)
+    discussion_instructions = discussion_summary_instructions("issue")
+    # print(discussion_instructions, '\n')
+
+    discussion_summary = generate_summary(active_issue, discussion_instructions)
+    print(discussion_summary, '\n')
+
+    markdown += discussion_summary
+
+    break
     
     # Step 2: Ask ChatGPT to analyze this by 1. asking how likely is this conversation to derail? or 2. Imagine how the rest of this conversation is going to go. Is it likely to derail?
 

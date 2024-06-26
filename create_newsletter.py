@@ -29,12 +29,16 @@ def general_instructions(param1, param2, param3, param4, param5, param6):
   return instructions
 
 
-# param1: "issue"
-def discussion_summary_instructions(param1):
-  return f"Given the JSON data about a GitHub {param1} and its comment section above, write a short summary capturing the trajectory of this conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. Start your answer with 'This GitHub conversation'"
+# # param1: "issue"
+# def discussion_summary_instructions(param1):
+#   return f"Given the JSON data about a GitHub {param1} and its comment section above, write a short summary capturing the trajectory of this conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. Start your answer with 'This GitHub conversation'"
 
-def discussion_score_instructions():
-  return "On a 0 to 1 scale, give only a single number to 2 decimal points describing the possibility of toxicity occurring in the future of this conversation, where 0 is not likely and 1 is very likely. Do not output anything else."
+# def discussion_score_instructions():
+#   return "On a 0 to 1 scale, give only a single number to 2 decimal points describing the possibility of toxicity occurring in the future of this conversation, where 0 is not likely and 1 is very likely. Do not output anything else."
+
+def discussion_instructions():
+  return """First, write a one paragraph summary capturing the trajectory of a GitHub conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. For example, '[username 1] expresses frustration that [username 2]'s solution did not work'. Start your answer with 'This GitHub conversation'"
+After that paragraph, on a different line, give only a single number to 2 decimal places on a 0 to 1 scale describing the possibility of occurring toxicity in future comments, where 0 to 0.3 should be very little toxicity, 0.3 to 0.6 should be a bit higher, and 0.6 to 1 should be alarming. Do not output anything else on this line."""
 
 
 # Generates the summary using ChatGPT given any context and question (prompt template above)
@@ -186,26 +190,38 @@ def issue_discussion_insights(repo):
     markdown += "As of our last update, there are no open issues with discussions going on within the past week. \n\n"
     return markdown
   
+  issue_count = 0
+
   # Step 1: get each issue from active_issues
   for active_issue in repo['active_issues']:
-    print(active_issue)
-    discussion_instructions = discussion_summary_instructions("issue")
-    # print(discussion_instructions, '\n')
-
-    discussion_summary = generate_summary(active_issue, discussion_instructions)
-    print(discussion_summary, '\n')
-
-    markdown += discussion_summary
-
-    break
-    
-    # Step 2: Ask ChatGPT to analyze this by 1. asking how likely is this conversation to derail? or 2. Imagine how the rest of this conversation is going to go. Is it likely to derail?
-
-    # Step 3: Given the summary, generate a number 0.0 - 1.0 to know which conversations are worth printing to the newsletter
-
-  return markdown + "\n\n"
+    instructions = discussion_instructions()
   
+    # summary = generate_summary(active_issue, instructions)
+    # print(summary)
+    generated_summary = """This GitHub conversation begins with stevenbui44 suggesting that someone should merge a new branch into the development branch to keep it up to date. Stevenbui45 responds with frustration, questioning the importance of keeping the branch up to date compared to ensuring the quality of changes. The tension escalates as stevenbui45 adds that the new branch is not even finished. The conversation culminates with stevenbui44 expressing anger and telling stevenbui45 to "kick rocks," indicating a significant rise in hostility.
 
+0.85"""
+
+    parts = generated_summary.rsplit('\n\n', 1)
+    summary = parts[0].strip()
+    score = float(parts[1])
+
+    if score > 0.5:
+      issue_count += 1
+      markdown += f"{issue_count}. **{active_issue['title']}**: Toxicity Score: {score:.2f}\n"
+      markdown += f"   - {active_issue['url']}\n"
+      markdown += f"   - {summary}\n\n"
+    
+  if issue_count == 0:
+    markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open issues from the past week. \n\n"
+    
+  return markdown
+  
+# Steps
+# 1. Create the prompt, saying to generate a summary and then a number 0.0-1.0
+# 2. Pass the JSON data and instructions to gpt-4o and generate a summary
+# 3. Parse the summary for the text section and the number, saving each into variables
+# 4. If the number is higher than 0.5, add to the markdown the issue name in bold, then the score, then the URL, then the summary
 
 
 

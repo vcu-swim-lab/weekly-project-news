@@ -38,7 +38,8 @@ def general_instructions(param1, param2, param3, param4, param5, param6):
 
 def discussion_instructions():
   return """First, write a one paragraph summary capturing the trajectory of a GitHub conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. For example, '[username 1] expresses frustration that [username 2]'s solution did not work'. Start your answer with 'This GitHub conversation'"
-After that paragraph, on a different line, give only a single number to 2 decimal places on a 0 to 1 scale describing the possibility of occurring toxicity in future comments, where 0 to 0.3 should be very little toxicity, 0.3 to 0.6 should be a bit higher, and 0.6 to 1 should be alarming. Do not output anything else on this line."""
+After that paragraph, on a different line, give only a single number to 2 decimal places on a 0 to 1 scale describing the possibility of occurring toxicity in future comments, where 0 to 0.3 should be very little toxicity, 0.3 to 0.6 should be a bit higher, and 0.6 to 1 should be alarming. Do not output anything else on this line.
+Then, on a different line, give only a short comma-separated list of specific reasons in the summary for giving the number. For example, 'Rapid escalation, aggressive language'"""
 
 
 # Generates the summary using ChatGPT given any context and question (prompt template above)
@@ -196,22 +197,30 @@ def issue_discussion_insights(repo):
   for active_issue in repo['active_issues']:
     instructions = discussion_instructions()
   
-    # summary = generate_summary(active_issue, instructions)
-    # print(summary)
-    generated_summary = """This GitHub conversation begins with stevenbui44 suggesting that someone should merge a new branch into the development branch to keep it up to date. Stevenbui45 responds with frustration, questioning the importance of keeping the branch up to date compared to ensuring the quality of changes. The tension escalates as stevenbui45 adds that the new branch is not even finished. The conversation culminates with stevenbui44 expressing anger and telling stevenbui45 to "kick rocks," indicating a significant rise in hostility.
+    generated_summary = generate_summary(active_issue, instructions)
+#     generated_summary = """This GitHub conversation begins with stevenbui44 suggesting that someone should merge a new branch into the development branch to keep it up to date. Stevenbui45 responds with frustration, questioning the importance of keeping the branch up to date compared to ensuring the quality of changes. The tension escalates as stevenbui45 adds that the new branch is not even finished. The conversation culminates with stevenbui44 expressing anger and telling stevenbui45 to "kick rocks," indicating a significant rise in hostility.
 
-0.85"""
+# 0.85"""
 
-    parts = generated_summary.rsplit('\n\n', 1)
+    parts = generated_summary.rsplit('\n\n', 2)
     summary = parts[0].strip()
     score = float(parts[1])
+    reason = parts[2].strip()
+
+    # if score > 0.5:
+    #   issue_count += 1
+    #   shortened_url = active_issue['url'].split("//")[-1]
+      
+    #   markdown += f"{issue_count}. **{active_issue['title']}**: Toxicity Score: {score:.2f}\n"
+    #   markdown += f"   - {shortened_url}\n"
+    #   markdown += f"   - {summary}\n\n"
 
     if score > 0.5:
       issue_count += 1
-      shortened_url = active_issue['url'].split("//")[-1]
+      # shortened_url = active_issue['url'].split("//")[-1]
       
-      markdown += f"{issue_count}. **{active_issue['title']}**: Toxicity Score: {score:.2f}\n"
-      markdown += f"   - {shortened_url}\n"
+      markdown += f"{issue_count}. [**{active_issue['title']}**]({active_issue['url']})\n"
+      markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
       markdown += f"   - {summary}\n\n"
     
   if issue_count == 0:

@@ -115,22 +115,33 @@ def quiet_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
+  issue_instructions += "Do not mention the URL in the summary."
   issues = repo['issues_by_open_date']
   size = min(len(issues), 5)
 
   # We are only summarizing the top 5 open issues (quiet)
+  # for i in range(size):
+  #   data = issues[i]
+  #   issue_title = data.get('title')
+  #   issue_summary = generate_summary(data, issue_instructions)
+
+  #   # Start each issue on a numbered list
+  #   markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
+  #   markdown += f"   - Open for {data.get('time_open')}\n"
+
+  #   original_url = data.get('url')
+  #   modified_url = re.sub(r'^(https?://)?(www\.)?', '', original_url)
+  #   markdown += f"   - {modified_url}\n\n"
+
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
     issue_summary = generate_summary(data, issue_instructions)
+    issue_url = data.get('url')
 
-    # Start each issue on a numbered list
-    markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
-    markdown += f"   - Open for {data.get('time_open')}\n"
-
-    original_url = data.get('url')
-    modified_url = re.sub(r'^(https?://)?(www\.)?', '', original_url)
-    markdown += f"   - {modified_url}\n\n"
+    # Make the issue title a clickable link
+    markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
+    markdown += f"   - Open for {data.get('time_open')}\n\n"
 
   if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
@@ -418,14 +429,14 @@ if __name__ == '__main__':
 
             # 1.2 Top 5 Active Issues
             outfile.write("## 1.2 Top 5 Active Issues:\n\n")
-            result = active_issues(repo)
-            outfile.write(result)
+            # result = active_issues(repo)
+            # outfile.write(result)
 
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-            # result = quiet_issues(repo)
-            # outfile.write(result)
+            result = quiet_issues(repo)
+            outfile.write(result)
 
 
             # 1.4: Closed Issues

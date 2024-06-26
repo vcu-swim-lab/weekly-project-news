@@ -5,6 +5,9 @@ from dotenv import load_dotenv
 from langchain_core.runnables import RunnableSequence
 from langchain.prompts import PromptTemplate
 import re
+import time
+import random
+from openai import RateLimitError
 
 load_dotenv()  
 
@@ -36,9 +39,21 @@ Then, on a different line, give only a short comma-separated list of specific re
 
 
 # Generates the summary using ChatGPT given any context and question (prompt template above)
-def generate_summary(data, instructions):
-    response = chain.invoke({"data": instructions, "instructions": data})
-    return response.content
+# def generate_summary(data, instructions):
+#     response = chain.invoke({"data": instructions, "instructions": data})
+#     return response.content
+
+def generate_summary(data, instructions, max_retries=5, base_wait=1):
+    for attempt in range(max_retries):
+        try:
+            response = chain.invoke({"data": instructions, "instructions": data})
+            return response.content
+        except RateLimitError as e:
+            if attempt == max_retries - 1:
+                raise e
+            wait_time = (2 ** attempt) * base_wait + random.uniform(0, 1)
+            print(f"Rate limit reached. Waiting for {wait_time:.2f} seconds before retrying...")
+            time.sleep(wait_time)
 
 
 
@@ -61,7 +76,7 @@ def open_issues(repo):
         comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
     
     # issue_summary = data
-    issue_summary = generate_summary(data, issue_instructions)
+    issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = f"URL: {open_issue.get('url')}"
     all_open_issues += f"{issue_summary}\n{issue_url}\n\n"
 
@@ -92,7 +107,7 @@ def active_issues(repo):
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
-    issue_summary = generate_summary(data, issue_instructions)
+    issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = data.get('url')
 
     # Make the issue title a clickable link
@@ -123,7 +138,7 @@ def quiet_issues(repo):
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
-    issue_summary = generate_summary(data, issue_instructions)
+    issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = data.get('url')
 
     # Make the issue title a clickable link
@@ -157,14 +172,14 @@ def closed_issues(repo):
         comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
     
     # issue_summary = data
-    issue_summary = generate_summary(data, issue_instructions)
+    issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = f"URL: {closed_issue.get('url')}"
     all_closed_issues += f"{issue_summary}\n{issue_url}\n\n"
 
   print("\n", all_closed_issues, "\n\n\n")
   
   # Step 2: get markdown output for all closed issues 
-  overall_summary = generate_summary(all_closed_issues, overall_instructions)
+  overall_summary = generate_summary(all_closed_issues, overall_instructions, max_retries=5, base_wait=1)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -185,7 +200,7 @@ def issue_discussion_insights(repo):
   for active_issue in repo['active_issues']:
     instructions = discussion_instructions()
   
-    generated_summary = generate_summary(active_issue, instructions)
+    generated_summary = generate_summary(active_issue, instructions, max_retries=5, base_wait=1)
 #     generated_summary = """This GitHub conversation begins with stevenbui44 suggesting that someone should merge a new branch into the development branch to keep it up to date. Stevenbui45 responds with frustration, questioning the importance of keeping the branch up to date compared to ensuring the quality of changes. The tension escalates as stevenbui45 adds that the new branch is not even finished. The conversation culminates with stevenbui44 expressing anger and telling stevenbui45 to "kick rocks," indicating a significant rise in hostility.
 
 # 0.85"""
@@ -226,14 +241,14 @@ def open_pull_requests(repo):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
     # pull_request_summary = data
-    pull_request_summary = generate_summary(data, pull_request_instructions)
+    pull_request_summary = generate_summary(data, pull_request_instructions, max_retries=5, base_wait=1)
     pull_request_url = f"URL: {pull_request.get('url')}"
     all_pull_requests += f"{pull_request_summary}\n{pull_request_url}\n\n"
 
   print("\n", all_pull_requests, "\n\n\n")
 
   # Step 2: get markdown output for all open pull requests 
-  overall_summary = generate_summary(all_pull_requests, overall_instructions)
+  overall_summary = generate_summary(all_pull_requests, overall_instructions, max_retries=5, base_wait=1)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -258,14 +273,14 @@ def closed_pull_requests(repo):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
     # pull_request_summary = data
-    pull_request_summary = generate_summary(data, pull_request_instructions)
+    pull_request_summary = generate_summary(data, pull_request_instructions, max_retries=5, base_wait=1)
     pull_request_url = f"URL: {pull_request.get('url')}"
     all_pull_requests += f"{pull_request_summary}\n{pull_request_url}\n\n"
 
   print("\n", all_pull_requests, "\n\n\n")
 
   # Step 2: get markdown output for all closed pull requests 
-  overall_summary = generate_summary(all_pull_requests, overall_instructions)
+  overall_summary = generate_summary(all_pull_requests, overall_instructions, max_retries=5, base_wait=1)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -286,7 +301,7 @@ def pull_request_discussion_insights(repo):
   for active_pull_request in repo['active_pull_requests']:
     instructions = discussion_instructions()
   
-    generated_summary = generate_summary(active_pull_request, instructions)
+    generated_summary = generate_summary(active_pull_request, instructions, max_retries=5, base_wait=1)
 #     generated_summary = """This GitHub conversation begins with stevenbui44 suggesting that someone should merge a new branch into the development branch to keep it up to date. Stevenbui45 responds with frustration, questioning the importance of keeping the branch up to date compared to ensuring the quality of changes. The tension escalates as stevenbui45 adds that the new branch is not even finished. The conversation culminates with stevenbui44 expressing anger and telling stevenbui45 to "kick rocks," indicating a significant rise in hostility.
 
 # 0.85"""
@@ -331,13 +346,13 @@ def commits(repo):
       data['message'] = re.sub(r'<img[^>]*>|\r\n', '', data['message'])
 
     # commit_summary = data
-    commit_summary = generate_summary(data, commit_instructions)
+    commit_summary = generate_summary(data, commit_instructions, max_retries=5, base_wait=1)
     all_commits += f"{commit_summary}\n\n"
 
   print("\n", all_commits, "\n\n\n")
 
   # Step 2: get markdown output for all commits
-  overall_summary = generate_summary(all_commits, overall_instructions)
+  overall_summary = generate_summary(all_commits, overall_instructions, max_retries=5, base_wait=1)
   if overall_summary.startswith("```") and overall_summary.endswith("```"):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
@@ -441,20 +456,20 @@ if __name__ == '__main__':
 
             # 1.1.2 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            # result = open_issues(repo)
-            # outfile.write(result)
+            result = open_issues(repo)
+            outfile.write(result)
 
 
             # 1.2 Top 5 Active Issues
             outfile.write("## 1.2 Top 5 Active Issues:\n\n")
-            # result = active_issues(repo)
-            # outfile.write(result)
+            result = active_issues(repo)
+            outfile.write(result)
 
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-            # result = quiet_issues(repo)
-            # outfile.write(result)
+            result = quiet_issues(repo)
+            outfile.write(result)
 
 
             # 1.4: Closed Issues
@@ -471,14 +486,14 @@ if __name__ == '__main__':
 
             # 1.4.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            # result = closed_issues(repo)
-            # outfile.write(result)
+            result = closed_issues(repo)
+            outfile.write(result)
 
 
             # 1.5 Issue Discussion Insights
             outfile.write("## 1.5 Issue Discussion Insights\n\n")
-            # result = issue_discussion_insights(repo)
-            # outfile.write(result)
+            result = issue_discussion_insights(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -495,8 +510,8 @@ if __name__ == '__main__':
 
             # 2.1.2 Pull Requests
             outfile.write("**Pull Requests:**\n\n")
-            # result = open_pull_requests(repo)
-            # outfile.write(result)
+            result = open_pull_requests(repo)
+            outfile.write(result)
 
 
             # 2.2: Closed Pull Requests
@@ -507,8 +522,8 @@ if __name__ == '__main__':
 
             # 2.2.2 Pull Requests
             outfile.write("**Summarized Pull Requests:**\n\n")
-            # result = closed_pull_requests(repo)
-            # outfile.write(result)
+            result = closed_pull_requests(repo)
+            outfile.write(result)
 
 
             # 2.3 Pull Request Discussion Insights
@@ -531,8 +546,8 @@ if __name__ == '__main__':
 
             # 3.1.2 Commits
             outfile.write("**Summarized Commits:**\n\n")
-            # result = commits(repo)
-            # outfile.write(result)
+            result = commits(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -552,8 +567,8 @@ if __name__ == '__main__':
 
             # 4.1.4 Active Contributors
             outfile.write("**Active Contributors:**\n\n")
-            # result = active_contributors(repo)
-            # outfile.write(result)
+            result = active_contributors(repo)
+            outfile.write(result)
 
             outfile.write("\n\n")
 

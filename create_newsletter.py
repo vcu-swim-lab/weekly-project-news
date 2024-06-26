@@ -208,8 +208,10 @@ def issue_discussion_insights(repo):
 
     if score > 0.5:
       issue_count += 1
+      shortened_url = active_issue['url'].split("//")[-1]
+      
       markdown += f"{issue_count}. **{active_issue['title']}**: Toxicity Score: {score:.2f}\n"
-      markdown += f"   - {active_issue['url']}\n"
+      markdown += f"   - {shortened_url}\n"
       markdown += f"   - {summary}\n\n"
     
   if issue_count == 0:
@@ -217,48 +219,6 @@ def issue_discussion_insights(repo):
     
   return markdown
   
-# Steps
-# 1. Create the prompt, saying to generate a summary and then a number 0.0-1.0
-# 2. Pass the JSON data and instructions to gpt-4o and generate a summary
-# 3. Parse the summary for the text section and the number, saving each into variables
-# 4. If the number is higher than 0.5, add to the markdown the issue name in bold, then the score, then the URL, then the summary
-
-
-
-
-# def open_issues(repo):
-#   all_open_issues = ""
-#   issue_instructions = individual_instructions("an open issue", "issue", "issue", "only one detailed sentence")
-#   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
-
-#   # Step 1: get summaries for each open issue first from the llm
-#   for open_issue in repo['open_issues']:
-#     data = open_issue
-   
-#     if (data['body']):
-#       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
-#       for comment in data.get('comments', []):
-#         comment['body'] = re.sub(r'<img[^>]*>|\r\n', '', comment['body'])
-    
-#     # issue_summary = data
-#     issue_summary = generate_summary(data, issue_instructions)
-#     issue_url = f"URL: {open_issue.get('url')}"
-#     all_open_issues += f"{issue_summary}\n{issue_url}\n\n"
-
-#   print("\n", all_open_issues, "\n\n\n")
-  
-#   # Step 2: get markdown output for all open issues 
-#   overall_summary = generate_summary(all_open_issues, overall_instructions)
-#   if overall_summary.startswith("```") and overall_summary.endswith("```"):
-#     overall_summary = overall_summary[3:-3]
-#   if overall_summary.startswith("markdown"):
-#     overall_summary = overall_summary[len("markdown"):].lstrip()
-#   return overall_summary + "\n"
-
-
-
-
-
 
 
 # 6 - Open Pull Requests

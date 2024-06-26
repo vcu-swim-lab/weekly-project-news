@@ -18,7 +18,7 @@ chain = PROMPT | llm
 
 # param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
 def individual_instructions(param1, param2, param3, param4):
-  return f"Above is JSON data describing {param1} from a GitHub project. Give {param4} describing what this {param2} is about, starting with 'This {param3}'"
+  return f"Above is JSON data describing {param1} from a GitHub project. Give {param4} describing what this {param2} is about, starting with 'This {param3}'. "
 
 # param1-4: "issues", param5: true if should include in instructions
 def general_instructions(param1, param2, param3, param4, param5, param6):
@@ -29,15 +29,8 @@ def general_instructions(param1, param2, param3, param4, param5, param6):
   return instructions
 
 
-# # param1: "issue"
-# def discussion_summary_instructions(param1):
-#   return f"Given the JSON data about a GitHub {param1} and its comment section above, write a short summary capturing the trajectory of this conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. Start your answer with 'This GitHub conversation'"
-
-# def discussion_score_instructions():
-#   return "On a 0 to 1 scale, give only a single number to 2 decimal points describing the possibility of toxicity occurring in the future of this conversation, where 0 is not likely and 1 is very likely. Do not output anything else."
-
 def discussion_instructions():
-  return """First, write a one paragraph summary capturing the trajectory of a GitHub conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. For example, '[username 1] expresses frustration that [username 2]'s solution did not work'. Start your answer with 'This GitHub conversation'"
+  return """First, write a one paragraph summary capturing the trajectory of a GitHub conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. For example, 'username1 expresses frustration that username2's solution did not work'. Start your answer with 'This GitHub conversation'"
 After that paragraph, on a different line, give only a single number to 2 decimal places on a 0 to 1 scale describing the possibility of occurring toxicity in future comments, where 0 to 0.3 should be very little toxicity, 0.3 to 0.6 should be a bit higher, and 0.6 to 1 should be alarming. Do not output anything else on this line.
 Then, on a different line, give only a short comma-separated list of specific reasons in the summary for giving the number. For example, 'Rapid escalation, aggressive language'"""
 
@@ -91,6 +84,7 @@ def active_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
+  issue_instructions += "Do not mention the URL in the summary."
   issues = repo['issues_by_number_of_comments']
   size = min(len(issues), 5)
 
@@ -99,14 +93,11 @@ def active_issues(repo):
     data = issues[i]
     issue_title = data.get('title')
     issue_summary = generate_summary(data, issue_instructions)
+    issue_url = data.get('url')
 
-    # Start each issue on a numbered list
-    markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
-    markdown += f"   - Number of comments: {data.get('number_of_comments')}\n"
-
-    original_url = data.get('url')
-    modified_url = re.sub(r'^(https?://)?(www\.)?', '', original_url)
-    markdown += f"   - {modified_url}\n\n"
+    # Make the issue title a clickable link
+    markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
+    markdown += f"   - Number of comments: {data.get('number_of_comments')}\n\n"
 
   if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
@@ -427,8 +418,8 @@ if __name__ == '__main__':
 
             # 1.2 Top 5 Active Issues
             outfile.write("## 1.2 Top 5 Active Issues:\n\n")
-            # result = active_issues(repo)
-            # outfile.write(result)
+            result = active_issues(repo)
+            outfile.write(result)
 
 
             # 1.3 Top 5 Quiet Issues
@@ -457,8 +448,8 @@ if __name__ == '__main__':
 
             # 1.5 Issue Discussion Insights
             outfile.write("## 1.5 Issue Discussion Insights\n\n")
-            result = issue_discussion_insights(repo)
-            outfile.write(result)
+            # result = issue_discussion_insights(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 

@@ -120,19 +120,6 @@ def quiet_issues(repo):
   size = min(len(issues), 5)
 
   # We are only summarizing the top 5 open issues (quiet)
-  # for i in range(size):
-  #   data = issues[i]
-  #   issue_title = data.get('title')
-  #   issue_summary = generate_summary(data, issue_instructions)
-
-  #   # Start each issue on a numbered list
-  #   markdown += f"{i + 1}. **{issue_title}**: {issue_summary}\n"
-  #   markdown += f"   - Open for {data.get('time_open')}\n"
-
-  #   original_url = data.get('url')
-  #   modified_url = re.sub(r'^(https?://)?(www\.)?', '', original_url)
-  #   markdown += f"   - {modified_url}\n\n"
-
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
@@ -195,7 +182,6 @@ def issue_discussion_insights(repo):
   
   issue_count = 0
 
-  # Step 1: get each issue from active_issues
   for active_issue in repo['active_issues']:
     instructions = discussion_instructions()
   
@@ -209,17 +195,8 @@ def issue_discussion_insights(repo):
     score = float(parts[1])
     reason = parts[2].strip()
 
-    # if score > 0.5:
-    #   issue_count += 1
-    #   shortened_url = active_issue['url'].split("//")[-1]
-      
-    #   markdown += f"{issue_count}. **{active_issue['title']}**: Toxicity Score: {score:.2f}\n"
-    #   markdown += f"   - {shortened_url}\n"
-    #   markdown += f"   - {summary}\n\n"
-
     if score > 0.5:
       issue_count += 1
-      # shortened_url = active_issue['url'].split("//")[-1]
       
       markdown += f"{issue_count}. [**{active_issue['title']}**]({active_issue['url']})\n"
       markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
@@ -294,6 +271,47 @@ def closed_pull_requests(repo):
   if overall_summary.startswith("markdown"):
     overall_summary = overall_summary[len("markdown"):].lstrip()
   return overall_summary + "\n\n"
+
+
+
+# 8 - Pull Request Discussion Insights
+def pull_request_discussion_insights(repo):
+  markdown = "This section will analyze the tone and sentiment of discussions within this project's open pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
+  if repo['active_pull_requests'] == []:
+    markdown += "As of our last update, there are no open pull requests with discussions going on within the past week. \n\n"
+    return markdown
+  
+  pull_request_count = 0
+
+  for active_pull_request in repo['active_pull_requests']:
+    instructions = discussion_instructions()
+  
+    generated_summary = generate_summary(active_pull_request, instructions)
+#     generated_summary = """This GitHub conversation begins with stevenbui44 suggesting that someone should merge a new branch into the development branch to keep it up to date. Stevenbui45 responds with frustration, questioning the importance of keeping the branch up to date compared to ensuring the quality of changes. The tension escalates as stevenbui45 adds that the new branch is not even finished. The conversation culminates with stevenbui44 expressing anger and telling stevenbui45 to "kick rocks," indicating a significant rise in hostility.
+
+# 0.85"""
+
+    parts = generated_summary.rsplit('\n\n', 2)
+    summary = parts[0].strip()
+    print("Summary: ", summary)
+
+    score = float(parts[1])
+    print("Score: ", score)
+
+    reason = parts[2].strip()
+    print("Reason: ", reason)
+
+    if score > 0.5:
+      pull_request_count += 1
+      
+      markdown += f"{pull_request_count}. [**{active_pull_request['title']}**]({active_pull_request['url']})\n"
+      markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
+      markdown += f"   - {summary}\n\n"
+    
+  if pull_request_count == 0:
+    markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open pull requests from the past week. \n\n"
+    
+  return markdown
 
 
 # 8 - Commits
@@ -435,8 +453,8 @@ if __name__ == '__main__':
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-            result = quiet_issues(repo)
-            outfile.write(result)
+            # result = quiet_issues(repo)
+            # outfile.write(result)
 
 
             # 1.4: Closed Issues
@@ -491,6 +509,12 @@ if __name__ == '__main__':
             outfile.write("**Summarized Pull Requests:**\n\n")
             # result = closed_pull_requests(repo)
             # outfile.write(result)
+
+
+            # 2.3 Pull Request Discussion Insights
+            outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
+            result = pull_request_discussion_insights(repo)
+            outfile.write(result)
 
             outfile.write("***\n\n")
 

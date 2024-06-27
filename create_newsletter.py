@@ -107,6 +107,14 @@ def active_issues(repo):
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
+
+    # TODO: until we get Christian's changes, get the issue body + comments from open_issues. Delete these 4 lines and edit the code accordingly
+    issue_body = next((issue['body'] for issue in repo['open_issues'] if issue['title'] == issue_title), '')
+    issue_comments = next((issue['comments'] for issue in repo['open_issues'] if issue['title'] == issue_title), [])
+    data['body'] = issue_body
+    data['comments'] = issue_comments
+
+
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = data.get('url')
 
@@ -201,9 +209,6 @@ def issue_discussion_insights(repo):
     instructions = discussion_instructions()
   
     generated_summary = generate_summary(active_issue, instructions, max_retries=5, base_wait=1)
-#     generated_summary = """This GitHub conversation begins with stevenbui44 suggesting that someone should merge a new branch into the development branch to keep it up to date. Stevenbui45 responds with frustration, questioning the importance of keeping the branch up to date compared to ensuring the quality of changes. The tension escalates as stevenbui45 adds that the new branch is not even finished. The conversation culminates with stevenbui44 expressing anger and telling stevenbui45 to "kick rocks," indicating a significant rise in hostility.
-
-# 0.85"""
 
     parts = generated_summary.rsplit('\n\n', 2)
     summary = parts[0].strip()
@@ -302,9 +307,6 @@ def pull_request_discussion_insights(repo):
     instructions = discussion_instructions()
   
     generated_summary = generate_summary(active_pull_request, instructions, max_retries=5, base_wait=1)
-#     generated_summary = """This GitHub conversation begins with stevenbui44 suggesting that someone should merge a new branch into the development branch to keep it up to date. Stevenbui45 responds with frustration, questioning the importance of keeping the branch up to date compared to ensuring the quality of changes. The tension escalates as stevenbui45 adds that the new branch is not even finished. The conversation culminates with stevenbui44 expressing anger and telling stevenbui45 to "kick rocks," indicating a significant rise in hostility.
-
-# 0.85"""
 
     parts = generated_summary.rsplit('\n\n', 2)
     summary = parts[0].strip()
@@ -456,8 +458,8 @@ if __name__ == '__main__':
 
             # 1.1.2 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            result = open_issues(repo)
-            outfile.write(result)
+            # result = open_issues(repo)
+            # outfile.write(result)
 
 
             # 1.2 Top 5 Active Issues
@@ -468,8 +470,8 @@ if __name__ == '__main__':
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-            result = quiet_issues(repo)
-            outfile.write(result)
+            # result = quiet_issues(repo)
+            # outfile.write(result)
 
 
             # 1.4: Closed Issues
@@ -486,14 +488,14 @@ if __name__ == '__main__':
 
             # 1.4.4 Issues
             outfile.write("**Summarized Issues:**\n\n")
-            result = closed_issues(repo)
-            outfile.write(result)
+            # result = closed_issues(repo)
+            # outfile.write(result)
 
 
             # 1.5 Issue Discussion Insights
             outfile.write("## 1.5 Issue Discussion Insights\n\n")
-            result = issue_discussion_insights(repo)
-            outfile.write(result)
+            # result = issue_discussion_insights(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -510,8 +512,8 @@ if __name__ == '__main__':
 
             # 2.1.2 Pull Requests
             outfile.write("**Pull Requests:**\n\n")
-            result = open_pull_requests(repo)
-            outfile.write(result)
+            # result = open_pull_requests(repo)
+            # outfile.write(result)
 
 
             # 2.2: Closed Pull Requests
@@ -522,14 +524,14 @@ if __name__ == '__main__':
 
             # 2.2.2 Pull Requests
             outfile.write("**Summarized Pull Requests:**\n\n")
-            result = closed_pull_requests(repo)
-            outfile.write(result)
+            # result = closed_pull_requests(repo)
+            # outfile.write(result)
 
 
             # 2.3 Pull Request Discussion Insights
             outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
-            result = pull_request_discussion_insights(repo)
-            outfile.write(result)
+            # result = pull_request_discussion_insights(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -546,8 +548,8 @@ if __name__ == '__main__':
 
             # 3.1.2 Commits
             outfile.write("**Summarized Commits:**\n\n")
-            result = commits(repo)
-            outfile.write(result)
+            # result = commits(repo)
+            # outfile.write(result)
 
             outfile.write("***\n\n")
 
@@ -567,8 +569,8 @@ if __name__ == '__main__':
 
             # 4.1.4 Active Contributors
             outfile.write("**Active Contributors:**\n\n")
-            result = active_contributors(repo)
-            outfile.write(result)
+            # result = active_contributors(repo)
+            # outfile.write(result)
 
             outfile.write("\n\n")
 

@@ -47,5 +47,7 @@ class IssueComment(Base):
     author_association = Column(String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+    
+    repository_full_name = Column(String)
 
-    issue_id = Column(Integer)
+    issue_id = Column(Integer, ForeignKey('issues.id'))

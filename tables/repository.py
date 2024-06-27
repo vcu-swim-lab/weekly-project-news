@@ -19,7 +19,7 @@ class Repository(Base):
     open_issues_count = Column(Integer)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-
+    
     def __repr__(self):
         return f"<Repository(id={self.id}, full_name={self.full_name})>"
 

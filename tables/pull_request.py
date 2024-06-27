@@ -30,6 +30,7 @@ class PullRequest(Base):
     repository_full_name = Column(String)
 
     labels = relationship("Label", secondary="pull_request_labels")
+    
 
     def __repr__(self):
         return f"<PullRequest(title={self.title}, state={self.state})>"
@@ -51,3 +52,7 @@ class PullRequestComment(Base):
     updated_at = Column(DateTime)
 
     pull_request_id = Column(Integer)
+    
+    repository_full_name = Column(String)
+    
+

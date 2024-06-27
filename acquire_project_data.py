@@ -7,7 +7,8 @@ import requests
 from dotenv import load_dotenv
 import concurrent.futures
 import multiprocessing
-
+import asyncio
+import aiohttp
 
 load_dotenv()
 
@@ -39,6 +40,7 @@ def get_open_issues(g, repo, one_week_ago):
             "body": issue.body,
             "user": issue.user.login,
             "labels": [label.name for label in issue.get_labels()],
+            "url":  issue.html_url,
             "comments": []
         }
 
@@ -86,25 +88,7 @@ def get_closed_issues(g, repo, one_week_ago):
             "title": issue.title,
             "body": issue.body,
             "user": issue.user.login,
-            "comments": []
         }
-
-        # Fetch comments from each issue
-        comments = issue.get_comments()
-        
-        # Iterate through each comment to fetch data
-        for comment in comments:
-            # Omits bot comments
-            if "[bot]" in comment.user.login.lower() or "bot" in comment.user.login.lower():
-                continue
-            
-            # Retreive user and body of each comment
-            comment_data = {
-                "user": comment.user.login,
-                "body": comment.body
-            }
-            # Append to each issue data
-            issue_data["comments"].append(comment_data)
 
         # Add data from entire issue to issue_data_closed
         issue_data_closed.append(issue_data)
@@ -200,11 +184,6 @@ def get_num_open_issues_weekly(weekly_open_issues):
 # ISSUES 6: Get number of closed issues in the last week
 def get_num_closed_issues_weekly(weekly_closed_issues):
     return len(weekly_closed_issues)
-
-# ISSUES 7: Get current total number of open issues
-def get_num_open_issues_all(all_open_issues):
-    return len(all_open_issues)
-    
 
 # ISSUES 7: Get average time to close issues all time
 def avg_issue_close_time(g, repo):
@@ -344,15 +323,11 @@ def get_closed_prs(g, repo, one_week_ago):
 
     return pr_data_closed
 
-# PRS 3: Gets NUMBER of ALL pull requests made within one_week_ago
-def get_num_prs(pr_data_open, pr_data_closed):
-    return len(pr_data_open) + len(pr_data_closed)
-
-# PRS 4: Get NUMBER of OPEN pull requests made within one_week_ago
+# PRS 3: Get NUMBER of OPEN pull requests made within one_week_ago
 def get_num_open_prs(pr_data_open):
     return len(pr_data_open)
 
-# PRS 5: Get NUMBER of CLOSED pull requests made within one_week_ago
+# PRS 4: Get NUMBER of CLOSED pull requests made within one_week_ago
 def get_num_closed_prs(pr_data_closed):
     return len(pr_data_closed)
 
@@ -379,7 +354,6 @@ def get_commit_messages(g, repo, one_week_ago):
 # COMMITS 2: Gets NUMBER of commits made within one_week_ago
 def get_num_commits(commit_data):
     return len(commit_data)
-
 
 
 # CONTRIBUTORS 1: Gets NUMBER of new contributors who made their first commit within one_week_ago
@@ -429,7 +403,6 @@ def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
     
     return new_contributor_data
-
 
 # CONTRIBUTORS 2: Gets NUMBER of contributors who made any commits within one_week_ago
 def get_weekly_contributors(g, repo, one_week_ago):
@@ -552,7 +525,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
     
 
 
-# Main 
+# # Main 
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
@@ -584,7 +557,7 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'cnovalski1/APIexample'
+        PROJECT_NAME = 'monicahq/monica'
         # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         
         
@@ -602,45 +575,32 @@ if __name__ == '__main__':
         # This "with" statement does NOT create any local scope, so variables can be accessed outside of it
         with concurrent.futures.ProcessPoolExecutor() as executor:
             # List sorting issues first for proper result access
-            issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)
-            
-            issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)
-            
-            open_issues = executor.submit(get_open_issues, g, repo, one_week_ago)
-            
-            closed_issues = executor.submit(get_closed_issues, g, repo, one_week_ago)
-            
-            active_issues = executor.submit(get_active_issues, g, repo, one_week_ago)
-            
-            num_all_open_issues = executor.submit(get_num_open_issues_all, issues_by_open_date.result())
-            
-            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, open_issues.result())
-            
-            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, open_issues.result())
-            
-            average_issue_close_time = executor.submit(avg_issue_close_time, g, repo)
-            
+            # ISSUES
+            issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)            
+            issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)            
+            open_issues = executor.submit(get_open_issues, g, repo, one_week_ago)           
+            closed_issues = executor.submit(get_closed_issues, g, repo, one_week_ago)            
+            active_issues = executor.submit(get_active_issues, g, repo, one_week_ago)            
+            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, open_issues.result())            
+            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, closed_issues.result())            
+            average_issue_close_time = executor.submit(avg_issue_close_time, g, repo)        
             average_issue_close_time_weekly = executor.submit(avg_issue_close_time_weekly, g, repo, one_week_ago)
             
-            open_pull_requests = executor.submit(get_open_prs, g, repo, one_week_ago)
-            
-            closed_pull_requests = executor.submit(get_closed_prs, g, repo, one_week_ago)
-            
-            num_all_prs = executor.submit(get_num_prs, open_pull_requests.result(), closed_pull_requests.result())
-            
-            num_open_prs = executor.submit(get_num_open_prs, open_pull_requests.result())
-            
+            # PRS
+            open_pull_requests = executor.submit(get_open_prs, g, repo, one_week_ago)            
+            closed_pull_requests = executor.submit(get_closed_prs, g, repo, one_week_ago)            
+            num_open_prs = executor.submit(get_num_open_prs, open_pull_requests.result())            
             num_closed_prs = executor.submit(get_num_closed_prs, closed_pull_requests.result())
             
-            commits = executor.submit(get_commit_messages, g, repo, one_week_ago)
-            
+            # COMMITS
+            commits = executor.submit(get_commit_messages, g, repo, one_week_ago)            
             num_commits = executor.submit(get_num_commits, commits.result())
-            
-            new_contributors = executor.submit(get_new_contributors, g, repo, one_week_ago)
-            
-            contributed_this_week = executor.submit(get_weekly_contributors, g, repo, one_week_ago)
-            
+
+            # CONTRIBUTORS
+            new_contributors = executor.submit(get_new_contributors, g, repo, one_week_ago)            
+            contributed_this_week = executor.submit(get_weekly_contributors, g, repo, one_week_ago)           
             active_contributors = executor.submit(get_active_contributors, g, repo, one_week_ago, thirty_days_ago)
+            
             
         
         # TODO: all of the contributors (3 functions) have not been checked yet
@@ -651,7 +611,6 @@ if __name__ == '__main__':
             "open_issues": open_issues.result(),
             "closed_issues": closed_issues.result(),
             "active_issues": active_issues.result(),
-            "num_all_open_issues": num_all_open_issues.result(),
             "num_weekly_open_issues": num_weekly_open_issues.result(),
             "num_weekly_closed_issues": num_weekly_closed_issues.result(),
             "issues_by_open_date": issues_by_open_date.result(),
@@ -660,7 +619,6 @@ if __name__ == '__main__':
             "average_issue_close_time_weekly": average_issue_close_time_weekly.result(),
             "open_pull_requests": open_pull_requests.result(),
             "closed_pull_requests": closed_pull_requests.result(),
-            "num_all_prs": num_all_prs.result(),
             "num_open_prs": num_open_prs.result(),
             "num_closed_prs": num_closed_prs.result(),
             "commits": commits.result(),

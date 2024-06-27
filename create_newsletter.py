@@ -99,7 +99,7 @@ def active_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
-  issue_instructions += "Do not mention the URL in the summary."
+  issue_instructions += "Do not mention the URL in the summary. After each bullet point, you must give only one indented bullet point in markdown (starting with three spaces, then '-') summarizing the interaction in the comments, which can be multiple concise sentences. You must only give ONE bullet point per 10 comments. If there are fewer than 10 comments, only give 1 bullet point. Do not mention specific usernames."
   issues = repo['issues_by_number_of_comments']
   size = min(len(issues), 5)
 

@@ -146,6 +146,12 @@ def quiet_issues(repo):
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
+
+    # TODO: until we get Christian's changes, get the issue body from open_issues. Delete these 2 lines and edit the code accordingly
+    issue_body = next((issue['body'] for issue in repo['open_issues'] if issue['title'] == issue_title), '')
+    data['body'] = issue_body
+
+
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = data.get('url')
 
@@ -464,14 +470,14 @@ if __name__ == '__main__':
 
             # 1.2 Top 5 Active Issues
             outfile.write("## 1.2 Top 5 Active Issues:\n\n")
-            result = active_issues(repo)
-            outfile.write(result)
+            # result = active_issues(repo)
+            # outfile.write(result)
 
 
             # 1.3 Top 5 Quiet Issues
             outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-            # result = quiet_issues(repo)
-            # outfile.write(result)
+            result = quiet_issues(repo)
+            outfile.write(result)
 
 
             # 1.4: Closed Issues

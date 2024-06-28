@@ -108,14 +108,6 @@ def active_issues(repo):
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
-
-    # TODO: until we get Christian's changes, get the issue body + comments from open_issues. Delete these 4 lines and edit the code accordingly
-    issue_body = next((issue['body'] for issue in repo['open_issues'] if issue['title'] == issue_title), '')
-    issue_comments = next((issue['comments'] for issue in repo['open_issues'] if issue['title'] == issue_title), [])
-    data['body'] = issue_body
-    data['comments'] = issue_comments
-
-
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = data.get('url')
 
@@ -147,12 +139,6 @@ def quiet_issues(repo):
   for i in range(size):
     data = issues[i]
     issue_title = data.get('title')
-
-    # TODO: until we get Christian's changes, get the issue body from open_issues. Delete these 2 lines and edit the code accordingly
-    issue_body = next((issue['body'] for issue in repo['open_issues'] if issue['title'] == issue_title), '')
-    data['body'] = issue_body
-
-
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = data.get('url')
 
@@ -338,7 +324,7 @@ def pull_request_discussion_insights(repo):
   return markdown
 
 
-# 8 - Commits
+# 9 - Commits
 def commits(repo):
   if repo['commits'] == []:
     return "As of our latest update, there are no commits for the project this week.\n\n"
@@ -369,7 +355,7 @@ def commits(repo):
   return overall_summary + "\n\n"
 
 
-# 9 - Active Contributors
+# 10 - Active Contributors
 def active_contributors(repo):
   overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past week. \n\n"
   if repo['active_contributors'][-1]['number_of_active_contributors'] == 0:
@@ -450,7 +436,7 @@ if __name__ == '__main__':
       "num_commits": get_num_commits(get_commit_messages(session, one_week_ago, repository)),
       "contributors": get_contributors(session, one_week_ago, repository)
     }
-    output_filename = os.path.join(newsletter_directory, f"newsletter_{repo_name.replace('/', '_')}.txt")
+    output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
 
     # print(output_filename)
     # print(repo_data)
@@ -520,8 +506,8 @@ if __name__ == '__main__':
 
         # 1.3 Top 5 Quiet Issues
         outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-        # result = quiet_issues(repo_data)
-        # outfile.write(result)
+        result = quiet_issues(repo_data)
+        outfile.write(result)
 
 
         # 1.4: Closed Issues
@@ -620,9 +606,9 @@ if __name__ == '__main__':
         # outfile.write(f"**Total Contributors This Week:** {repo_data.get('contributed_this_week')[-1].get('number_of_weekly_contributors')}\n\n")
 
         # 4.1.4 Active Contributors
-        outfile.write("**Active Contributors:**\n\n")
-        result = active_contributors(repo_data)
-        outfile.write(result)
+        # outfile.write("**Active Contributors:**\n\n")
+        # result = active_contributors(repo_data)
+        # outfile.write(result)
 
         outfile.write("\n\n")
       

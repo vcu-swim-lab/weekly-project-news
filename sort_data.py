@@ -908,11 +908,12 @@ if __name__ == '__main__':
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
+    # TODO Move this to parse_github_data instead of here, so repo data gets inserted into the database. 
     repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
 
      
     # Time variable for function parameters. Holds the date/time one week ago
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=100)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
@@ -924,6 +925,7 @@ if __name__ == '__main__':
     # Array to store data for all of the repositories
     all_repo_data = []
     
+    # THIS IS FOR TESTING
     repo_names = ['https://github.com/danny-avila/LibreChat']
     
     # for-loop for every repo name (ex. tensorflow/tensorflow)

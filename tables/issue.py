@@ -22,7 +22,6 @@ class Issue(Base):
     closed_at = Column(DateTime)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-    author_association = Column(String)
 
     user_login = Column(String)
     repository_full_name = Column(String)

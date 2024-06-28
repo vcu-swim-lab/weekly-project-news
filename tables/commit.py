@@ -18,7 +18,6 @@ class Commit(Base):
 
     commit_message = Column(Text)
     commit_url = Column(String)
-    commit_comment_count = Column(Integer)
 
     repository_full_name = Column(String)
     
@@ -33,11 +32,10 @@ class CommitComment(Base):
     html_url = Column(String)
     body = Column(Text)
     user_login = Column(String)
-    author_association = Column(String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
 
-    commit_id = Column(String, primary_key=True)
+    commit_sha = Column(String, primary_key=True)
     
     repository_full_name = Column(String)
     

@@ -10,8 +10,6 @@ import multiprocessing
 import asyncio
 import aiohttp
 from aiohttp import ClientSession
-import aiofiles
-import nest_asyncio
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
 from tables.repository import Repository, RepositoryAuthor
@@ -482,7 +480,7 @@ def get_commit_messages(session, one_week_ago, repository_full_name):
         Commit.sha,
         Commit.commit_message,
         Commit.committer_date,
-        Commit.committer_login
+        Commit.committer_name
     ).filter(
         and_(
             Commit.repository_full_name == repository_full_name,
@@ -967,6 +965,7 @@ if __name__ == '__main__':
             "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repo_name),
             "open_pull_requests": open_pull_requests,
             "closed_pull_requests": closed_pull_requests,
+            "active_pull_requests": get_active_prs(session, one_week_ago, repo_name),
             "num_open_prs": get_num_open_prs(open_pull_requests),
             "num_closed_prs": get_num_closed_prs(closed_pull_requests),
             "commits": commits,

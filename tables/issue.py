@@ -43,7 +43,6 @@ class IssueComment(Base):
     html_url = Column(String)
     body = Column(Text)
     user_login = Column(String)
-    author_association = Column(String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     

@@ -18,13 +18,10 @@ class PullRequest(Base):
     state = Column(String, nullable=False)
     title = Column(String, nullable=False)
     body = Column(Text)
-    locked = Column(Boolean)
-    active_lock_reason = Column(String)
     comments = Column(Integer)
     closed_at = Column(DateTime)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
-    author_association = Column(String)
 
     user_login = Column(String)
     repository_full_name = Column(String)
@@ -47,7 +44,6 @@ class PullRequestComment(Base):
     html_url = Column(String)
     body = Column(Text)
     user_login = Column(String)
-    author_association = Column(String)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
 

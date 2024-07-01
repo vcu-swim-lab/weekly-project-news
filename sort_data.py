@@ -10,8 +10,6 @@ import multiprocessing
 import asyncio
 import aiohttp
 from aiohttp import ClientSession
-import aiofiles
-import nest_asyncio
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
 from tables.repository import Repository, RepositoryAuthor
@@ -482,7 +480,7 @@ def get_commit_messages(session, one_week_ago, repository_full_name):
         Commit.sha,
         Commit.commit_message,
         Commit.committer_date,
-        Commit.committer_login
+        Commit.committer_name
     ).filter(
         and_(
             Commit.repository_full_name == repository_full_name,
@@ -494,7 +492,7 @@ def get_commit_messages(session, one_week_ago, repository_full_name):
     commit_data = []
 
     for commit in commits:
-        if commit.committer_login is None or "bot" in commit.committer_login.lower() or "[bot]" in commit.committer_login.lower():
+        if commit.committer_name is None or "bot" in commit.committer_name.lower() or "[bot]" in commit.committer_name.lower():
             continue
         
         data = {
@@ -513,378 +511,378 @@ def get_num_commits(commit_data):
 
 
 # CONTRIBUTORS 1: Gets list of users with the label FIRST_TIME_CONTRIBUTOR
-def get_contributors(session, one_week_ago, repository_full_name):
-    # Query the database for issues
-    issues = session.query(
-        Issue.user_login,
-        Issue.author_association,
-        Issue.created_at,
-    ).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name,
-            Issue.created_at >= one_week_ago,
-            Issue.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"])
-        )
-    ).all()
+# def get_contributors(session, one_week_ago, repository_full_name):
+#     # Query the database for issues
+#     issues = session.query(
+#         Issue.user_login,
+#         Issue.author_association,
+#         Issue.created_at,
+#     ).filter(
+#         and_(
+#             Issue.repository_full_name == repository_full_name,
+#             Issue.created_at >= one_week_ago,
+#             Issue.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"])
+#         )
+#     ).all()
     
-    # Query for issue comments
-    issue_comments = session.query(
-        IssueComment.user_login,
-        IssueComment.author_association,
-        IssueComment.created_at,
-        IssueComment.repository_full_name
-    ).filter(
-        and_(
-            IssueComment.repository_full_name == repository_full_name,
-            IssueComment.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"]),
-            IssueComment.created_at >= one_week_ago
-        )
-    ).all()
+#     # Query for issue comments
+#     issue_comments = session.query(
+#         IssueComment.user_login,
+#         IssueComment.author_association,
+#         IssueComment.created_at,
+#         IssueComment.repository_full_name
+#     ).filter(
+#         and_(
+#             IssueComment.repository_full_name == repository_full_name,
+#             IssueComment.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"]),
+#             IssueComment.created_at >= one_week_ago
+#         )
+#     ).all()
     
-    # Query for commit comments
-    commit_comments = session.query(
-        CommitComment.repository_full_name,
-        CommitComment.user_login,
-        CommitComment.created_at,
-        CommitComment.author_association
-    ).filter(
-        and_(
-            CommitComment.repository_full_name == repository_full_name,
-            CommitComment.created_at >= one_week_ago,
-            CommitComment.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"])
-        )
-    ).all()
+#     # Query for commit comments
+#     commit_comments = session.query(
+#         CommitComment.repository_full_name,
+#         CommitComment.user_login,
+#         CommitComment.created_at,
+#         CommitComment.author_association
+#     ).filter(
+#         and_(
+#             CommitComment.repository_full_name == repository_full_name,
+#             CommitComment.created_at >= one_week_ago,
+#             CommitComment.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"])
+#         )
+#     ).all()
     
-    # Query for commits
-    commits = session.query(
-        Commit.committer_login,
-        Commit.repository_full_name,
-        Commit.committer_date
-    ).filter(
-        and_(
-            Commit.repository_full_name == repository_full_name,
-            Commit.committer_date >= one_week_ago,
-        )
-    ).all()
+#     # Query for commits
+#     commits = session.query(
+#         Commit.committer_login,
+#         Commit.repository_full_name,
+#         Commit.committer_date
+#     ).filter(
+#         and_(
+#             Commit.repository_full_name == repository_full_name,
+#             Commit.committer_date >= one_week_ago,
+#         )
+#     ).all()
     
-    # Query for pull requests
-    pulls = session.query(
-        PullRequest.user_login,
-        PullRequest.author_association,
-        PullRequest.created_at
-    ).filter(
-        and_(
-            PullRequest.repository_full_name == repository_full_name,
-            PullRequest.created_at >= one_week_ago,
-            PullRequest.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"])
-        )
-    ).all()
+#     # Query for pull requests
+#     pulls = session.query(
+#         PullRequest.user_login,
+#         PullRequest.author_association,
+#         PullRequest.created_at
+#     ).filter(
+#         and_(
+#             PullRequest.repository_full_name == repository_full_name,
+#             PullRequest.created_at >= one_week_ago,
+#             PullRequest.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"])
+#         )
+#     ).all()
     
-    # Query for pull request comments
-    pr_comments = session.query(
-        PullRequestComment.user_login,
-        PullRequestComment.author_association,
-        PullRequestComment.created_at,
-        PullRequestComment.repository_full_name
-    ).filter(
-        and_(
-            PullRequestComment.created_at >= one_week_ago,
-            PullRequestComment.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"]),
-            PullRequestComment.repository_full_name == repository_full_name
-        )
-    ).all()
+#     # Query for pull request comments
+#     pr_comments = session.query(
+#         PullRequestComment.user_login,
+#         PullRequestComment.author_association,
+#         PullRequestComment.created_at,
+#         PullRequestComment.repository_full_name
+#     ).filter(
+#         and_(
+#             PullRequestComment.created_at >= one_week_ago,
+#             PullRequestComment.author_association.in_(["FIRST_TIME_CONTRIBUTOR", "CONTRIBUTOR"]),
+#             PullRequestComment.repository_full_name == repository_full_name
+#         )
+#     ).all()
     
-    # Lists to store first time contributors and returning contributors
-    first_time_contributors = []
-    active_contributors = []
+#     # Lists to store first time contributors and returning contributors
+#     first_time_contributors = []
+#     active_contributors = []
 
-    # Loop through all issues
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
+#     # Loop through all issues
+#     for issue in issues:
+#         # Omit bots
+#         if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
+#             continue
         
-        # Insert first time contributor
-        if issue.author_association == "FIRST_TIME_CONTRIBUTOR":
-            found = False
+#         # Insert first time contributor
+#         if issue.author_association == "FIRST_TIME_CONTRIBUTOR":
+#             found = False
             
-            # If the user exists in the list, update number of issues they've created
-            for contributor in first_time_contributors:
-                if contributor["author"] == issue.user_login:
-                    contributor["issues"] += 1
-                    found = True
-                    break
+#             # If the user exists in the list, update number of issues they've created
+#             for contributor in first_time_contributors:
+#                 if contributor["author"] == issue.user_login:
+#                     contributor["issues"] += 1
+#                     found = True
+#                     break
             
-            # Otherwise, insert them into the database
-            if not found:
-                issue_data = {
-                "author": issue.user_login,
-                "commits": 0,
-                "issues": 1,
-                "pull_requests": 0
-                }
-                first_time_contributors.append(issue_data)
+#             # Otherwise, insert them into the database
+#             if not found:
+#                 issue_data = {
+#                 "author": issue.user_login,
+#                 "commits": 0,
+#                 "issues": 1,
+#                 "pull_requests": 0
+#                 }
+#                 first_time_contributors.append(issue_data)
         
-        # Insert active contributor
-        if issue.author_association == "CONTRIBUTOR":
-            found = False
+#         # Insert active contributor
+#         if issue.author_association == "CONTRIBUTOR":
+#             found = False
             
-            for contributor in active_contributors:
-                if contributor["author"] == issue.user_login:
-                    contributor["issues"] += 1
-                    found = True
-                    break
+#             for contributor in active_contributors:
+#                 if contributor["author"] == issue.user_login:
+#                     contributor["issues"] += 1
+#                     found = True
+#                     break
                 
-            if not found:
-                issue_data = {
-                    "author": issue.user_login,
-                    "commits": 0,
-                    "issues": 1,
-                    "pull_requests": 0
-                }
-                active_contributors.append(issue_data)
+#             if not found:
+#                 issue_data = {
+#                     "author": issue.user_login,
+#                     "commits": 0,
+#                     "issues": 1,
+#                     "pull_requests": 0
+#                 }
+#                 active_contributors.append(issue_data)
                 
-    # Loop through each pull request
-    for pull in pulls:
-        # Omit bots
-        if "bot" in pull.user_login.lower() or "[bot]" in pull.user_login.lower():
-            continue
+#     # Loop through each pull request
+#     for pull in pulls:
+#         # Omit bots
+#         if "bot" in pull.user_login.lower() or "[bot]" in pull.user_login.lower():
+#             continue
         
-        if pull.author_association == "FIRST_TIME_CONTRIBUTOR":
-            found = False
+#         if pull.author_association == "FIRST_TIME_CONTRIBUTOR":
+#             found = False
             
-            # If the user exists in the list, update number of issues they've created
-            for contributor in first_time_contributors:
-                if contributor["author"] == issue.user_login:
-                    contributor["pull_requests"] += 1
-                    found = True
-                    break
+#             # If the user exists in the list, update number of issues they've created
+#             for contributor in first_time_contributors:
+#                 if contributor["author"] == issue.user_login:
+#                     contributor["pull_requests"] += 1
+#                     found = True
+#                     break
             
-            # Otherwise, insert them into the database
-            if not found:
-                pr_data = {
-                "author": issue.user_login,
-                "commits": 0,
-                "issues": 0,
-                "pull_requests": 1
-                }
-                first_time_contributors.append(pr_data)
+#             # Otherwise, insert them into the database
+#             if not found:
+#                 pr_data = {
+#                 "author": issue.user_login,
+#                 "commits": 0,
+#                 "issues": 0,
+#                 "pull_requests": 1
+#                 }
+#                 first_time_contributors.append(pr_data)
         
-        # Handle authors labeled "CONTRIBUTOR"
-        if pull.author_association == "CONTRIBUTOR":
-            found = False
+#         # Handle authors labeled "CONTRIBUTOR"
+#         if pull.author_association == "CONTRIBUTOR":
+#             found = False
             
-            # If the user exists in the list, update number of issues they've created
-            for contributor in first_time_contributors:
-                if contributor["author"] == issue.user_login:
-                    contributor["pull_requests"] += 1
-                    found = True
-                    break
+#             # If the user exists in the list, update number of issues they've created
+#             for contributor in first_time_contributors:
+#                 if contributor["author"] == issue.user_login:
+#                     contributor["pull_requests"] += 1
+#                     found = True
+#                     break
             
-            # Otherwise, insert them into the database
-            if not found:
-                pr_data = {
-                "author": issue.user_login,
-                "commits": 0,
-                "issues": 0,
-                "pull_requests": 1
-                }
-                first_time_contributors.append(pr_data)
+#             # Otherwise, insert them into the database
+#             if not found:
+#                 pr_data = {
+#                 "author": issue.user_login,
+#                 "commits": 0,
+#                 "issues": 0,
+#                 "pull_requests": 1
+#                 }
+#                 first_time_contributors.append(pr_data)
         
-    # Loop through commit comments
-    for comment in commit_comments:
-        # Omit bots
-        if "bot" in comment.user_login.lower() or "[bot]" in comment.user_login.lower():
-            continue
+#     # Loop through commit comments
+#     for comment in commit_comments:
+#         # Omit bots
+#         if "bot" in comment.user_login.lower() or "[bot]" in comment.user_login.lower():
+#             continue
         
-        # Check if the author is a first-time contributor
-        if comment.author_association == "FIRST_TIME_CONTRIBUTOR":
-            found = False
+#         # Check if the author is a first-time contributor
+#         if comment.author_association == "FIRST_TIME_CONTRIBUTOR":
+#             found = False
             
-            # If the user exists in the list, update the number of commits they've created
-            for contributor in first_time_contributors:
-                if contributor["author"] == comment.user_login:
-                    # Loop through commits to count the commits made by this user
-                    for commit in commits:
-                        if contributor["author"] == commit.committer_login:
-                            contributor["commits"] += 1
-                    found = True
-                    break
+#             # If the user exists in the list, update the number of commits they've created
+#             for contributor in first_time_contributors:
+#                 if contributor["author"] == comment.user_login:
+#                     # Loop through commits to count the commits made by this user
+#                     for commit in commits:
+#                         if contributor["author"] == commit.committer_login:
+#                             contributor["commits"] += 1
+#                     found = True
+#                     break
             
-            # If the user does not exist in the list, insert them into the list
-            if not found:
-                commit_count = 0
-                # Loop through commits to count the commits made by this user
-                for commit in commits:
-                    if comment.user_login == commit.committer_login:
-                        commit_count += 1
+#             # If the user does not exist in the list, insert them into the list
+#             if not found:
+#                 commit_count = 0
+#                 # Loop through commits to count the commits made by this user
+#                 for commit in commits:
+#                     if comment.user_login == commit.committer_login:
+#                         commit_count += 1
                 
-                pr_data = {
-                    "author": comment.user_login,
-                    "commits": commit_count,
-                    "issues": 0,
-                    "pull_requests": 0,
-                }
-                first_time_contributors.append(pr_data)
+#                 pr_data = {
+#                     "author": comment.user_login,
+#                     "commits": commit_count,
+#                     "issues": 0,
+#                     "pull_requests": 0,
+#                 }
+#                 first_time_contributors.append(pr_data)
                 
-        if comment.author_association == "CONTRIBUTOR":
-            found = False
-            # If the user exists in the list, update the number of commits they've created
-            for contributor in active_contributors:
-                if contributor["author"] == comment.user_login:
-                    # Loop through commits to count the commits made by this user
-                    for commit in commits:
-                        if contributor["author"] == commit.committer_login:
-                            contributor["commits"] += 1
-                    found = True
-                    break
+#         if comment.author_association == "CONTRIBUTOR":
+#             found = False
+#             # If the user exists in the list, update the number of commits they've created
+#             for contributor in active_contributors:
+#                 if contributor["author"] == comment.user_login:
+#                     # Loop through commits to count the commits made by this user
+#                     for commit in commits:
+#                         if contributor["author"] == commit.committer_login:
+#                             contributor["commits"] += 1
+#                     found = True
+#                     break
             
-            # If the user does not exist in the list, insert them into the list
-            if not found:
-                commit_count = 0
-                # Loop through commits to count the commits made by this user
-                for commit in commits:
-                    if comment.user_login == commit.committer_login:
-                        commit_count += 1
+#             # If the user does not exist in the list, insert them into the list
+#             if not found:
+#                 commit_count = 0
+#                 # Loop through commits to count the commits made by this user
+#                 for commit in commits:
+#                     if comment.user_login == commit.committer_login:
+#                         commit_count += 1
                 
-                pr_data = {
-                    "author": comment.user_login,
-                    "commits": commit_count,
-                    "issues": 0,
-                    "pull_requests": 0,
-                }
-                first_time_contributors.append(pr_data)
+#                 pr_data = {
+#                     "author": comment.user_login,
+#                     "commits": commit_count,
+#                     "issues": 0,
+#                     "pull_requests": 0,
+#                 }
+#                 first_time_contributors.append(pr_data)
     
-    # Loop through issue comments
-    for comment in issue_comments:
-        # Omit bots
-        if "bot" in comment.user_login.lower() or "[bot]" in comment.user_login.lower():
-            continue
+#     # Loop through issue comments
+#     for comment in issue_comments:
+#         # Omit bots
+#         if "bot" in comment.user_login.lower() or "[bot]" in comment.user_login.lower():
+#             continue
         
-        # Check if the author is a first-time contributor
-        if comment.author_association == "FIRST_TIME_CONTRIBUTOR":
-            found = False
+#         # Check if the author is a first-time contributor
+#         if comment.author_association == "FIRST_TIME_CONTRIBUTOR":
+#             found = False
             
-            # If the user exists in the list, update the number of issues they've created
-            for contributor in first_time_contributors:
-                if contributor["author"] == comment.user_login:
-                    # Loop through issues to count the issues made by this user
-                    for issue in issues:
-                        if contributor["author"] == issue.user_login:
-                            contributor["issues"] += 1
-                    found = True
-                    break
+#             # If the user exists in the list, update the number of issues they've created
+#             for contributor in first_time_contributors:
+#                 if contributor["author"] == comment.user_login:
+#                     # Loop through issues to count the issues made by this user
+#                     for issue in issues:
+#                         if contributor["author"] == issue.user_login:
+#                             contributor["issues"] += 1
+#                     found = True
+#                     break
             
-            # If the user does not exist in the list, insert them into the list
-            if not found:
-                issue_count = 0
-                # Loop through issues to count the issues made by this user
-                for issue in issues:
-                    if comment.user_login == issue.user_login:
-                        issue_count += 1
+#             # If the user does not exist in the list, insert them into the list
+#             if not found:
+#                 issue_count = 0
+#                 # Loop through issues to count the issues made by this user
+#                 for issue in issues:
+#                     if comment.user_login == issue.user_login:
+#                         issue_count += 1
                 
-                issue_data = {
-                    "author": comment.user_login,
-                    "commits": 0,
-                    "issues": issue_count,
-                    "pull_requests": 0
-                }
-                first_time_contributors.append(issue_data)
+#                 issue_data = {
+#                     "author": comment.user_login,
+#                     "commits": 0,
+#                     "issues": issue_count,
+#                     "pull_requests": 0
+#                 }
+#                 first_time_contributors.append(issue_data)
                 
-        if comment.author_association == "CONTRIBUTOR":
-            found = False
-             # If the user exists in the list, update the number of issues they've created
-            for contributor in active_contributors:
-                if contributor["author"] == comment.user_login:
-                    # Loop through issues to count the issues made by this user
-                    for issue in issues:
-                        if contributor["author"] == issue.user_login:
-                            contributor["issues"] += 1
-                    found = True
-                    break
+#         if comment.author_association == "CONTRIBUTOR":
+#             found = False
+#              # If the user exists in the list, update the number of issues they've created
+#             for contributor in active_contributors:
+#                 if contributor["author"] == comment.user_login:
+#                     # Loop through issues to count the issues made by this user
+#                     for issue in issues:
+#                         if contributor["author"] == issue.user_login:
+#                             contributor["issues"] += 1
+#                     found = True
+#                     break
             
-            # If the user does not exist in the list, insert them into the list
-            if not found:
-                issue_count = 0
-                # Loop through issues to count the issues made by this user
-                for issue in issues:
-                    if comment.user_login == issue.user_login:
-                        issue_count += 1
+#             # If the user does not exist in the list, insert them into the list
+#             if not found:
+#                 issue_count = 0
+#                 # Loop through issues to count the issues made by this user
+#                 for issue in issues:
+#                     if comment.user_login == issue.user_login:
+#                         issue_count += 1
                 
-                issue_data = {
-                    "author": comment.user_login,
-                    "commits": 0,
-                    "issues": issue_count,
-                    "pull_requests": 0
-                }
-                active_contributors.append(issue_data)
+#                 issue_data = {
+#                     "author": comment.user_login,
+#                     "commits": 0,
+#                     "issues": issue_count,
+#                     "pull_requests": 0
+#                 }
+#                 active_contributors.append(issue_data)
     
-    # Loop through pull request comments
-    for comment in pr_comments:
-        # Omit bots
-        if "bot" in comment.user_login.lower() or "[bot]" in comment.user_login.lower():
-            continue
+#     # Loop through pull request comments
+#     for comment in pr_comments:
+#         # Omit bots
+#         if "bot" in comment.user_login.lower() or "[bot]" in comment.user_login.lower():
+#             continue
         
-        # Check if the author is a first-time contributor
-        if comment.author_association == "FIRST_TIME_CONTRIBUTOR":
-            found = False
+#         # Check if the author is a first-time contributor
+#         if comment.author_association == "FIRST_TIME_CONTRIBUTOR":
+#             found = False
             
-            # If the user exists in the list, update the number of pull requests they've created
-            for contributor in first_time_contributors:
-                if contributor["author"] == comment.user_login:
-                    # Loop through pull requests to count the pull requests made by this user
-                    for pull in pulls:
-                        if contributor["author"] == pull.user_login:
-                            contributor["pull_requests"] += 1
-                    found = True
-                    break
+#             # If the user exists in the list, update the number of pull requests they've created
+#             for contributor in first_time_contributors:
+#                 if contributor["author"] == comment.user_login:
+#                     # Loop through pull requests to count the pull requests made by this user
+#                     for pull in pulls:
+#                         if contributor["author"] == pull.user_login:
+#                             contributor["pull_requests"] += 1
+#                     found = True
+#                     break
             
-            # If the user does not exist in the list, insert them into the list
-            if not found:
-                pr_count = 0
-                # Loop through pull requests to count the pull requests made by this user
-                for pull in pulls:
-                    if comment.user_login == pull.user_login:
-                        pr_count += 1
+#             # If the user does not exist in the list, insert them into the list
+#             if not found:
+#                 pr_count = 0
+#                 # Loop through pull requests to count the pull requests made by this user
+#                 for pull in pulls:
+#                     if comment.user_login == pull.user_login:
+#                         pr_count += 1
                 
-                pr_data = {
-                    "author": comment.user_login,
-                    "commits": 0,
-                    "issues": 0,
-                    "pull_requests": pr_count
-                }
-                first_time_contributors.append(pr_data)
+#                 pr_data = {
+#                     "author": comment.user_login,
+#                     "commits": 0,
+#                     "issues": 0,
+#                     "pull_requests": pr_count
+#                 }
+#                 first_time_contributors.append(pr_data)
                 
-        if comment.author_association == "CONTRIBUTOR":
-            found = False
+#         if comment.author_association == "CONTRIBUTOR":
+#             found = False
             
-            # If the user exists in the list, update the number of pull requests they've created
-            for contributor in active_contributors:
-                if contributor["author"] == comment.user_login:
-                    # Loop through pull requests to count the pull requests made by this user
-                    for pull in pulls:
-                        if contributor["author"] == pull.user_login:
-                            contributor["pull_requests"] += 1
-                    found = True
-                    break
+#             # If the user exists in the list, update the number of pull requests they've created
+#             for contributor in active_contributors:
+#                 if contributor["author"] == comment.user_login:
+#                     # Loop through pull requests to count the pull requests made by this user
+#                     for pull in pulls:
+#                         if contributor["author"] == pull.user_login:
+#                             contributor["pull_requests"] += 1
+#                     found = True
+#                     break
             
-            # If the user does not exist in the list, insert them into the list
-            if not found:
-                pr_count = 0
-                # Loop through pull requests to count the pull requests made by this user
-                for pull in pulls:
-                    if comment.user_login == pull.user_login:
-                        pr_count += 1
+#             # If the user does not exist in the list, insert them into the list
+#             if not found:
+#                 pr_count = 0
+#                 # Loop through pull requests to count the pull requests made by this user
+#                 for pull in pulls:
+#                     if comment.user_login == pull.user_login:
+#                         pr_count += 1
                 
-                pr_data = {
-                    "author": comment.user_login,
-                    "commits": 0,
-                    "issues": 0,
-                    "pull_requests": pr_count
-                }
-                active_contributors.append(pr_data)
+#                 pr_data = {
+#                     "author": comment.user_login,
+#                     "commits": 0,
+#                     "issues": 0,
+#                     "pull_requests": pr_count
+#                 }
+#                 active_contributors.append(pr_data)
     
-    return first_time_contributors, active_contributors
+#     return first_time_contributors, active_contributors
     
 
 # Main 
@@ -908,11 +906,12 @@ if __name__ == '__main__':
         subscribers_data = json.load(file)
 
     # get a list of all of the repo names from subscribers_data
+    # TODO Move this to parse_github_data instead of here, so repo data gets inserted into the database. 
     repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
 
      
     # Time variable for function parameters. Holds the date/time one week ago
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=100)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
@@ -924,6 +923,7 @@ if __name__ == '__main__':
     # Array to store data for all of the repositories
     all_repo_data = []
     
+    # THIS IS FOR TESTING
     repo_names = ['https://github.com/danny-avila/LibreChat']
     
     # for-loop for every repo name (ex. tensorflow/tensorflow)
@@ -949,7 +949,7 @@ if __name__ == '__main__':
         commits = get_commit_messages(session, one_week_ago, repo_name)            
 
         # CONTRIBUTORS
-        contributors = get_contributors(session, one_week_ago, repo_name)           
+        # contributors = get_contributors(session, one_week_ago, repo_name)           
     
         # Format and store data
         repo_data = {
@@ -965,12 +965,13 @@ if __name__ == '__main__':
             "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repo_name),
             "open_pull_requests": open_pull_requests,
             "closed_pull_requests": closed_pull_requests,
+            "active_pull_requests": get_active_prs(session, one_week_ago, repo_name),
             "num_open_prs": get_num_open_prs(open_pull_requests),
             "num_closed_prs": get_num_closed_prs(closed_pull_requests),
             "commits": commits,
             "num_commits": get_num_commits(commits),
-            "first_time_contributors":contributors[0],
-            "active_contributors": contributors[1]
+            # "first_time_contributors":contributors[0],
+            # "active_contributors": contributors[1]
         }
         
         all_repo_data.append(repo_data)

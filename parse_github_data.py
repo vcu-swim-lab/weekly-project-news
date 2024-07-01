@@ -1,10 +1,9 @@
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
 from tables.repository import Repository, RepositoryAuthor
-from tables.issue import Issue, IssueLabel, IssueComment
-from tables.pull_request import PullRequest, PullRequestLabel, PullRequestComment
-from tables.commit import Commit, CommitComment
-from tables.label import Label
+from tables.issue import Issue, IssueComment
+from tables.pull_request import PullRequest, PullRequestComment
+from tables.commit import Commit
 from tables.user import User
 from datetime import datetime  # Import datetime
 import json
@@ -91,10 +90,15 @@ def get_issues(repo, limit):
     
     issues_array = []
     issues = repo.get_issues(state='all')
+    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
     
     for issue in issues:
-        issues_array.append(issue)
+        if issue.pull_request:
+            continue
+        elif issue.created_at > one_year_ago:
+            continue
         
+        issues_array.append(issue)
         if len(issues_array) >= limit:
             break
 
@@ -104,8 +108,12 @@ def get_issues(repo, limit):
 def get_pull_requests(repo, limit):
     pr_array = []
     pulls = repo.get_pulls()
+    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for pr in pulls:
+        if pr.created_at > one_year_ago:
+            continue
+        
         pr_array.append(pr)
         if len(pr_array) >= limit:
             break
@@ -117,8 +125,12 @@ def get_pull_requests(repo, limit):
 def get_all_commits(repo, limit):
     commit_array = []
     commits = repo.get_commits()
+    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for commit in commits:
+        if commit.commit.author.date > one_year_ago:
+            continue
+        
         commit_array.append(commit)
         if len(commit_array) > limit:
             break
@@ -201,17 +213,6 @@ def insert_issue(issue):
         insert_user(user_data)
     user = session.query(User).filter_by(login=user_data['login']).first()
     filtered_data['user_login'] = user.login
-
-    # Handle labels
-    labels = []
-    for label in issue.labels:
-        label_obj = session.query(Label).filter_by(name=label.name).first()
-        if not label_obj:
-            label_obj = Label(name=label.name)
-            session.add(label_obj)
-            session.commit()
-        labels.append(label_obj)
-    filtered_data['labels'] = labels
     
     # Retrieve the repo name and insert into database
     repo_name = get_repo_name(issue.html_url)
@@ -331,18 +332,6 @@ def insert_pull_request(data):
     else:
         filtered_data['repository_full_name'] = get_repo_name(data.url)
 
-    # Handle labels
-    if data.labels:
-        labels = []
-        for label in data.labels:
-            label_obj = session.query(Label).filter_by(name=label.name).first()
-            if not label_obj:
-                label_obj = Label(name=label.name)
-                session.add(label_obj)
-                session.commit()
-            labels.append(label_obj)
-        filtered_data['labels'] = labels
-
     try:
         new_pr = PullRequest(**filtered_data)
         session.add(new_pr)
@@ -455,56 +444,6 @@ def insert_commit(data):
     except IntegrityError as e:
         session.rollback()
         print(f"IntegrityError: {e}")
-    
-# COMMITS 2: INSERT COMMIT COMMENT
-def insert_commit_comment(data, commit_sha):
-    comment_fields = {column.name for column in CommitComment.__table__.columns}
-    
-    # Extract data from the comment object
-    filtered_comment_data = {
-        'id': data.id,
-        'url': data.url,
-        'html_url': data.html_url,
-        'body': data.body,
-        'created_at': data.created_at,
-        'updated_at': data.updated_at,
-        'commit_sha': commit_sha
-    }
-    
-    # Handle user data
-    if hasattr(data, 'user'):
-        user_data = data.user
-        user = session.query(User).filter_by(login=user_data.login).first()
-        if not user:
-            user = insert_user(user_data)
-            if not user:
-                print(f"Failed to insert or retrieve user: {user_data}")
-                return
-        filtered_comment_data['user_login'] = user.login
-
-    # Convert datetime fields if necessary
-    datetime_fields = ['created_at', 'updated_at']
-    for field in datetime_fields:
-        if field in filtered_comment_data and isinstance(filtered_comment_data[field], str):
-            filtered_comment_data[field] = datetime.strptime(filtered_comment_data[field], "%Y-%m-%dT%H:%M:%SZ")
-
-    # Retrieve the repo name and insert into database
-    repo_name = get_repo_name(data.html_url)
-    if repo_name is not None:
-        filtered_comment_data['repository_full_name'] = repo_name
-    else:
-        filtered_comment_data['repository_full_name'] = get_repo_name(data.url)
-
-    # Filter out only the fields present in the CommitComment model
-    filtered_comment_data = {key: value for key, value in filtered_comment_data.items() if key in comment_fields}
-
-    try:
-        new_comment = CommitComment(**filtered_comment_data)
-        session.add(new_comment)
-        session.commit()
-    except IntegrityError as e:
-        session.rollback()
-        print(f"IntegrityError: {e}")
 
 
 if __name__ == '__main__':
@@ -519,8 +458,11 @@ if __name__ == '__main__':
     
     
     # Define owners and repos arrays
-    owners = ['cnovalski1', 'monicahq', 'danny-avila', 'tensorflow']
-    repos = ['APIexample', 'monica', 'LibreChat', 'tensorflow']
+    # owners = ['cnovalski1', 'monicahq', 'danny-avila', 'tensorflow']
+    # repos = ['APIexample', 'monica', 'LibreChat', 'tensorflow']
+    
+    owners = ['monicahq']
+    repos = ['monica']
 
     
     for owner, repo in zip(owners, repos):
@@ -553,9 +495,4 @@ if __name__ == '__main__':
         for commit in commits:
             insert_commit(commit)
 
-            commit_comments = commit.get_comments()
-
-            for comment in commit_comments:
-                print(comment)
-                insert_commit_comment(comment, commit.sha)
     

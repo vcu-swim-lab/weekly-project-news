@@ -4,7 +4,6 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Bool
 from sqlalchemy.orm import relationship
 from .base import Base
 from .user import User
-from .label import Label
 from .repository import Repository
 
 class PullRequest(Base):
@@ -25,17 +24,10 @@ class PullRequest(Base):
 
     user_login = Column(String)
     repository_full_name = Column(String)
-
-    labels = relationship("Label", secondary="pull_request_labels")
     
 
     def __repr__(self):
         return f"<PullRequest(title={self.title}, state={self.state})>"
-
-class PullRequestLabel(Base):
-    __tablename__ = 'pull_request_labels'
-    pull_request_id = Column(Integer, ForeignKey('pull_requests.id'), primary_key=True)
-    label_name = Column(Integer, ForeignKey('labels.name'), primary_key=True)
 
 class PullRequestComment(Base):
     __tablename__ = 'pull_request_comments'

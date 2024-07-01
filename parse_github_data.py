@@ -131,13 +131,24 @@ def insert_user(data):
     user_fields = {column.name for column in User.__table__.columns}
     
     # Extract data from the NamedUser object
-    user_data = {
-        'id': data.id,
-        'login': data.login,
-        'url': data.url,
-        'html_url': data.html_url,
-        'name': data.name,
-    }
+    if isinstance(data, dict):
+        # Extract data from the dictionary using .get() to avoid KeyError
+        user_data = {
+            'id': data.get('id'),
+            'login': data.get('login'),
+            'url': data.get('url'),
+            'html_url': data.get('html_url'),
+            'name': data.get('name'),
+        }
+    else:
+        # Assume data is a NamedUser object
+        user_data = {
+            'id': getattr(data, 'id', None),
+            'login': getattr(data, 'login', None),
+            'url': getattr(data, 'url', None),
+            'html_url': getattr(data, 'html_url', None),
+            'name': getattr(data, 'name', None),
+        }
     
     # Filter out only the fields present in the User model
     filtered_data = {key: value for key, value in user_data.items() if key in user_fields}

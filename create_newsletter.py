@@ -12,6 +12,7 @@ from sort_data import *
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+from collections import deque
 
 load_dotenv()  
 
@@ -42,15 +43,44 @@ After that paragraph, on a different line, give only a single number to 2 decima
 Then, on a different line, give only a short comma-separated list of specific reasons in the summary for giving the number. For example, 'Rapid escalation, aggressive language'"""
 
 
-# Generates the summary using ChatGPT given any context and question (prompt template above)
-# def generate_summary(data, instructions):
-#     response = chain.invoke({"data": instructions, "instructions": data})
-#     return response.content
+total_tokens = 0
+total_requests = 0
+minute_start_time = datetime.now()
 
+# Generates summary using gpt-4o given context and question (prompt_template above)
+# Uses exponential backoff as a backoff timer
 def generate_summary(data, instructions, max_retries=5, base_wait=1):
+    global total_requests, total_tokens, minute_start_time
+
     for attempt in range(max_retries):
         try:
+            current_time = datetime.now()
+
+            # if over a minute, reset
+            if (current_time - minute_start_time).total_seconds() >= 60:
+                total_requests = 0
+                total_tokens = 0
+                minute_start_time = current_time
+                print("\n--- New Minute: Counters Reset ---\n")
+
+            total_requests += 1
+
             response = chain.invoke({"data": instructions, "instructions": data})
+            print(response)
+
+            tokens_used = response.usage_metadata['total_tokens']
+            print(tokens_used)
+            total_tokens += tokens_used
+
+            time_elapsed = (current_time - minute_start_time).total_seconds()
+
+            print(f"\n--- API Call Complete ---")
+            print(f"Tokens used in this request: {tokens_used}")
+            print(f"Total tokens used this minute: {total_tokens}")
+            print(f"Total requests made: {total_requests}")
+            print(f"Time elapsed in current minute: {time_elapsed:.2f} seconds")
+            print("------------------------\n")
+
             return response.content
         except RateLimitError as e:
             if attempt == max_retries - 1:
@@ -416,20 +446,17 @@ if __name__ == '__main__':
   limit = 100;
 
   # 1.4: getting all of the repositories
-  query = text("SELECT full_name FROM repositories")
-  result = session.execute(query)
-  repositories = [row[0] for row in result]
+  # query = text("SELECT full_name FROM repositories")
+  # result = session.execute(query)
+  # repositories = [row[0] for row in result]
   repositories = [
-    # "danny-avila/LibreChat"
     "tensorflow/tensorflow"
   ]
-
-  print(repositories)
 
   # PART TWO: create the markdown for a newsletter
   for repository in repositories:
 
-    # # Step 1: call the a sort_data.py function on each 
+    # 2.1: call all sort_data.py functions on the repo
     repo_data = {
       "repo_name": repository,
       "open_issues": get_open_issues(session, one_week_ago, repository),
@@ -452,6 +479,28 @@ if __name__ == '__main__':
       "active_contributors": get_contributors(session, one_week_ago, repository)[1],
     }
     output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
+
+    # print(output_filename)
+    # print(repo_data)
+    # print(repo_data['repo_name'])
+    # print(repo_data['open_issues'])
+    # print(repo_data['closed_issues'])
+    # print(repo_data['active_issues'])
+    # print(repo_data['num_weekly_open_issues'])
+    # print(repo_data['num_weekly_closed_issues'])
+    # print(repo_data['issues_by_open_date'])
+    # print(repo_data['issues_by_number_of_comments'])
+    # print(repo_data['average_issue_close_time'])
+    # print(repo_data['average_issue_close_time_weekly'])
+    print(repo_data['open_pull_requests'])
+    # print(repo_data['closed_pull_requests'])
+    # print(repo_data['num_open_prs'])
+    # print(repo_data['num_closed_prs'])
+    # print(repo_data['commits'])
+    # print(repo_data['num_commits'])
+    # print(repo_data['first_time_contributors'])
+    # print(repo_data['active_contributors'])
+    print()
 
     name = repo_data['repo_name'].split('/')[-1]
     capitalized_name = name[0].upper() + name[1:]
@@ -539,8 +588,8 @@ if __name__ == '__main__':
 
         # 2.1.2 Pull Requests
         outfile.write("**Pull Requests:**\n\n")
-        # result = open_pull_requests(repo_data)
-        # outfile.write(result)
+        result = open_pull_requests(repo_data)
+        outfile.write(result)
 
 
         # 2.2: Closed Pull Requests

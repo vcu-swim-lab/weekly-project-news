@@ -13,6 +13,7 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from collections import deque
+import openai
 
 load_dotenv()  
 
@@ -63,21 +64,20 @@ def generate_summary(data, instructions, max_retries=5, base_wait=1):
                 minute_start_time = current_time
                 print("\n--- New Minute: Counters Reset ---\n")
 
-            total_requests += 1
-
+            # print('data:')
+            # print(data)
+            # print()
             response = chain.invoke({"data": instructions, "instructions": data})
-            print(response)
-
             tokens_used = response.usage_metadata['total_tokens']
-            print(tokens_used)
             total_tokens += tokens_used
+            total_requests += 1
 
             time_elapsed = (current_time - minute_start_time).total_seconds()
 
             print(f"\n--- API Call Complete ---")
-            print(f"Tokens used in this request: {tokens_used}")
-            print(f"Total tokens used this minute: {total_tokens}")
-            print(f"Total requests made: {total_requests}")
+            print(f"Tokens used in this request:    {tokens_used} tokens")
+            print(f"Total tokens used this minute:  {total_tokens} tokens")
+            print(f"Total requests made:            {total_requests} requests")
             print(f"Time elapsed in current minute: {time_elapsed:.2f} seconds")
             print("------------------------\n")
 
@@ -475,29 +475,29 @@ if __name__ == '__main__':
       "num_closed_prs": get_num_closed_prs(get_closed_prs(session, one_week_ago, repository)),
       "commits": get_commit_messages(session, one_week_ago, repository),
       "num_commits": get_num_commits(get_commit_messages(session, one_week_ago, repository)),
-      "first_time_contributors": get_contributors(session, one_week_ago, repository)[0],
-      "active_contributors": get_contributors(session, one_week_ago, repository)[1],
+      # "first_time_contributors": get_contributors(session, one_week_ago, repository)[0],
+      # "active_contributors": get_contributors(session, one_week_ago, repository)[1],
     }
     output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
 
-    # print(output_filename)
-    # print(repo_data)
-    # print(repo_data['repo_name'])
-    # print(repo_data['open_issues'])
-    # print(repo_data['closed_issues'])
-    # print(repo_data['active_issues'])
-    # print(repo_data['num_weekly_open_issues'])
-    # print(repo_data['num_weekly_closed_issues'])
-    # print(repo_data['issues_by_open_date'])
-    # print(repo_data['issues_by_number_of_comments'])
-    # print(repo_data['average_issue_close_time'])
-    # print(repo_data['average_issue_close_time_weekly'])
+    print(output_filename)
+    print(repo_data)
+    print(repo_data['repo_name'])
+    print(repo_data['open_issues'])
+    print(repo_data['closed_issues'])
+    print(repo_data['active_issues'])
+    print(repo_data['num_weekly_open_issues'])
+    print(repo_data['num_weekly_closed_issues'])
+    print(repo_data['issues_by_open_date'])
+    print(repo_data['issues_by_number_of_comments'])
+    print(repo_data['average_issue_close_time'])
+    print(repo_data['average_issue_close_time_weekly'])
     print(repo_data['open_pull_requests'])
-    # print(repo_data['closed_pull_requests'])
-    # print(repo_data['num_open_prs'])
-    # print(repo_data['num_closed_prs'])
-    # print(repo_data['commits'])
-    # print(repo_data['num_commits'])
+    print(repo_data['closed_pull_requests'])
+    print(repo_data['num_open_prs'])
+    print(repo_data['num_closed_prs'])
+    print(repo_data['commits'])
+    print(repo_data['num_commits'])
     # print(repo_data['first_time_contributors'])
     # print(repo_data['active_contributors'])
     print()
@@ -588,8 +588,8 @@ if __name__ == '__main__':
 
         # 2.1.2 Pull Requests
         outfile.write("**Pull Requests:**\n\n")
-        result = open_pull_requests(repo_data)
-        outfile.write(result)
+        # result = open_pull_requests(repo_data)
+        # outfile.write(result)
 
 
         # 2.2: Closed Pull Requests
@@ -606,8 +606,8 @@ if __name__ == '__main__':
 
         # 2.3 Pull Request Discussion Insights
         outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
-        # result = pull_request_discussion_insights(repo_data)
-        # outfile.write(result)
+        result = pull_request_discussion_insights(repo_data)
+        outfile.write(result)
 
         outfile.write("***\n\n")
 

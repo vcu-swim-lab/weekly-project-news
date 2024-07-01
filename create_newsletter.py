@@ -9,6 +9,9 @@ import time
 import random
 from openai import RateLimitError
 from sort_data import *
+from datetime import datetime, timezone, timedelta
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 
 load_dotenv()  
 
@@ -397,23 +400,33 @@ def active_contributors(repo):
 
 if __name__ == '__main__':
 
+  # PART ONE: Setting everything up
+  # 1.1: connect to the database 
+  engine = create_engine('sqlite:///github.db')
+
+  # 1.2: connect engine to the session
   Session = sessionmaker(bind=engine)
   session = Session()
 
-  one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-  limit = 100;
-
-  # output folder
+  # 1.3: output folder + other stuff to run
   newsletter_directory = 'newsletter_data'
   if not os.path.exists(newsletter_directory):
     os.makedirs(newsletter_directory)
+  one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+  limit = 100;
 
-  # TODO: get actual repositories from the database somehow
+  # 1.4: getting all of the repositories
+  query = text("SELECT full_name FROM repositories")
+  result = session.execute(query)
+  repositories = [row[0] for row in result]
   repositories = [
-    "danny-avila/LibreChat"
+    # "danny-avila/LibreChat"
+    "tensorflow/tensorflow"
   ]
 
-  # generate a newsletter for each repository
+  print(repositories)
+
+  # PART TWO: create the markdown for a newsletter
   for repository in repositories:
 
     # # Step 1: call the a sort_data.py function on each 
@@ -430,33 +443,15 @@ if __name__ == '__main__':
       "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repository),
       "open_pull_requests": get_open_prs(session, one_week_ago, repository),
       "closed_pull_requests": get_closed_prs(session, one_week_ago, repository),
+      "active_pull_requests": get_active_prs(session, one_week_ago, repository),
       "num_open_prs": get_num_open_prs(get_open_prs(session, one_week_ago, repository)),
       "num_closed_prs": get_num_closed_prs(get_closed_prs(session, one_week_ago, repository)),
       "commits": get_commit_messages(session, one_week_ago, repository),
       "num_commits": get_num_commits(get_commit_messages(session, one_week_ago, repository)),
-      "contributors": get_contributors(session, one_week_ago, repository)
+      "first_time_contributors": get_contributors(session, one_week_ago, repository)[0],
+      "active_contributors": get_contributors(session, one_week_ago, repository)[1],
     }
     output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
-
-    # print(output_filename)
-    # print(repo_data)
-    # print(repo_data['repo_name'])
-    # print(repo_data['open_issues'])
-    # print(repo_data['closed_issues'])
-    # print(repo_data['active_issues'])
-    # print(repo_data['num_weekly_open_issues'])
-    # print(repo_data['num_weekly_closed_issues'])
-    # print(repo_data['issues_by_open_date'])
-    # print(repo_data['issues_by_number_of_comments'])
-    # print(repo_data['average_issue_close_time'])
-    # print(repo_data['average_issue_close_time_weekly'])
-    # print(repo_data['open_pull_requests'])
-    # print(repo_data['closed_pull_requests'])
-    # print(repo_data['num_open_prs'])
-    # print(repo_data['num_closed_prs'])
-    # print(repo_data['commits'])
-    # print(repo_data['num_commits'])
-    # print(repo_data['contributors'])
 
     name = repo_data['repo_name'].split('/')[-1]
     capitalized_name = name[0].upper() + name[1:]
@@ -464,10 +459,6 @@ if __name__ == '__main__':
     try:
       with open(output_filename, "w") as outfile:
         
-        # #0: Title
-        # title = f"# Weekly GitHub Report for {capitalized_name}\n\n"
-        # outfile.write(title)
-
         # 0: Title
         title = f"# Weekly GitHub Report for {capitalized_name}\n\n"
         outfile.write(title)
@@ -506,8 +497,8 @@ if __name__ == '__main__':
 
         # 1.3 Top 5 Quiet Issues
         outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-        result = quiet_issues(repo_data)
-        outfile.write(result)
+        # result = quiet_issues(repo_data)
+        # outfile.write(result)
 
 
         # 1.4: Closed Issues
@@ -597,7 +588,8 @@ if __name__ == '__main__':
         # 4.1: Contributors
         outfile.write("## 4.1 Contributors\n\n")
 
-        # print(repo_data.get('contributors'))
+        # print(repo_data.get('first_time_contributors'))
+        # print(repo_data.get('active_contributors'))
 
         # # 4.1.1 New Contributors
         # outfile.write(f"**New Contributors:** {repo_data.get('new_contributors')[-1].get('number_of_new_contributors')}\n\n")

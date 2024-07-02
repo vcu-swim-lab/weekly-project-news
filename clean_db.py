@@ -25,6 +25,7 @@ import requests
 import os 
 from parse_github_data import *
 from sort_data import *
+
 # Create a configured "Session" class
 Session = sessionmaker(bind=engine)
 
@@ -32,53 +33,25 @@ Session = sessionmaker(bind=engine)
 session = Session()
 one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
-# ISSUES  1: Update the state of an issue
 # TODO
-def update_issue_state(issue_id, state):
-    # Query database by issue ID
-    # Update object state
-    # Update in database
+# Deletes all associated comments as well
+def delete_issue(issue_id):
     return
 
 # TODO
-def update_issue_num_comments(issue_id, num_comments):
+# Deletes all associated comments as well
+def delete_pr(pr_id):
     return
 
 # TODO
-def update_issue_closed_at(issue_id, closed_at):
-    return
-
-# TODO
-def update_issue_updated_at(issue_id, closed_at):
-    return
-
-# TODO
-def update_issue_comment_updated_at(comment_id, updated_at):
-    return
-
-# PRS 1: Update the state of a pull request
-# TODO
-def update_pr_state(issue_id, state):
-    return
-
-# TODO
-def update_pr_num_comments(issue_id, num_comments):
-    return
-
-# TODO
-def update_pr_closed_at(issue_id, closed_at):
-    return
-
-# TODO
-def update_pr_updated_at(issue_id, closed_at):
-    return
-
-# TODO
-def update_pr_comment_updated_at(comment_id, updated_at):
+# Deletes all associated comments as well
+def delete_commit(commit_id):
     return
 
 
-# TODO
-# Get list of all issues, PRs, and commits with each of these attributes
-# Put them each in an array
-# Loop through each and update
+
+# TODO Clean database pseudocode
+# For each repository in database
+# Search through issues, delete if ___
+# Search through PRs, delete if ___
+# Search through commits, delete if ___

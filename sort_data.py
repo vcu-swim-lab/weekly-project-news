@@ -197,8 +197,12 @@ def sort_issues_num_comments(session, repository_full_name, limit):
         "title": issue.title,
         "number_of_comments": issue.comments,
         "body": issue.body,
-        "url": issue.html_url
+        "url": issue.html_url,
+        "comments": []
         }
+        comments = session.query(IssueComment.body, IssueComment.issue_id).filter(IssueComment.issue_id == issue.id).all()
+        for comment in comments:
+            issue_data["comments"].append({"body": comment.body})
         
         issue_data.append(data)
         
@@ -663,7 +667,6 @@ if __name__ == '__main__':
     
     # Limit the number of requests in certain pages (limits number of items in for loop)
     limit = 100
-    PROJECT_NAME = 'monicahq/monica'
 
     # Array to store data for all of the repositories
     all_repo_data = []

@@ -95,7 +95,9 @@ def get_issues(repo, limit):
     for issue in issues:
         if issue.pull_request:
             continue
-        elif issue.created_at > one_year_ago:
+        elif issue.created_at < one_year_ago:
+            continue
+        elif 'bot' in issue.user.login.lower() or '[bot]' in issue.user.login.lower():
             continue
         
         issues_array.append(issue)
@@ -111,7 +113,9 @@ def get_pull_requests(repo, limit):
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for pr in pulls:
-        if pr.created_at > one_year_ago:
+        if pr.created_at < one_year_ago:
+            continue
+        elif 'bot' in pr.user.login.lower() or '[bot]' in pr.user.login.lower():
             continue
         
         pr_array.append(pr)
@@ -128,7 +132,9 @@ def get_all_commits(repo, limit):
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for commit in commits:
-        if commit.commit.author.date > one_year_ago:
+        if commit.commit.author.date < one_year_ago:
+            continue
+        elif 'bot' in commit.commit.author.name.lower() or '[bot]' in commit.commit.author.name.lower():
             continue
         
         commit_array.append(commit)
@@ -444,6 +450,16 @@ def insert_commit(data):
     except IntegrityError as e:
         session.rollback()
         print(f"IntegrityError: {e}")
+
+
+
+
+
+
+# TODO
+# 1. Add code to go through subscribers
+# 2. Make proper list of repos and owners from that data, making sure to check if the repo already exists in the list
+
 
 
 if __name__ == '__main__':

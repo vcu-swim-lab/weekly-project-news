@@ -85,17 +85,16 @@ def insert_repository(data):
     session.add(new_repo)
     session.commit()
 
-# Retreive issues via pygithub
-def get_issues(repo, limit):
+# RETREIVE ISSUES 
+def get_issues(repo, limit, date):
     
     issues_array = []
-    issues = repo.get_issues(state='all')
-    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
+    issues = repo.get_issues(state='all', since=date)
     
     for issue in issues:
         if issue.pull_request:
             continue
-        elif issue.created_at < one_year_ago:
+        elif issue.created_at < date:
             continue
         elif 'bot' in issue.user.login.lower() or '[bot]' in issue.user.login.lower():
             continue
@@ -106,14 +105,15 @@ def get_issues(repo, limit):
 
     return issues_array
 
-# Retreive PRs via pygithub
-def get_pull_requests(repo, limit):
+
+# RETREIVE PULL REQUESTS
+def get_pull_requests(repo, limit, date):
     pr_array = []
     pulls = repo.get_pulls()
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for pr in pulls:
-        if pr.created_at < one_year_ago:
+        if pr.created_at < date:
             continue
         elif 'bot' in pr.user.login.lower() or '[bot]' in pr.user.login.lower():
             continue
@@ -125,14 +125,13 @@ def get_pull_requests(repo, limit):
     return pr_array
 
 
-# API call definition for commits
-def get_all_commits(repo, limit):
+# RETREIVE COMMITS
+def get_all_commits(repo, limit, date):
     commit_array = []
     commits = repo.get_commits()
-    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for commit in commits:
-        if commit.commit.author.date < one_year_ago:
+        if commit.commit.author.date < date:
             continue
         elif 'bot' in commit.commit.author.name.lower() or '[bot]' in commit.commit.author.name.lower():
             continue
@@ -451,9 +450,31 @@ def insert_commit(data):
         session.rollback()
         print(f"IntegrityError: {e}")
 
+# Insert all repository data relative to a specific date (e.g. one week, one year, etc.)
+def insert_all_data(repository, limit, date):
+    issues = get_issues(repository, limit, date)
+    for issue in issues:
+        insert_issue(issue)
+        issue_comments = issue.get_comments()
 
+        for comment in issue_comments:
+            insert_issue_comment(comment, issue.id)
 
+    # Get pull requests and insert them into the database
+    pulls = get_pull_requests(repository, limit, date)
+    for pr in pulls:
+        insert_pull_request(pr)
 
+        pr_comments = pr.get_comments()
+        
+        for comment in pr_comments:
+            insert_pr_comment(comment, pr.id)
+
+    # Get commits and insert them into the database
+    commits = get_all_commits(repository, limit, date)
+    for commit in commits:
+        insert_commit(commit)
+    
 
 
 # TODO
@@ -464,6 +485,8 @@ def insert_commit(data):
 
 if __name__ == '__main__':
     g = Github(os.environ['GITHUB_API_KEY'])
+    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Define the limit for API calls
     limit = 100
@@ -474,41 +497,23 @@ if __name__ == '__main__':
     
     
     # Define owners and repos arrays
-    # owners = ['cnovalski1', 'monicahq', 'danny-avila', 'tensorflow']
-    # repos = ['APIexample', 'monica', 'LibreChat', 'tensorflow']
+    owners = ['cnovalski1', 'monicahq', 'danny-avila', 'tensorflow']
+    repos = ['APIexample', 'monica', 'LibreChat', 'tensorflow']
     
-    owners = ['monicahq']
-    repos = ['monica']
-
+    # Get a list of repositories currently in the database
+    repo_list = [r[0] for r in session.query(Repository.full_name).all()]
+    
     
     for owner, repo in zip(owners, repos):
-    # Process repository data
-        repository = g.get_repo(f"{owner}/{repo}")
-        repo_data = get_a_repository(owner, repo)
-        insert_repository(repo_data)
+        repository_full_name = f"{owner}/{repo}"
+        repository = g.get_repo(repository_full_name)
         
-        # Get issues and insert them into the database
-        issues = get_issues(repository, limit)
-        for issue in issues:
-            insert_issue(issue)
-            issue_comments = issue.get_comments()
-
-            for comment in issue_comments:
-                insert_issue_comment(comment, issue.id)
-
-        # Get pull requests and insert them into the database
-        pulls = get_pull_requests(repository, limit)
-        for pr in pulls:
-            insert_pull_request(pr)
-
-            pr_comments = pr.get_comments()
-            
-            for comment in pr_comments:
-                insert_pr_comment(comment, pr.id)
-
-        # Get commits and insert them into the database
-        commits = get_all_commits(repository, limit)
-        for commit in commits:
-            insert_commit(commit)
+        # If repo already exists in database
+        if repository_full_name in repo_list:
+            insert_all_data(repository, limit, one_week_ago)
+        else: # Repo doesn't exist in database, so insert it
+            repo_data = get_a_repository(owner, repo)
+            insert_repository(repo_data)
+            insert_all_data(repository, limit, one_year_ago)
 
     

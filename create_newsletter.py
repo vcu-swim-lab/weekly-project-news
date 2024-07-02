@@ -338,6 +338,10 @@ def pull_request_discussion_insights(repo):
     print("Reason: ", reason)
 
     if score > 0.5:
+      # print('a')
+      # print(active_pull_request)
+      # print('b')
+
       pull_request_count += 1
       
       markdown += f"{pull_request_count}. [**{active_pull_request['title']}**]({active_pull_request['url']})\n"
@@ -350,6 +354,7 @@ def pull_request_discussion_insights(repo):
   return markdown
 
 
+
 # 9 - Commits
 def commits(repo):
   if repo['commits'] == []:
@@ -359,12 +364,6 @@ def commits(repo):
   commit_instructions = individual_instructions("a commit", "commit", "commit", "only one detailed sentence")
   overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
   overall_instructions += "You must go through all of the commits first and then group similar commits together. Do NOT output duplicate topics. There should be much fewer bullet points than commits. Show the output in markdown in a code block.\n"
-
-  # print('\n')
-  # print(commit_instructions)
-  # print('\n')
-  # print(overall_instructions)
-  # print('\n')
 
   # Step 1: get summaries for each commit first from the llm
   for commit in repo['commits']:
@@ -381,9 +380,6 @@ def commits(repo):
 
   # Step 2: get markdown output for all commits
   overall_summary = generate_summary(all_commits, overall_instructions, max_retries=5, base_wait=1)
-  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
-  #   overall_summary = overall_summary[3:-3]
-
   if overall_summary.startswith("```markdown"):
     overall_summary = overall_summary[len("```markdown"):].lstrip()
   if overall_summary.startswith("```"):
@@ -393,7 +389,7 @@ def commits(repo):
   if overall_summary.startswith("markdown"):
     overall_summary = overall_summary[len("markdown"):].lstrip()
   return overall_summary + "\n\n"
-  return ""
+
 
 
 # 10 - Active Contributors
@@ -495,7 +491,7 @@ if __name__ == '__main__':
     # print(repo_data['repo_name'])
     # print(repo_data['open_issues'])
     # print(repo_data['closed_issues'])
-    # print(repo_data['active_issues'])
+    print(repo_data['active_issues'])
     # print(repo_data['num_weekly_open_issues'])
     # print(repo_data['num_weekly_closed_issues'])
     # print(repo_data['issues_by_open_date'])
@@ -507,7 +503,7 @@ if __name__ == '__main__':
     # print("active_pull_requests: ", repo_data['active_pull_requests'])
     # print(repo_data['num_open_prs'])
     # print(repo_data['num_closed_prs'])
-    print("commits: ", repo_data['commits'])
+    # print("commits: ", repo_data['commits'])
     # print(repo_data['num_commits'])
 
     # print(repo_data['first_time_contributors'])
@@ -626,20 +622,20 @@ if __name__ == '__main__':
 
 
         # 3: Commits
-        outfile.write("# III. Commits\n\n")
+        # outfile.write("# III. Commits\n\n")
 
-        # 3.1: Open Commits
-        outfile.write("## 3.1 Commits\n\n")
+        # # 3.1: Open Commits
+        # outfile.write("## 3.1 Commits\n\n")
 
-        # 3.1.1 Open Commits This Week
-        outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
+        # # 3.1.1 Open Commits This Week
+        # outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
 
-        # 3.1.2 Commits
-        outfile.write("**Summarized Commits:**\n\n")
-        result = commits(repo_data)
-        outfile.write(result)
+        # # 3.1.2 Commits
+        # outfile.write("**Summarized Commits:**\n\n")
+        # result = commits(repo_data)
+        # outfile.write(result)
 
-        outfile.write("***\n\n")
+        # outfile.write("***\n\n")
 
 
 

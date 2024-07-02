@@ -358,6 +358,13 @@ def commits(repo):
   all_commits = ""
   commit_instructions = individual_instructions("a commit", "commit", "commit", "only one detailed sentence")
   overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
+  overall_instructions += "You must go through all of the commits first and then group similar commits together. Do NOT output duplicate topics. There should be much fewer bullet points than commits. Show the output in markdown in a code block.\n"
+
+  # print('\n')
+  # print(commit_instructions)
+  # print('\n')
+  # print(overall_instructions)
+  # print('\n')
 
   # Step 1: get summaries for each commit first from the llm
   for commit in repo['commits']:
@@ -374,11 +381,19 @@ def commits(repo):
 
   # Step 2: get markdown output for all commits
   overall_summary = generate_summary(all_commits, overall_instructions, max_retries=5, base_wait=1)
-  if overall_summary.startswith("```") and overall_summary.endswith("```"):
-    overall_summary = overall_summary[3:-3]
+  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[3:-3]
+
+  if overall_summary.startswith("```markdown"):
+    overall_summary = overall_summary[len("```markdown"):].lstrip()
+  if overall_summary.startswith("```"):
+    overall_summary = overall_summary[3:].lstrip()
+  if overall_summary.endswith("```"):
+    overall_summary = overall_summary[:-3].rstrip()
   if overall_summary.startswith("markdown"):
     overall_summary = overall_summary[len("markdown"):].lstrip()
   return overall_summary + "\n\n"
+  return ""
 
 
 # 10 - Active Contributors
@@ -444,6 +459,7 @@ if __name__ == '__main__':
   # repositories = [row[0] for row in result]
   repositories = [
     "tensorflow/tensorflow"
+    # "stevenbui44/test-vscode"
   ]
 
   # PART TWO: create the markdown for a newsletter
@@ -468,6 +484,7 @@ if __name__ == '__main__':
       "num_closed_prs": get_num_closed_prs(get_closed_prs(session, one_week_ago, repository)),
       "commits": get_commit_messages(session, one_week_ago, repository),
       "num_commits": get_num_commits(get_commit_messages(session, one_week_ago, repository)),
+
       # "first_time_contributors": get_contributors(session, one_week_ago, repository)[0],
       # "active_contributors": get_contributors(session, one_week_ago, repository)[1],
     }
@@ -482,19 +499,20 @@ if __name__ == '__main__':
     # print(repo_data['num_weekly_open_issues'])
     # print(repo_data['num_weekly_closed_issues'])
     # print(repo_data['issues_by_open_date'])
-    print(repo_data['issues_by_number_of_comments'])
+    # print(repo_data['issues_by_number_of_comments'])
     # print(repo_data['average_issue_close_time'])
     # print(repo_data['average_issue_close_time_weekly'])
-    # print(repo_data['open_pull_requests'])
+    # print("open_pull_requests: ", repo_data['open_pull_requests'])
     # print(repo_data['closed_pull_requests'])
-    # print(repo_data['active_pull_requests'])
+    # print("active_pull_requests: ", repo_data['active_pull_requests'])
     # print(repo_data['num_open_prs'])
     # print(repo_data['num_closed_prs'])
-    # print(repo_data['commits'])
+    print("commits: ", repo_data['commits'])
     # print(repo_data['num_commits'])
+
     # print(repo_data['first_time_contributors'])
     # print(repo_data['active_contributors'])
-    # print()
+    print()
 
     name = repo_data['repo_name'].split('/')[-1]
     capitalized_name = name[0].upper() + name[1:]
@@ -532,7 +550,7 @@ if __name__ == '__main__':
         # outfile.write(result)
 
 
-        # # 1.2 Top 5 Active Issues
+        # 1.2 Top 5 Active Issues
         # outfile.write("## 1.2 Top 5 Active Issues:\n\n")
         # result = active_issues(repo_data)
         # outfile.write(result)
@@ -607,21 +625,21 @@ if __name__ == '__main__':
 
 
 
-        # # 3: Commits
-        # outfile.write("# III. Commits\n\n")
+        # 3: Commits
+        outfile.write("# III. Commits\n\n")
 
-        # # 3.1: Open Commits
-        # outfile.write("## 3.1 Commits\n\n")
+        # 3.1: Open Commits
+        outfile.write("## 3.1 Commits\n\n")
 
-        # # 3.1.1 Open Commits This Week
-        # outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
+        # 3.1.1 Open Commits This Week
+        outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
 
-        # # 3.1.2 Commits
-        # outfile.write("**Summarized Commits:**\n\n")
-        # result = commits(repo_data)
-        # outfile.write(result)
+        # 3.1.2 Commits
+        outfile.write("**Summarized Commits:**\n\n")
+        result = commits(repo_data)
+        outfile.write(result)
 
-        # outfile.write("***\n\n")
+        outfile.write("***\n\n")
 
 
 

@@ -394,10 +394,12 @@ def commits(repo):
 
 # 10 - Active Contributors
 def active_contributors(repo):
-  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past week. \n\n"
+  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past month. \n\n"
   if repo['active_contributors'][-1]['number_of_active_contributors'] == 0:
     overall_summary += "As of our latest update, there are no active contributors for the project this week.\n\n"
     return overall_summary
+  
+  print(len(repo['active_contributors']))
 
   overall_summary += "Contributor | Commits | Pull Requests | Issues \n"
   overall_summary += "---|---|---|---\n"
@@ -447,6 +449,7 @@ if __name__ == '__main__':
   if not os.path.exists(newsletter_directory):
     os.makedirs(newsletter_directory)
   one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+  thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
   limit = 100;
 
   # 1.4: getting all of the repositories
@@ -483,6 +486,8 @@ if __name__ == '__main__':
 
       # "first_time_contributors": get_contributors(session, one_week_ago, repository)[0],
       # "active_contributors": get_contributors(session, one_week_ago, repository)[1],
+
+      "active_contributors": get_active_contributors(session, one_week_ago, thirty_days_ago, repository)
     }
     output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
 
@@ -491,7 +496,7 @@ if __name__ == '__main__':
     # print(repo_data['repo_name'])
     # print(repo_data['open_issues'])
     # print(repo_data['closed_issues'])
-    print(repo_data['active_issues'])
+    # print(repo_data['active_issues'])
     # print(repo_data['num_weekly_open_issues'])
     # print(repo_data['num_weekly_closed_issues'])
     # print(repo_data['issues_by_open_date'])
@@ -507,7 +512,7 @@ if __name__ == '__main__':
     # print(repo_data['num_commits'])
 
     # print(repo_data['first_time_contributors'])
-    # print(repo_data['active_contributors'])
+    print(repo_data['active_contributors'])
     print()
 
     name = repo_data['repo_name'].split('/')[-1]
@@ -643,14 +648,11 @@ if __name__ == '__main__':
 
         # WARNING: DO NOT UNCOMMENT THIS YET!!!!!!!!!!
 
-        # # 4: Contributors
-        # outfile.write("# IV. Contributors\n\n")
+        # 4: Contributors
+        outfile.write("# IV. Contributors\n\n")
 
-        # # 4.1: Contributors
-        # outfile.write("## 4.1 Contributors\n\n")
-
-        # print(repo_data.get('first_time_contributors'))
-        # print(repo_data.get('active_contributors'))
+        # 4.1: Contributors
+        outfile.write("## 4.1 Contributors\n\n")
 
         # # 4.1.1 New Contributors
         # outfile.write(f"**New Contributors:** {repo_data.get('new_contributors')[-1].get('number_of_new_contributors')}\n\n")
@@ -658,10 +660,10 @@ if __name__ == '__main__':
         # # 4.1.2 New Contributors
         # outfile.write(f"**Total Contributors This Week:** {repo_data.get('contributed_this_week')[-1].get('number_of_weekly_contributors')}\n\n")
 
-        # 4.1.4 Active Contributors
-        # outfile.write("**Active Contributors:**\n\n")
-        # result = active_contributors(repo_data)
-        # outfile.write(result)
+        # 4.1.3 Active Contributors
+        outfile.write("**Active Contributors:**\n\n")
+        result = active_contributors(repo_data)
+        outfile.write(result)
 
         outfile.write("\n\n")
       

@@ -467,19 +467,28 @@ if __name__ == '__main__':
     
     # Define the limit for API calls
     limit = 100
+
+    # Get owners and repos
+    with open("subscribers.json", 'r') as f:
+        data = json.load(f)
     
-    # Testing code
-    owner = 'monicahq'
-    repo = 'monica'
+    owners = []
+    repos = []
     
+    for subscriber in data['results']:
+        repo_name = subscriber['metadata'].get('repo_name', '')
+        if repo_name and 'github.com' in repo_name:
+            # ex. https://github.com/cnovalski1/APIexample
+            parts = repo_name.split('/')
+            if len(parts) >= 5:
+                owners.append(parts[3])
+                repos.append(parts[4])
     
-    # Define owners and repos arrays
+    # Custom owners and repos for testing
     # owners = ['cnovalski1', 'monicahq', 'danny-avila', 'tensorflow']
     # repos = ['APIexample', 'monica', 'LibreChat', 'tensorflow']
-    
-    owners = ['monicahq']
-    repos = ['monica']
-
+    # owners = ['stevenbui44']
+    # repos = ['test-vscode']
     
     for owner, repo in zip(owners, repos):
     # Process repository data
@@ -510,5 +519,3 @@ if __name__ == '__main__':
         commits = get_all_commits(repository, limit)
         for commit in commits:
             insert_commit(commit)
-
-    

@@ -2,9 +2,8 @@ import requests
 import os
 import json
 from dotenv import load_dotenv
-import json
 
-load_dotenv('public.env')  
+load_dotenv()  
 
 headers = {
     "Authorization": f"Token {os.environ['BUTTONDOWN_API_KEY']}",

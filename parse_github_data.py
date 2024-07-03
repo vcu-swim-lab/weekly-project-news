@@ -29,26 +29,8 @@ def rate_limit_check(g):
         time.sleep(sleep_duration)
 
 
-
-# Create all tables
-Base.metadata.create_all(engine)
-
-# Create a configured "Session" class
-Session = sessionmaker(bind=engine)
-
-# Create a session
-session = Session()
-
-GITHUB_API_KEY = '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'
-headers = {'Authorization': f'token {GITHUB_API_KEY}'}
-
-# Remove the logs for creating the database
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
-engine = create_engine('sqlite:///github.db')
-
-
-def get_a_repository(owner, repo):
-    url = f'https://api.github.com/repos/{owner}/{repo}'
+def get_a_repository(repository):
+    url = f'https://api.github.com/repos/{repository}'
     print(url)
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
@@ -484,35 +466,58 @@ def insert_all_data(repository, limit, date):
 
 
 if __name__ == '__main__':
+    # Disable logging
+    logging.getLogger('sqlalchemy').disabled = True
+    # Create an engine and session
+    engine = create_engine('sqlite:///github.db')
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # GitHub API key and headers
+    GITHUB_API_KEY = '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'
+    headers = {'Authorization': f'token {GITHUB_API_KEY}'}
+    
+    # PyGithub
     g = Github(os.environ['GITHUB_API_KEY'])
+    
+    # Datetime variables
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Define the limit for API calls
     limit = 100
+
+    # Get owners and repos
+    with open("subscribers.json", 'r') as f:
+        data = json.load(f)
     
-    # Testing code
-    owner = 'monicahq'
-    repo = 'monica'
+    # Keep a list of the subscriber repos
+    subscriber_repo_list = []
     
+    for subscriber in data['results']:
+        repo_name = subscriber['metadata'].get('repo_name', '')
+        if repo_name and 'github.com' in repo_name:
+            # ex. https://github.com/cnovalski1/APIexample
+            parts = repo_name.split('/')
+            if len(parts) >= 5:
+                full_repo_name = f"{parts[3]}/{parts[4]}"
+                subscriber_repo_list.append(full_repo_name)
+                
+                
+    # List of the current repositories in the database
+    current_repo_list = session.query(Repository.full_name).all()
+    current_repo_list = [item[0] for item in current_repo_list]
     
-    # Define owners and repos arrays
-    owners = ['cnovalski1', 'monicahq', 'danny-avila', 'tensorflow']
-    repos = ['APIexample', 'monica', 'LibreChat', 'tensorflow']
-    
-    # Get a list of repositories currently in the database
-    repo_list = [r[0] for r in session.query(Repository.full_name).all()]
-    
-    
-    for owner, repo in zip(owners, repos):
-        repository_full_name = f"{owner}/{repo}"
-        repository = g.get_repo(repository_full_name)
+    # Loop through each subscriber repo and insert data
+    for repo in subscriber_repo_list:
+        repository = g.get_repo(repo)
         
         # If repo already exists in database
-        if repository_full_name in repo_list:
+        if repo in current_repo_list:
             insert_all_data(repository, limit, one_week_ago)
         else: # Repo doesn't exist in database, so insert it
-            repo_data = get_a_repository(owner, repo)
+            repo_data = get_a_repository(repo)
             insert_repository(repo_data)
             insert_all_data(repository, limit, one_year_ago)
 

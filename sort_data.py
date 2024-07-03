@@ -116,13 +116,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
   
 # ISSUES 3: Gets all issues, sorted by longest open date first
 def sort_issues_open_date(session, repository_full_name, limit): 
-    issues = session.query(
-        Issue.title,
-        Issue.body,
-        Issue.html_url,
-        Issue.created_at,
-        Issue.user_login
-    ).filter(
+    issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
             Issue.state == 'open', 
@@ -151,7 +145,8 @@ def sort_issues_open_date(session, repository_full_name, limit):
             "title": issue.title,
             "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
             "body": issue.body,
-            "url": issue.html_url
+            "url": issue.html_url,
+            "id": issue.id
         }
         issue_data_sorted.append(issue_data) # Append to issue data for output
         
@@ -192,6 +187,7 @@ def sort_issues_num_comments(session, repository_full_name, limit):
         "number_of_comments": issue.comments,
         "body": issue.body,
         "url": issue.html_url,
+        "id": issue.id,
         "comments": []
         }
         comments = session.query(IssueComment.issue_id, IssueComment.body).filter(IssueComment.issue_id == issue.id).all()

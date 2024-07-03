@@ -6,9 +6,6 @@ import os
 import requests
 from dotenv import load_dotenv
 import concurrent.futures
-import multiprocessing
-import asyncio
-import aiohttp
 
 load_dotenv()
 

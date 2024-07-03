@@ -116,13 +116,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
   
 # ISSUES 3: Gets all issues, sorted by longest open date first
 def sort_issues_open_date(session, repository_full_name, limit): 
-    issues = session.query(
-        Issue.title,
-        Issue.body,
-        Issue.html_url,
-        Issue.created_at,
-        Issue.user_login
-    ).filter(
+    issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
             Issue.state == 'open', 
@@ -151,7 +145,8 @@ def sort_issues_open_date(session, repository_full_name, limit):
             "title": issue.title,
             "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
             "body": issue.body,
-            "url": issue.html_url
+            "url": issue.html_url,
+            "id": issue.id
         }
         issue_data_sorted.append(issue_data) # Append to issue data for output
         
@@ -164,13 +159,7 @@ def sort_issues_open_date(session, repository_full_name, limit):
 
 # ISSUES 4: Gets all issues within one_week_ago, sorted by most comments first
 def sort_issues_num_comments(session, repository_full_name, limit):
-    issues = session.query(
-        Issue.title,
-        Issue.body,
-        Issue.html_url,
-        Issue.comments,
-        Issue.user_login
-    ).filter(
+    issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
             Issue.state == 'open', 
@@ -197,8 +186,13 @@ def sort_issues_num_comments(session, repository_full_name, limit):
         "title": issue.title,
         "number_of_comments": issue.comments,
         "body": issue.body,
-        "url": issue.html_url
+        "url": issue.html_url,
+        "id": issue.id,
+        "comments": []
         }
+        comments = session.query(IssueComment.issue_id, IssueComment.body).filter(IssueComment.issue_id == issue.id).all()
+        for comment in comments:
+            data["comments"].append({"body": comment.body})
         
         issue_data.append(data)
         
@@ -509,8 +503,8 @@ def get_num_commits(commit_data):
 
 
 # CONTRIBUTORS 1: Gets ALL contributors who are considered "active" within one_week_ago
-# Active: > 0 commits this week, > 0 issues this month, AND > 0 PRs this week
-def get_active_contributors(session, one_week_ago, thirty_days_ago, repository_full_name):
+# Active: > 0 commits this month, > 0 issues this month, AND > 0 PRs this month
+def get_active_contributors(session, thirty_days_ago, repository_full_name):
     # Query the database to retreive commits
     commits = session.query(
         Commit.sha,
@@ -520,7 +514,7 @@ def get_active_contributors(session, one_week_ago, thirty_days_ago, repository_f
     ).filter(
         and_(
             Commit.repository_full_name == repository_full_name,
-            Commit.committer_date >= one_week_ago
+            Commit.committer_date >= thirty_days_ago
         )
     ).all()
     
@@ -531,7 +525,7 @@ def get_active_contributors(session, one_week_ago, thirty_days_ago, repository_f
     ).filter(
         and_(
             PullRequest.repository_full_name == repository_full_name,
-            PullRequest.created_at >= one_week_ago,
+            PullRequest.created_at >= thirty_days_ago,
         )
     ).all()
     
@@ -663,7 +657,6 @@ if __name__ == '__main__':
     
     # Limit the number of requests in certain pages (limits number of items in for loop)
     limit = 100
-    PROJECT_NAME = 'monicahq/monica'
 
     # Array to store data for all of the repositories
     all_repo_data = []

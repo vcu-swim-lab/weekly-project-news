@@ -29,26 +29,8 @@ def rate_limit_check(g):
         time.sleep(sleep_duration)
 
 
-
-# Create all tables
-Base.metadata.create_all(engine)
-
-# Create a configured "Session" class
-Session = sessionmaker(bind=engine)
-
-# Create a session
-session = Session()
-
-GITHUB_API_KEY = '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'
-headers = {'Authorization': f'token {GITHUB_API_KEY}'}
-
-# Remove the logs for creating the database
-logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
-engine = create_engine('sqlite:///github.db')
-
-
-def get_a_repository(owner, repo):
-    url = f'https://api.github.com/repos/{owner}/{repo}'
+def get_a_repository(repository):
+    url = f'https://api.github.com/repos/{repository}'
     print(url)
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
@@ -85,17 +67,18 @@ def insert_repository(data):
     session.add(new_repo)
     session.commit()
 
-# Retreive issues via pygithub
-def get_issues(repo, limit):
+# RETREIVE ISSUES 
+def get_issues(repo, limit, date):
     
     issues_array = []
-    issues = repo.get_issues(state='all')
-    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
+    issues = repo.get_issues(state='all', since=date)
     
     for issue in issues:
         if issue.pull_request:
             continue
-        elif issue.created_at > one_year_ago:
+        elif issue.created_at < date:
+            continue
+        elif 'bot' in issue.user.login.lower() or '[bot]' in issue.user.login.lower():
             continue
         
         issues_array.append(issue)
@@ -104,14 +87,17 @@ def get_issues(repo, limit):
 
     return issues_array
 
-# Retreive PRs via pygithub
-def get_pull_requests(repo, limit):
+
+# RETREIVE PULL REQUESTS
+def get_pull_requests(repo, limit, date):
     pr_array = []
     pulls = repo.get_pulls()
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for pr in pulls:
-        if pr.created_at > one_year_ago:
+        if pr.created_at < date:
+            continue
+        elif 'bot' in pr.user.login.lower() or '[bot]' in pr.user.login.lower():
             continue
         
         pr_array.append(pr)
@@ -121,14 +107,15 @@ def get_pull_requests(repo, limit):
     return pr_array
 
 
-# API call definition for commits
-def get_all_commits(repo, limit):
+# RETREIVE COMMITS
+def get_all_commits(repo, limit, date):
     commit_array = []
     commits = repo.get_commits()
-    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for commit in commits:
-        if commit.commit.author.date > one_year_ago:
+        if commit.commit.author.date < date:
+            continue
+        elif 'bot' in commit.commit.author.name.lower() or '[bot]' in commit.commit.author.name.lower():
             continue
         
         commit_array.append(commit)
@@ -445,54 +432,93 @@ def insert_commit(data):
         session.rollback()
         print(f"IntegrityError: {e}")
 
+# Insert all repository data relative to a specific date (e.g. one week, one year, etc.)
+def insert_all_data(repository, limit, date):
+    issues = get_issues(repository, limit, date)
+    for issue in issues:
+        insert_issue(issue)
+        issue_comments = issue.get_comments()
+
+        for comment in issue_comments:
+            insert_issue_comment(comment, issue.id)
+
+    # Get pull requests and insert them into the database
+    pulls = get_pull_requests(repository, limit, date)
+    for pr in pulls:
+        insert_pull_request(pr)
+
+        pr_comments = pr.get_comments()
+        
+        for comment in pr_comments:
+            insert_pr_comment(comment, pr.id)
+
+    # Get commits and insert them into the database
+    commits = get_all_commits(repository, limit, date)
+    for commit in commits:
+        insert_commit(commit)
+    
+
+
+# TODO
+# 1. Add code to go through subscribers
+# 2. Make proper list of repos and owners from that data, making sure to check if the repo already exists in the list
+
+
 
 if __name__ == '__main__':
+    # Disable logging
+    logging.getLogger('sqlalchemy').disabled = True
+    # Create an engine and session
+    engine = create_engine('sqlite:///github.db')
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # GitHub API key and headers
+    GITHUB_API_KEY = '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'
+    headers = {'Authorization': f'token {GITHUB_API_KEY}'}
+    
+    # PyGithub
     g = Github(os.environ['GITHUB_API_KEY'])
+    
+    # Datetime variables
+    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Define the limit for API calls
     limit = 100
-    
-    # Testing code
-    owner = 'monicahq'
-    repo = 'monica'
-    
-    
-    # Define owners and repos arrays
-    # owners = ['cnovalski1', 'monicahq', 'danny-avila', 'tensorflow']
-    # repos = ['APIexample', 'monica', 'LibreChat', 'tensorflow']
-    
-    owners = ['monicahq']
-    repos = ['monica']
 
+    # Get owners and repos
+    with open("subscribers.json", 'r') as f:
+        data = json.load(f)
     
-    for owner, repo in zip(owners, repos):
-    # Process repository data
-        repository = g.get_repo(f"{owner}/{repo}")
-        repo_data = get_a_repository(owner, repo)
-        insert_repository(repo_data)
+    # Keep a list of the subscriber repos
+    subscriber_repo_list = []
+    
+    for subscriber in data['results']:
+        repo_name = subscriber['metadata'].get('repo_name', '')
+        if repo_name and 'github.com' in repo_name:
+            # ex. https://github.com/cnovalski1/APIexample
+            parts = repo_name.split('/')
+            if len(parts) >= 5:
+                full_repo_name = f"{parts[3]}/{parts[4]}"
+                subscriber_repo_list.append(full_repo_name)
+                
+                
+    # List of the current repositories in the database
+    current_repo_list = session.query(Repository.full_name).all()
+    current_repo_list = [item[0] for item in current_repo_list]
+    
+    # Loop through each subscriber repo and insert data
+    for repo in subscriber_repo_list:
+        repository = g.get_repo(repo)
         
-        # Get issues and insert them into the database
-        issues = get_issues(repository, limit)
-        for issue in issues:
-            insert_issue(issue)
-            issue_comments = issue.get_comments()
-
-            for comment in issue_comments:
-                insert_issue_comment(comment, issue.id)
-
-        # Get pull requests and insert them into the database
-        pulls = get_pull_requests(repository, limit)
-        for pr in pulls:
-            insert_pull_request(pr)
-
-            pr_comments = pr.get_comments()
-            
-            for comment in pr_comments:
-                insert_pr_comment(comment, pr.id)
-
-        # Get commits and insert them into the database
-        commits = get_all_commits(repository, limit)
-        for commit in commits:
-            insert_commit(commit)
+        # If repo already exists in database
+        if repo in current_repo_list:
+            insert_all_data(repository, limit, one_week_ago)
+        else: # Repo doesn't exist in database, so insert it
+            repo_data = get_a_repository(repo)
+            insert_repository(repo_data)
+            insert_all_data(repository, limit, one_year_ago)
 
     

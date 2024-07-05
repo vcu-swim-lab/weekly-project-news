@@ -97,6 +97,9 @@ def delete_commit(session, commit_sha):
 
 # Main
 if __name__ == '__main__':
+    # Measure the time it takes for every function to execute. 
+    start_time = time.time()
+    
     # Create SQLAlchemy engine and session
     logging.getLogger('sqlalchemy').disabled = True
     engine = create_engine('sqlite:///github.db')
@@ -165,4 +168,16 @@ if __name__ == '__main__':
             # Delete closed prs older than a month and delete open prs older than a month and not active
             elif (close_date and close_date < one_month_ago) or (create_date < one_month_ago and update_date < one_week_ago):
                 delete_pr(session, pr.id)
+                
+                
+    # Check how long the function takes to run and print result
+    elapsed_time = time.time() - start_time
+    if (elapsed_time >= 60):
+        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+    else:
+        print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+    
+    
+        
+
         

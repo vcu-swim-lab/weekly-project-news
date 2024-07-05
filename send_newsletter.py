@@ -66,10 +66,15 @@ def update_email_status(email_id):
     data = {
         "subject": subject,
         "body": content,
-        "status": "sent"
+        "status": "imported"
     }
     
     response = requests.patch(url, headers=headers, json=data)
+    print('a')
+    print(response)
+    print('subject: ', subject)
+    print('b')
+
     if response.status_code >= 200 and response.status_code < 300:
         return response
     else:

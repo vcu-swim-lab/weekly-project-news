@@ -473,7 +473,7 @@ if __name__ == '__main__':
     session = Session()
 
     # GitHub API key and headers
-    GITHUB_API_KEY = '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'
+    GITHUB_API_KEY = os.environ['GITHUB_API_KEY']
     headers = {'Authorization': f'token {GITHUB_API_KEY}'}
     
     # PyGithub
@@ -506,9 +506,17 @@ if __name__ == '__main__':
     # List of the current repositories in the database
     current_repo_list = session.query(Repository.full_name).all()
     current_repo_list = [item[0] for item in current_repo_list]
+
+    # Making a set to keep track of processed repos to save time
+    processed_repos = set()
     
     # Loop through each subscriber repo and insert data
     for repo in subscriber_repo_list:
+
+        # Skip repos that have already been processed
+        if repo in processed_repos:
+            continue
+
         repository = g.get_repo(repo)
         
         # If repo already exists in database
@@ -518,6 +526,8 @@ if __name__ == '__main__':
             repo_data = get_a_repository(repo)
             insert_repository(repo_data)
             insert_all_data(repository, limit, one_year_ago)
+
+        processed_repos.add(repo)
             
     
        # Check how long the function takes to run and print result

@@ -8,8 +8,6 @@ class Issue(Base):
     __tablename__ = 'issues'
     
     id = Column(Integer, primary_key=True)
-    url = Column(String)
-    comments_url = Column(String)
     html_url = Column(String)
     number = Column(Integer, nullable=False)
     state = Column(String, nullable=False)
@@ -29,7 +27,6 @@ class Issue(Base):
 class IssueComment(Base):
     __tablename__ = 'issue_comments'
     id = Column(Integer, primary_key=True)
-    url = Column(String)
     html_url = Column(String)
     body = Column(Text)
     user_login = Column(String)

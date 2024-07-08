@@ -469,9 +469,10 @@ if __name__ == '__main__':
   # repositories = [row[0] for row in result]
   repositories = [
     # "tensorflow/tensorflow"
-    "stevenbui44/test-vscode",
+    # "stevenbui44/test-vscode",
     # "stevenbui44/flashcode"
-    "cnovalski1/APIexample"
+    # "cnovalski1/APIexample"
+    "luis605/Lit-Engine"
   ]
 
   # PART TWO: create the markdown for a newsletter
@@ -557,111 +558,111 @@ if __name__ == '__main__':
         outfile.write(result)
 
 
-      #   # 1.2 Top 5 Active Issues
-      #   outfile.write("## 1.2 Top 5 Active Issues:\n\n")
-      #   result = active_issues(repo_data)
-      #   outfile.write(result)
+        # 1.2 Top 5 Active Issues
+        outfile.write("## 1.2 Top 5 Active Issues:\n\n")
+        result = active_issues(repo_data)
+        outfile.write(result)
 
 
-      #   # 1.3 Top 5 Quiet Issues
-      #   outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-      #   result = quiet_issues(repo_data)
-      #   outfile.write(result)
+        # 1.3 Top 5 Quiet Issues
+        outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
+        result = quiet_issues(repo_data)
+        outfile.write(result)
 
 
-      #   # 1.4: Closed Issues
-      #   outfile.write("## 1.4 Closed Issues\n\n")
+        # 1.4: Closed Issues
+        outfile.write("## 1.4 Closed Issues\n\n")
 
-      #   # 1.4.1 Closed Issues This Week
-      #   outfile.write(f"**Closed Issues This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
+        # 1.4.1 Closed Issues This Week
+        outfile.write(f"**Closed Issues This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
 
-      #   # 1.4.2 Average Time to Close Issues This Week
-      #   outfile.write(f"**Average Issue Close Time (This Week):** {repo_data.get('average_issue_close_time_weekly', None)}\n\n")
+        # 1.4.2 Average Time to Close Issues This Week
+        outfile.write(f"**Average Issue Close Time (This Week):** {repo_data.get('average_issue_close_time_weekly', None)}\n\n")
 
-      #   # 1.4.3 Average Time to Close Issues All Time
-      #   outfile.write(f"**Average Issue Close Time (All Time):** {repo_data.get('average_issue_close_time', None)}\n\n")
+        # 1.4.3 Average Time to Close Issues All Time
+        outfile.write(f"**Average Issue Close Time (All Time):** {repo_data.get('average_issue_close_time', None)}\n\n")
 
-      #   # 1.4.4 Issues
-      #   outfile.write("**Summarized Issues:**\n\n")
-      #   result = closed_issues(repo_data)
-      #   outfile.write(result)
-
-
-      #   # 1.5 Issue Discussion Insights
-      #   outfile.write("## 1.5 Issue Discussion Insights\n\n")
-      #   result = issue_discussion_insights(repo_data)
-      #   outfile.write(result)
-
-      #   outfile.write("***\n\n")
+        # 1.4.4 Issues
+        outfile.write("**Summarized Issues:**\n\n")
+        result = closed_issues(repo_data)
+        outfile.write(result)
 
 
+        # 1.5 Issue Discussion Insights
+        outfile.write("## 1.5 Issue Discussion Insights\n\n")
+        result = issue_discussion_insights(repo_data)
+        outfile.write(result)
 
-      #   # 2: Pull Requests
-      #   outfile.write("# II. Pull Requests\n\n")
-
-      #   # 2.1: Open Pull Requests
-      #   outfile.write("## 2.1 Open Pull Requests\n\n")
-
-      #   # 2.1.1 Open Pull Requests This Week
-      #   outfile.write(f"**Open Pull Requests This Week:** {repo_data.get('num_open_prs', None)}\n\n")
-
-      #   # 2.1.2 Pull Requests
-      #   outfile.write("**Pull Requests:**\n\n")
-      #   result = open_pull_requests(repo_data)
-      #   outfile.write(result)
-
-
-      #   # 2.2: Closed Pull Requests
-      #   outfile.write("## 2.2 Closed Pull Requests\n\n")
-
-      #   # 2.2.1 Closed Pull Requests This Week
-      #   outfile.write(f"**Closed Pull Requests This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
-
-      #   # 2.2.2 Pull Requests
-      #   outfile.write("**Summarized Pull Requests:**\n\n")
-      #   result = closed_pull_requests(repo_data)
-      #   outfile.write(result)
-
-
-        # # 2.3 Pull Request Discussion Insights
-        # outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
-        # result = pull_request_discussion_insights(repo_data)
-        # outfile.write(result)
-
-        # outfile.write("***\n\n")
+        outfile.write("***\n\n")
 
 
 
-      #   # 3: Commits
-      #   outfile.write("# III. Commits\n\n")
+        # 2: Pull Requests
+        outfile.write("# II. Pull Requests\n\n")
 
-      #   # 3.1: Open Commits
-      #   outfile.write("## 3.1 Commits\n\n")
+        # 2.1: Open Pull Requests
+        outfile.write("## 2.1 Open Pull Requests\n\n")
 
-      #   # 3.1.1 Open Commits This Week
-      #   outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
+        # 2.1.1 Open Pull Requests This Week
+        outfile.write(f"**Open Pull Requests This Week:** {repo_data.get('num_open_prs', None)}\n\n")
 
-      #   # 3.1.2 Commits
-      #   outfile.write("**Summarized Commits:**\n\n")
-      #   result = commits(repo_data)
-      #   outfile.write(result)
-
-      #   outfile.write("***\n\n")
+        # 2.1.2 Pull Requests
+        outfile.write("**Pull Requests:**\n\n")
+        result = open_pull_requests(repo_data)
+        outfile.write(result)
 
 
+        # 2.2: Closed Pull Requests
+        outfile.write("## 2.2 Closed Pull Requests\n\n")
 
-      #   # 4: Contributors
-      #   outfile.write("# IV. Contributors\n\n")
+        # 2.2.1 Closed Pull Requests This Week
+        outfile.write(f"**Closed Pull Requests This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
 
-      #   # 4.1: Contributors
-      #   outfile.write("## 4.1 Contributors\n\n")
+        # 2.2.2 Pull Requests
+        outfile.write("**Summarized Pull Requests:**\n\n")
+        result = closed_pull_requests(repo_data)
+        outfile.write(result)
 
-      #   # 4.1.3 Active Contributors
-      #   outfile.write("**Active Contributors:**\n\n")
-      #   result = active_contributors(repo_data)
-      #   outfile.write(result)
 
-      #   outfile.write("\n\n")
+        # 2.3 Pull Request Discussion Insights
+        outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
+        result = pull_request_discussion_insights(repo_data)
+        outfile.write(result)
+
+        outfile.write("***\n\n")
+
+
+
+        # 3: Commits
+        outfile.write("# III. Commits\n\n")
+
+        # 3.1: Open Commits
+        outfile.write("## 3.1 Commits\n\n")
+
+        # 3.1.1 Open Commits This Week
+        outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
+
+        # 3.1.2 Commits
+        outfile.write("**Summarized Commits:**\n\n")
+        result = commits(repo_data)
+        outfile.write(result)
+
+        outfile.write("***\n\n")
+
+
+
+        # 4: Contributors
+        outfile.write("# IV. Contributors\n\n")
+
+        # 4.1: Contributors
+        outfile.write("## 4.1 Contributors\n\n")
+
+        # 4.1.3 Active Contributors
+        outfile.write("**Active Contributors:**\n\n")
+        result = active_contributors(repo_data)
+        outfile.write(result)
+
+        outfile.write("\n\n")
       
       print(f"Successfully added {repository} to {output_filename}")
 

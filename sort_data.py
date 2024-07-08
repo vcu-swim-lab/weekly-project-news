@@ -113,183 +113,8 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
         closed_issue_data.append(issue_data)
     
     return closed_issue_data
-  
-# ISSUES 3: Gets all issues, sorted by longest open date first
-def sort_issues_open_date(session, repository_full_name, limit): 
-    issues = session.query(Issue).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'open', 
-        )
-    ).order_by(
-        Issue.created_at.asc()
-    ).all()
-    
-    # Set up data variables
-    issue_data_sorted = []
-    
-    # Loop through each issue
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
-        
-        # Calculate the time open in days, hours, and minutes
-        time_open = datetime.now(timezone.utc)-issue.created_at.replace(tzinfo=timezone.utc)
-        days = time_open.days
-        hours, remainder = divmod(time_open.seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
 
-        # Store the issue title, time open in days, hours, and minutes, minutes open, and a link to the issue
-        issue_data = {
-            "title": issue.title,
-            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
-            "body": issue.body,
-            "url": issue.html_url,
-            "id": issue.id
-        }
-        issue_data_sorted.append(issue_data) # Append to issue data for output
-        
-        # Break the for loop if the amount of data is large enough
-        if len(issue_data) >= limit:
-            break
-        
-    
-    return issue_data_sorted
-
-# ISSUES 4: Gets all issues within one_week_ago, sorted by most comments first
-def sort_issues_num_comments(session, repository_full_name, limit):
-    issues = session.query(Issue).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'open', 
-        )
-    ).order_by(
-        Issue.comments.desc()
-    ).all()
-    
-    issue_data = []
-    
-    
-    # Iterates through each issue
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
-        
-        # If the number of comments on an issue is 0, skip it
-        if issue.comments == 0:
-            continue
-        
-        # Otherwise, add the title and number of comments to the data array
-        data = {
-        "title": issue.title,
-        "number_of_comments": issue.comments,
-        "body": issue.body,
-        "url": issue.html_url,
-        "id": issue.id,
-        "comments": []
-        }
-        comments = session.query(IssueComment.issue_id, IssueComment.body).filter(IssueComment.issue_id == issue.id).all()
-        for comment in comments:
-            data["comments"].append({"body": comment.body})
-        
-        issue_data.append(data)
-        
-        # Break the for loop if the amount of data is large enough
-        if len(issue_data) >= limit:
-            break
- 
-    return issue_data # Return in JSON format
-
-# ISSUES 5: Get number of open issues in the last week
-def get_num_open_issues_weekly(weekly_open_issues):
-    return len(weekly_open_issues)
-
-# ISSUES 6: Get number of closed issues in the last week
-def get_num_closed_issues_weekly(weekly_closed_issues):
-    return len(weekly_closed_issues)
-
-# ISSUES 7: Get average time to close issues all time
-def avg_issue_close_time(session, repository_full_name):
-    # Retreive the issues and set up time variables
-    issues = session.query(
-        Issue.id,
-        Issue.title,
-        Issue.body,
-        Issue.html_url,
-        Issue.created_at,
-        Issue.closed_at,
-        Issue.user_login
-    ).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'closed'
-        )
-    ).all()
-    
-    total_issues = len(issues)
-    total_close_time = 0
-    avg_close_time = 0
-    
-    # Iterates through each issue and calculates the total close time in minutes for each issue
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
-        
-        time_open = issue.closed_at - issue.created_at
-        total_minutes = time_open.total_seconds() // 60
-        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
-    
-    # Prevents dividing by zero
-    if total_issues > 0:
-        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
-   
-    return  "{:.2f} days".format(avg_close_time) # Return the average time to close issues formatted to 2 decimal places
-
-# ISSUES 8: Get average time to close issues in the last week 
-def avg_issue_close_time_weekly(session, one_week_ago, repository_full_name):
-    # Retreive the issues and set up time variables
-    issues = session.query(
-        Issue.id,
-        Issue.title,
-        Issue.body,
-        Issue.html_url,
-        Issue.created_at,
-        Issue.closed_at,
-        Issue.user_login
-    ).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'closed',
-            Issue.closed_at >= one_week_ago
-        )
-    ).all()
-    
-    total_issues = len(issues)
-    total_close_time = 0
-    avg_close_time = 0
-    
-    # Iterates through each issue and calculates the total close time in minutes for each issue
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
-        
-        time_open = issue.closed_at - issue.created_at
-        total_minutes = time_open.total_seconds() // 60
-        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
-    
-    # Prevents dividing by zero
-    if total_issues > 0:
-        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
-    
-    
-    # Return the average time to close issues in the last week formatted to 2 decimals
-    return  "{:.2f} days".format(avg_close_time)
-
-# ISSUES 9: Get list of "active" issues, which are issues commented on/updated within the last week
+# ISSUES 3: Get list of "active" issues, which are issues commented on/updated within the last week
 def get_active_issues(session, one_week_ago, repository_full_name):
     # Retreive issues and set up variables
     issues = session.query(
@@ -335,6 +160,135 @@ def get_active_issues(session, one_week_ago, repository_full_name):
     
     return active_issue_data
 
+  
+# ISSUES 4: Gets all issues, sorted by longest open date first
+def sort_issues_open_date(session, repository_full_name, limit): 
+    issues = session.query(Issue).filter(
+        and_(
+            Issue.repository_full_name == repository_full_name, 
+            Issue.state == 'open', 
+        )
+    ).order_by(
+        Issue.created_at.asc()
+    ).all()
+    
+    # Set up data variables
+    issue_data_sorted = []
+    
+    # Loop through each issue
+    for issue in issues:
+        # Omit bots
+        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
+            continue
+        
+        # Calculate the time open in days, hours, and minutes
+        time_open = datetime.now(timezone.utc)-issue.created_at.replace(tzinfo=timezone.utc)
+        days = time_open.days
+        hours, remainder = divmod(time_open.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        # Store the issue title, time open in days, hours, and minutes, minutes open, and a link to the issue
+        issue_data = {
+            "title": issue.title,
+            "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+            "body": issue.body,
+            "url": issue.html_url,
+            "id": issue.id
+        }
+        issue_data_sorted.append(issue_data) # Append to issue data for output
+        
+        # Break the for loop if the amount of data is large enough
+        if len(issue_data) >= limit:
+            break
+        
+    
+    return issue_data_sorted
+
+# ISSUES 5: Gets all issues within one_week_ago, sorted by most comments first
+def sort_issues_num_comments(session, repository_full_name, limit):
+    issues = session.query(Issue).filter(
+        and_(
+            Issue.repository_full_name == repository_full_name, 
+            Issue.state == 'open', 
+        )
+    ).order_by(
+        Issue.comments.desc()
+    ).all()
+    
+    issue_data = []
+    
+    
+    # Iterates through each issue
+    for issue in issues:
+        # Omit bots
+        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
+            continue
+        
+        # If the number of comments on an issue is 0, skip it
+        if issue.comments == 0:
+            continue
+        
+        # Otherwise, add the title and number of comments to the data array
+        data = {
+        "title": issue.title,
+        "number_of_comments": issue.comments,
+        "body": issue.body,
+        "url": issue.html_url,
+        "id": issue.id,
+        "comments": []
+        }
+        comments = session.query(IssueComment.issue_id, IssueComment.body).filter(IssueComment.issue_id == issue.id).all()
+        for comment in comments:
+            data["comments"].append({"body": comment.body})
+        
+        issue_data.append(data)
+        
+        # Break the for loop if the amount of data is large enough
+        if len(issue_data) >= limit:
+            break
+ 
+    return issue_data # Return in JSON format
+
+# ISSUES 6: Get average time to close issues in the last week 
+def avg_issue_close_time_weekly(session, one_week_ago, repository_full_name):
+    # Retreive the issues and set up time variables
+    issues = session.query(Issue).filter(
+        and_(
+            Issue.repository_full_name == repository_full_name, 
+            Issue.state == 'closed',
+            Issue.closed_at >= one_week_ago
+        )
+    ).all()
+    
+    total_issues = len(issues)
+    total_close_time = 0
+    avg_close_time = 0
+    
+    # Iterates through each issue and calculates the total close time in minutes for each issue
+    for issue in issues:
+        # Omit bots
+        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
+            continue
+        
+        time_open = issue.closed_at - issue.created_at
+        total_minutes = time_open.total_seconds() // 60
+        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
+    
+    # Prevents dividing by zero
+    if total_issues > 0:
+        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
+    
+    
+    # Return the average time to close issues in the last week formatted to 2 decimals
+    return  "{:.2f} days".format(avg_close_time)
+
+# ISSUES 7: Get number of open issues in the last week
+def get_num_open_issues_weekly(weekly_open_issues):
+    return len(weekly_open_issues)
+
+# ISSUES 8: Get number of closed issues in the last week
+def get_num_closed_issues_weekly(weekly_closed_issues):
+    return len(weekly_closed_issues)
 
 
 # PRS 1: Gets open pull requests within one_week_ago
@@ -624,57 +578,9 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
 
     return active_contributors
 
-# Main 
-if __name__ == '__main__':
-    # Measure the time it takes for every function to execute. 
-    start_time = time.time()
 
-    # DATABASE SESSION
-    # Create a configured "Session" class
-    Session = sessionmaker(bind=engine)
-    # Create a session
-    session = Session()
-    
-    # Omit the SQL logs from printing on each run
-    logging.basicConfig()
-    logging.getLogger('sqlalchemy').setLevel(logging.WARNING)
-        
-    
-    # get all of the subscribers from subscribers.json
-    with open('subscribers.json') as file:
-        subscribers_data = json.load(file)
-
-    # get a list of all of the repo names from subscribers_data
-    # TODO Move this to parse_github_data instead of here, so repo data gets inserted into the database. 
-    repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
-
-     
-    # Time variable for function parameters. Holds the date/time one week ago
-    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-    
-    # Variable for saving the time 30 days ago, since timedelta doesn't define "one month" anywhere
-    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
-    
-    # Limit the number of requests in certain pages (limits number of items in for loop)
-    limit = 100
-
-    # Array to store data for all of the repositories
-    all_repo_data = []
-    
-    # THIS IS FOR TESTING
-    repo_names = ['https://github.com/monicahq/monica']
-    
-    # for-loop for every repo name (ex. tensorflow/tensorflow)
-    for repo_url in repo_names:
-        # Retreive repo name
-        repo_name = repo_url.split('https://github.com/')[-1]
-        
-        # Testing repo
-        repo_name = 'monicahq/monica'
-        
-        # List to store data for this specific repository
-        repo_data = []
-
+# Retreive all data for a given repository and format
+def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
         # ISSUES
         open_issues = get_open_issues(session, one_week_ago, repo_name)           
         closed_issues = get_closed_issues(session, one_week_ago, repo_name)                                                  
@@ -684,11 +590,8 @@ if __name__ == '__main__':
         closed_pull_requests = get_closed_prs(session, one_week_ago, repo_name)           
         
         # COMMITS
-        commits = get_commit_messages(session, one_week_ago, repo_name)            
-
-        # CONTRIBUTORS
-        # contributors = get_contributors(session, one_week_ago, repo_name)           
-    
+        commits = get_commit_messages(session, one_week_ago, repo_name)
+        
         # Format and store data
         repo_data = {
             "repo_name": repo_name,
@@ -699,7 +602,6 @@ if __name__ == '__main__':
             "num_weekly_closed_issues": get_num_closed_issues_weekly(closed_issues),
             "issues_by_open_date": sort_issues_open_date(session, repo_name, limit),
             "issues_by_number_of_comments": sort_issues_num_comments(session, repo_name, limit),
-            "average_issue_close_time": avg_issue_close_time(session, repo_name),
             "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repo_name),
             "open_pull_requests": open_pull_requests,
             "closed_pull_requests": closed_pull_requests,
@@ -708,12 +610,49 @@ if __name__ == '__main__':
             "num_closed_prs": get_num_closed_prs(closed_pull_requests),
             "commits": commits,
             "num_commits": get_num_commits(commits),
-            "active_contributors": get_active_contributors(session, one_week_ago, thirty_days_ago, repo_name)
+            "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name)
         }
+        
+        return repo_data
+
+# Main 
+if __name__ == '__main__':
+    # Measure the time it takes for every function to execute. 
+    start_time = time.time()
+
+    # DATABASE SESSION
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    # Omit the SQL logs from printing on each run
+    logging.disable(logging.WARNING)
+        
+    # get all of the subscribers from subscribers.json
+    with open('subscribers.json') as file:
+        subscribers_data = json.load(file)
+
+    # Get a list of all of the repo names from subscribers_data
+    repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
+     
+    # Time variables and limit
+    one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
+    limit = 100
+
+    # Array to store data for all of the repositories
+    all_repo_data = []
+
+    # for-loop for every repo name (ex. tensorflow/tensorflow)
+    for repo_url in repo_names:
+        # Retreive repo name
+        repo_name = repo_url.split('https://github.com/')[-1]
+        
+        repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name)
         
         all_repo_data.append(repo_data)
     
-    print("repo_data = " + json.dumps(all_repo_data[0], indent=4))
+    for item in all_repo_data:
+        print("repo_data = " + json.dumps(item, indent=4))
     
     # Check how long the function takes to run and print result
     elapsed_time = time.time() - start_time

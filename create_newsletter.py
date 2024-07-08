@@ -488,7 +488,6 @@ if __name__ == '__main__':
       "num_weekly_closed_issues": get_num_closed_issues_weekly(get_closed_issues(session, one_week_ago, repository)),
       "issues_by_open_date": sort_issues_open_date(session, repository, limit),
       "issues_by_number_of_comments": sort_issues_num_comments(session, repository, limit),
-      "average_issue_close_time": avg_issue_close_time(session, repository),
       "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repository),
       "open_pull_requests": get_open_prs(session, one_week_ago, repository),
       "closed_pull_requests": get_closed_prs(session, one_week_ago, repository),

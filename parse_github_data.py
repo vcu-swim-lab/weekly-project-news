@@ -29,15 +29,15 @@ def rate_limit_check(g):
         time.sleep(sleep_duration)
 
 
-def get_a_repository(repository):
-    url = f'https://api.github.com/repos/{repository}'
-    print(url)
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        repo_info = response.json()
-        return repo_info
-    else:
-        print(f'Failed to fetch repository information: {response.status_code}')
+# def get_a_repository(repository):
+#     url = f'https://api.github.com/repos/{repository}'
+#     print(url)
+#     response = requests.get(url, headers=headers)
+#     if response.status_code == 200:
+#         repo_info = response.json()
+#         return repo_info
+#     else:
+#         print(f'Failed to fetch repository information: {response.status_code}')
 
 # Retreives the repo name from the url
 def get_repo_name(url):
@@ -135,18 +135,14 @@ def insert_user(data):
         user_data = {
             'id': data.get('id'),
             'login': data.get('login'),
-            'url': data.get('url'),
             'html_url': data.get('html_url'),
-            'name': data.get('name'),
         }
     else:
         # Assume data is a NamedUser object
         user_data = {
             'id': getattr(data, 'id', None),
             'login': getattr(data, 'login', None),
-            'url': getattr(data, 'url', None),
-            'html_url': getattr(data, 'html_url', None),
-            'name': getattr(data, 'name', None),
+            'html_url': getattr(data, 'html_url', None)
         }
     
     # Filter out only the fields present in the User model
@@ -190,7 +186,11 @@ def insert_issue(issue):
         print("Issue already exists!")
         return
 
-    user_data = {'login': issue.user.login}
+    user_data = {
+        'id': issue.user.id,
+        'login': issue.user.login,
+        'html_url': issue.user.html_url
+        }
     user = session.query(User).filter_by(login=user_data['login']).first()
     if not user:
         insert_user(user_data)
@@ -481,7 +481,6 @@ if __name__ == '__main__':
 
     # GitHub API key and headers
     GITHUB_API_KEY = os.environ['GITHUB_API_KEY']
-    headers = {'Authorization': f'token {GITHUB_API_KEY}'}
     
     # PyGithub
     g = Github(GITHUB_API_KEY)
@@ -491,7 +490,7 @@ if __name__ == '__main__':
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Define the limit for API calls
-    limit = 1000
+    limit = 100
 
     # Get owners and repos
     with open("subscribers.json", 'r') as f:
@@ -500,8 +499,8 @@ if __name__ == '__main__':
     # Keep a list of the subscriber repos
     subscriber_repo_list = []
     
-    for subscriber in subscriber_data:
-        repo_name = subscriber['repo_name']
+    for subscriber in subscriber_data['results']:
+        repo_name = subscriber['metadata'].get('repo_name', '')
         if repo_name and 'github.com' in repo_name:
             # ex. https://github.com/cnovalski1/APIexample
             parts = repo_name.split('/')
@@ -522,8 +521,7 @@ if __name__ == '__main__':
         if repo in current_repo_list:
             insert_all_data(g, repository, limit, one_week_ago)
         else: # Repo doesn't exist in database, so insert it
-            repo_data = get_a_repository(repo)
-            insert_repository(repo_data)
+            insert_repository(repository)
             insert_all_data(g, repository, limit, one_year_ago)
             
     

@@ -42,9 +42,7 @@ def valid_issue():
     
     return valid_issue
 
-# TODO Test for 'bot'
-
-# TODO Test for '[bot]'
+# TODO Test for invalid issue (already exists)
 
 # Contains all test cases
 class TestDB:      
@@ -66,7 +64,5 @@ class TestDB:
         assert issue.user_login == 'user1'
         assert issue.repository_full_name == 'repo1'
     
-    @pytest.mark.xfail(raises=IntegrityError)
-    def test_bot_issue(self, db_session):
-        print()
+
         

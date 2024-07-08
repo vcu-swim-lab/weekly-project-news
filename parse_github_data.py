@@ -456,16 +456,14 @@ def insert_all_data(repository, limit, date):
     commits = get_all_commits(repository, limit, date)
     for commit in commits:
         insert_commit(commit)
-    
+ 
 
-
-# TODO
-# 1. Add code to go through subscribers
-# 2. Make proper list of repos and owners from that data, making sure to check if the repo already exists in the list
-
-
-
+   
+# Main
 if __name__ == '__main__':
+    # Measure the time it takes for every function to execute. 
+    start_time = time.time()
+    
     # Disable logging
     logging.getLogger('sqlalchemy').disabled = True
     # Create an engine and session
@@ -486,7 +484,7 @@ if __name__ == '__main__':
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Define the limit for API calls
-    limit = 100
+    limit = 1000
 
     # Get owners and repos
     with open("subscribers.json", 'r') as f:
@@ -520,5 +518,17 @@ if __name__ == '__main__':
             repo_data = get_a_repository(repo)
             insert_repository(repo_data)
             insert_all_data(repository, limit, one_year_ago)
+            
+    
+       # Check how long the function takes to run and print result
+    elapsed_time = time.time() - start_time
+    if (elapsed_time >= 60):
+        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+    else:
+        print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+    
+    
+        
+
 
     

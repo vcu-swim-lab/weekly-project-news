@@ -10,6 +10,7 @@ from tables.pull_request import PullRequest, PullRequestComment
 from datetime import datetime  # Import datetime
 import logging
 from sqlalchemy import create_engine
+import time
 
 load_dotenv()
 
@@ -224,6 +225,10 @@ def update_all_prs(repo, session, one_week_ago):
 
 # Main
 if __name__ == '__main__':
+    # Measure the time it takes for every function to execute. 
+    start_time = time.time()
+    
+    
     # Create SQLAlchemy engine and session
     logging.getLogger('sqlalchemy').disabled = True
     engine = create_engine('sqlite:///github.db')
@@ -246,4 +251,13 @@ if __name__ == '__main__':
         update_all_issues(repo, session, one_week_ago)
         
         update_all_prs(repo, session, one_week_ago)
+        
+    # Check how long the function takes to run and print result
+    elapsed_time = time.time() - start_time
+    if (elapsed_time >= 60):
+        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+    else:
+        print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+    
+    
         

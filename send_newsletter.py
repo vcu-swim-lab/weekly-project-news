@@ -66,10 +66,15 @@ def update_email_status(email_id):
     data = {
         "subject": subject,
         "body": content,
-        "status": "sent"
+        "status": "imported"
     }
     
     response = requests.patch(url, headers=headers, json=data)
+    print('a')
+    print(response)
+    print('subject: ', subject)
+    print('b')
+
     if response.status_code >= 200 and response.status_code < 300:
         return response
     else:
@@ -80,13 +85,13 @@ def update_email_status(email_id):
     
 
 # "Main function"
-with open('test_subscribers.json', 'r') as file:
+with open('subscribers.json', 'r') as file:
     subscribers_data = json.load(file)
 
 for subscriber in subscribers_data['results']:
     email = subscriber['email']
-    if email == 'kostadin@gmail.com':
-        continue
+    # if email == 'kostadin@gmail.com':
+    #     continue
 
     github_repo = subscriber.get('metadata', {}).get('repo_name')
     if not github_repo:

@@ -27,9 +27,9 @@ def individual_instructions(param1, param2, param3, param4):
 
 # param1-4: "issues", param5: true if should include in instructions
 def general_instructions(param1, param2, param3, param4, param5, param6):
-  instructions = f"Generate a bulleted list in markdown where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. "
+  instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
   if param5:
-    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must start with 'https://github.com'. "
+    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https:// in brackets, but only including the https:// in parentheses (ex. [github.com/...](https://github.com/...) ). "
   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
   return instructions
 
@@ -104,6 +104,11 @@ def open_issues(repo):
     
     # issue_summary = data
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
+
+    print('a')
+    print(issue_summary)
+    print('b')
+
     issue_url = f"URL: {open_issue.get('url')}"
     all_open_issues += f"{issue_summary}\n{issue_url}\n\n"
 
@@ -115,6 +120,12 @@ def open_issues(repo):
     overall_summary = overall_summary[3:-3]
   if overall_summary.startswith("markdown"):
     overall_summary = overall_summary[len("markdown"):].lstrip()
+
+
+  print('c')
+  print(overall_summary)
+  print('d')
+
   return overall_summary + "\n"
 
 
@@ -458,8 +469,10 @@ if __name__ == '__main__':
   # repositories = [row[0] for row in result]
   repositories = [
     # "tensorflow/tensorflow"
-    # "stevenbui44/test-vscode"
-    "stevenbui44/flashcode"
+    # "stevenbui44/test-vscode",
+    # "stevenbui44/flashcode"
+    # "cnovalski1/APIexample"
+    "luis605/Lit-Engine"
   ]
 
   # PART TWO: create the markdown for a newsletter
@@ -483,36 +496,29 @@ if __name__ == '__main__':
       "num_closed_prs": get_num_closed_prs(get_closed_prs(session, one_week_ago, repository)),
       "commits": get_commit_messages(session, one_week_ago, repository),
       "num_commits": get_num_commits(get_commit_messages(session, one_week_ago, repository)),
-
-      # "first_time_contributors": get_contributors(session, one_week_ago, repository)[0],
-      # "active_contributors": get_contributors(session, one_week_ago, repository)[1],
-
-      "active_contributors": get_active_contributors(session, one_week_ago, thirty_days_ago, repository)
+      "active_contributors": get_active_contributors(session, thirty_days_ago, repository)
     }
     output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
 
     # print(output_filename)
-    # print(repo_data)
-    # print(repo_data['repo_name'])
-    # print(repo_data['open_issues'])
-    # print(repo_data['closed_issues'])
-    # print(repo_data['active_issues'])
-    # print(repo_data['num_weekly_open_issues'])
-    # print(repo_data['num_weekly_closed_issues'])
-    # print(repo_data['issues_by_open_date'])
-    # print(repo_data['issues_by_number_of_comments'])
-    # print(repo_data['average_issue_close_time'])
-    # print(repo_data['average_issue_close_time_weekly'])
+    # print("repo_name: ", repo_data['repo_name'])
+    # print("open_issues: ", repo_data['open_issues'])
+    # print("closed_issues", repo_data['closed_issues'])
+    # print("active_issues", repo_data['active_issues'])
+    # print("num_weekly_open_issues", repo_data['num_weekly_open_issues'])
+    # print("num_weekly_closed_issues", repo_data['num_weekly_closed_issues'])
+    # print("issues_by_open_date", repo_data['issues_by_open_date'])
+    # print("issues_by_number_of_comments", repo_data['issues_by_number_of_comments'])
+    # print("average_issue_close_time", repo_data['average_issue_close_time'])
+    # print("average_issue_close_time_weekly", repo_data['average_issue_close_time_weekly'])
     # print("open_pull_requests: ", repo_data['open_pull_requests'])
-    # print(repo_data['closed_pull_requests'])
+    # print("closed_pull_requests", repo_data['closed_pull_requests'])
     # print("active_pull_requests: ", repo_data['active_pull_requests'])
-    # print(repo_data['num_open_prs'])
-    # print(repo_data['num_closed_prs'])
+    # print("num_open_prs", repo_data['num_open_prs'])
+    # print("num_closed_prs", repo_data['num_closed_prs'])
     # print("commits: ", repo_data['commits'])
-    # print(repo_data['num_commits'])
-
-    # print(repo_data['first_time_contributors'])
-    # print(repo_data['active_contributors'])
+    # print("num_commits", repo_data['num_commits'])
+    # print("active_contributors", repo_data['active_contributors'])
     # print()
 
     name = repo_data['repo_name'].split('/')[-1]
@@ -536,7 +542,7 @@ if __name__ == '__main__':
 
 
 
-        # 1: Issues
+      # 1: Issues
         outfile.write("# I. Issues\n\n")
 
         # 1.1: Open Issues

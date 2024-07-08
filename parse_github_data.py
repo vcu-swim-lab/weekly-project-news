@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
-from tables.repository import Repository, RepositoryAuthor
+from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
@@ -59,7 +59,7 @@ def insert_repository(data):
             filtered_data[field] = datetime.strptime(filtered_data[field], "%Y-%m-%dT%H:%M:%SZ")
     
     if session.query(Repository).filter_by(id=filtered_data['id']).first() is not None:
-        print("Already Exists!")
+        print("Repository already exists!")
         return
 
     # Create and add the repository to the session
@@ -68,7 +68,7 @@ def insert_repository(data):
     session.commit()
 
 # RETREIVE ISSUES 
-def get_issues(repo, limit, date):
+def get_issues(g, repo, limit, date):
     
     issues_array = []
     issues = repo.get_issues(state='all', since=date)
@@ -89,7 +89,7 @@ def get_issues(repo, limit, date):
 
 
 # RETREIVE PULL REQUESTS
-def get_pull_requests(repo, limit, date):
+def get_pull_requests(g, repo, limit, date):
     pr_array = []
     pulls = repo.get_pulls()
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
@@ -108,7 +108,7 @@ def get_pull_requests(repo, limit, date):
 
 
 # RETREIVE COMMITS
-def get_all_commits(repo, limit, date):
+def get_all_commits(g, repo, limit, date):
     commit_array = []
     commits = repo.get_commits()
 
@@ -172,15 +172,11 @@ def insert_issue(issue):
     # Extract data from the issue object
     data = {
         'id': issue.id,
-        'url': issue.url,
-        'comments_url': issue.comments_url,
         'html_url': issue.html_url,
         'number': issue.number,
         'state': issue.state,
         'title': issue.title,
         'body': issue.body,
-        'locked': issue.locked,
-        'active_lock_reason': issue.active_lock_reason,
         'comments': issue.comments,
         'closed_at': issue.closed_at.isoformat() if issue.closed_at else None,
         'created_at': issue.created_at.isoformat() if issue.created_at else None,
@@ -191,7 +187,7 @@ def insert_issue(issue):
     filtered_data = {key: value for key, value in data.items() if key in issue_fields}
 
     if session.query(Issue).filter_by(id=filtered_data['id']).first() is not None:
-        print("Already Exists!")
+        print("Issue already exists!")
         return
 
     user_data = {'login': issue.user.login}
@@ -230,7 +226,6 @@ def insert_issue_comment(comment_data, issue_id):
     # Initialize filtered_comment_data with mandatory fields
     filtered_comment_data = {
         'id': comment_data.id,
-        'url': comment_data.url,
         'html_url': comment_data.html_url,
         'body': comment_data.body,
         'user_login': comment_data.user.login,
@@ -245,6 +240,11 @@ def insert_issue_comment(comment_data, issue_id):
         filtered_comment_data['repository_full_name'] = repo_name
     else:
         filtered_comment_data['repository_full_name'] = get_repo_name(comment_data['url'])
+    
+    # Check if comment already exists in the database
+    if session.query(IssueComment).filter_by(id=filtered_comment_data['id']).first() is not None:
+        print("Issue comment already exists!")
+        return
 
     # Filter out fields not in comment_fields
     filtered_comment_data = {key: value for key, value in filtered_comment_data.items() if key in comment_fields}
@@ -283,8 +283,6 @@ def insert_pull_request(data):
     # Extract data from the pull request object
     filtered_data = {
         'id': data.id,
-        'url': data.url,
-        'comments_url': data.comments_url,
         'html_url': data.html_url,
         'number': data.number,
         'state': data.state,
@@ -353,6 +351,11 @@ def insert_pr_comment(data, pr_id):
                 print(f"Failed to insert or retrieve user: {user_data}")
                 return
         filtered_comment_data['user_login'] = user.login
+        
+    # Check if comment already exists in the database
+    if session.query(PullRequestComment).filter_by(id=filtered_comment_data['id']).first() is not None:
+        print("Pull Request Comment already exists!")
+        return
 
     # Convert datetime fields if necessary
     datetime_fields = ['created_at', 'updated_at']
@@ -387,14 +390,11 @@ def insert_commit(data):
     # Extract data from the commit object
     filtered_data = {
         'sha': data.sha,
-        'url': data.url,
         'html_url': data.html_url,
-        'comments_url': data.comments_url,
         'committer_login': data.commit.author if data.commit.author else None,
         'committer_date': data.commit.committer.date,
         'committer_name': data.commit.author.name,
         'commit_message': data.commit.message,
-        'commit_url': data.commit.url,
     }
     
     # Filter out only the fields present in the Commit model
@@ -433,8 +433,8 @@ def insert_commit(data):
         print(f"IntegrityError: {e}")
 
 # Insert all repository data relative to a specific date (e.g. one week, one year, etc.)
-def insert_all_data(repository, limit, date):
-    issues = get_issues(repository, limit, date)
+def insert_all_data(g, repository, limit, date):
+    issues = get_issues(g, repository, limit, date)
     for issue in issues:
         insert_issue(issue)
         issue_comments = issue.get_comments()
@@ -442,8 +442,10 @@ def insert_all_data(repository, limit, date):
         for comment in issue_comments:
             insert_issue_comment(comment, issue.id)
 
+        rate_limit_check(g)
+
     # Get pull requests and insert them into the database
-    pulls = get_pull_requests(repository, limit, date)
+    pulls = get_pull_requests(g, repository, limit, date)
     for pr in pulls:
         insert_pull_request(pr)
 
@@ -451,13 +453,18 @@ def insert_all_data(repository, limit, date):
         
         for comment in pr_comments:
             insert_pr_comment(comment, pr.id)
+        
+        rate_limit_check(g)
 
     # Get commits and insert them into the database
-    commits = get_all_commits(repository, limit, date)
+    commits = get_all_commits(g, repository, limit, date)
     for commit in commits:
         insert_commit(commit)
+        
+        rate_limit_check(g)
  
 
+# TODO Add check for rate limit if 403 error
    
 # Main
 if __name__ == '__main__':
@@ -473,11 +480,11 @@ if __name__ == '__main__':
     session = Session()
 
     # GitHub API key and headers
-    GITHUB_API_KEY = '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'
+    GITHUB_API_KEY = os.environ['GITHUB_API_KEY']
     headers = {'Authorization': f'token {GITHUB_API_KEY}'}
     
     # PyGithub
-    g = Github(os.environ['GITHUB_API_KEY'])
+    g = Github(GITHUB_API_KEY)
     
     # Datetime variables
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
@@ -488,13 +495,13 @@ if __name__ == '__main__':
 
     # Get owners and repos
     with open("subscribers.json", 'r') as f:
-        data = json.load(f)
+        subscriber_data = json.load(f)
     
     # Keep a list of the subscriber repos
     subscriber_repo_list = []
     
-    for subscriber in data['results']:
-        repo_name = subscriber['metadata'].get('repo_name', '')
+    for subscriber in subscriber_data:
+        repo_name = subscriber['repo_name']
         if repo_name and 'github.com' in repo_name:
             # ex. https://github.com/cnovalski1/APIexample
             parts = repo_name.split('/')
@@ -513,11 +520,11 @@ if __name__ == '__main__':
         
         # If repo already exists in database
         if repo in current_repo_list:
-            insert_all_data(repository, limit, one_week_ago)
+            insert_all_data(g, repository, limit, one_week_ago)
         else: # Repo doesn't exist in database, so insert it
             repo_data = get_a_repository(repo)
             insert_repository(repo_data)
-            insert_all_data(repository, limit, one_year_ago)
+            insert_all_data(g, repository, limit, one_year_ago)
             
     
        # Check how long the function takes to run and print result

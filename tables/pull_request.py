@@ -10,8 +10,6 @@ class PullRequest(Base):
     __tablename__ = 'pull_requests'
     
     id = Column(Integer, primary_key=True)
-    url = Column(String)
-    comments_url = Column(String)
     html_url = Column(String)
     number = Column(Integer, nullable=False)
     state = Column(String, nullable=False)
@@ -32,7 +30,6 @@ class PullRequest(Base):
 class PullRequestComment(Base):
     __tablename__ = 'pull_request_comments'
     id = Column(Integer, primary_key=True)
-    url = Column(String)
     html_url = Column(String)
     body = Column(Text)
     user_login = Column(String)

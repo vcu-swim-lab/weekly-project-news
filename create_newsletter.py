@@ -141,7 +141,7 @@ def active_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
-  issue_instructions += "Do not mention the URL in the summary. After each bullet point, you must give only one indented bullet point in markdown (starting with three spaces, then '-') summarizing the interaction in the comments, which can be multiple concise sentences. You must only give ONE bullet point per 10 comments. If there are fewer than 10 comments, only give 1 bullet point. Do not mention specific usernames."
+  issue_instructions += "Do not mention the URL in the summary. After that bullet point, you MUST give only one indented bullet point in markdown (which must start with three spaces, then '-') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
   issues = repo['issues_by_number_of_comments']
   size = min(len(issues), 5)
 
@@ -574,10 +574,10 @@ if __name__ == '__main__':
         # outfile.write(result)
 
 
-        # # 1.2 Top 5 Active Issues
-        # outfile.write("## 1.2 Top 5 Active Issues:\n\n")
-        # result = active_issues(repo_data)
-        # outfile.write(result)
+        # 1.2 Top 5 Active Issues
+        outfile.write("## 1.2 Top 5 Active Issues:\n\n")
+        result = active_issues(repo_data)
+        outfile.write(result)
 
 
         # # 1.3 Top 5 Quiet Issues
@@ -613,19 +613,19 @@ if __name__ == '__main__':
 
 
 
-        # 2: Pull Requests
-        outfile.write("# II. Pull Requests\n\n")
+        # # 2: Pull Requests
+        # outfile.write("# II. Pull Requests\n\n")
 
-        # 2.1: Open Pull Requests
-        outfile.write("## 2.1 Open Pull Requests\n\n")
+        # # 2.1: Open Pull Requests
+        # outfile.write("## 2.1 Open Pull Requests\n\n")
 
-        # 2.1.1 Open Pull Requests This Week
-        outfile.write(f"**Open Pull Requests This Week:** {repo_data.get('num_open_prs', None)}\n\n")
+        # # 2.1.1 Open Pull Requests This Week
+        # outfile.write(f"**Open Pull Requests This Week:** {repo_data.get('num_open_prs', None)}\n\n")
 
-        # 2.1.2 Pull Requests
-        outfile.write("**Pull Requests:**\n\n")
-        result = open_pull_requests(repo_data)
-        outfile.write(result)
+        # # 2.1.2 Pull Requests
+        # outfile.write("**Pull Requests:**\n\n")
+        # result = open_pull_requests(repo_data)
+        # outfile.write(result)
 
 
         # # 2.2: Closed Pull Requests

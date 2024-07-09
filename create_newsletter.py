@@ -116,10 +116,14 @@ def open_issues(repo):
   
   # Step 2: get markdown output for all open issues 
   overall_summary = generate_summary(all_open_issues, overall_instructions)
-  if overall_summary.startswith("```") and overall_summary.endswith("```"):
-    overall_summary = overall_summary[3:-3]
-  if overall_summary.startswith("markdown"):
-    overall_summary = overall_summary[len("markdown"):].lstrip()
+  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[3:-3]
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  if "```markdown" in overall_summary:
+    start = overall_summary.index("```markdown") + len("```markdown")
+    end = overall_summary.rindex("```")
+    overall_summary = overall_summary[start:end].strip() + "\n"
 
 
   print('c')
@@ -218,10 +222,14 @@ def closed_issues(repo):
   
   # Step 2: get markdown output for all closed issues 
   overall_summary = generate_summary(all_closed_issues, overall_instructions, max_retries=5, base_wait=1)
-  if overall_summary.startswith("```") and overall_summary.endswith("```"):
-    overall_summary = overall_summary[3:-3]
-  if overall_summary.startswith("markdown"):
-    overall_summary = overall_summary[len("markdown"):].lstrip()
+  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[3:-3]
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  if "```markdown" in overall_summary:
+    start = overall_summary.index("```markdown") + len("```markdown")
+    end = overall_summary.rindex("```")
+    overall_summary = overall_summary[start:end].strip() + "\n"
   return overall_summary + "\n\n"
 
 
@@ -396,14 +404,18 @@ def commits(repo):
 
   # Step 2: get markdown output for all commits
   overall_summary = generate_summary(all_commits, overall_instructions, max_retries=5, base_wait=1)
-  if overall_summary.startswith("```markdown"):
-    overall_summary = overall_summary[len("```markdown"):].lstrip()
-  if overall_summary.startswith("```"):
-    overall_summary = overall_summary[3:].lstrip()
-  if overall_summary.endswith("```"):
-    overall_summary = overall_summary[:-3].rstrip()
-  if overall_summary.startswith("markdown"):
-    overall_summary = overall_summary[len("markdown"):].lstrip()
+  # if overall_summary.startswith("```markdown"):
+  #   overall_summary = overall_summary[len("```markdown"):].lstrip()
+  # if overall_summary.startswith("```"):
+  #   overall_summary = overall_summary[3:].lstrip()
+  # if overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[:-3].rstrip()
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  if "```markdown" in overall_summary:
+    start = overall_summary.index("```markdown") + len("```markdown")
+    end = overall_summary.rindex("```")
+    overall_summary = overall_summary[start:end].strip() + "\n"
   return overall_summary + "\n\n"
 
 

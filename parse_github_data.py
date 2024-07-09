@@ -21,7 +21,8 @@ import random
 load_dotenv()
 # Load API keys from .env file
 API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
-current_key_index = 0
+print(API_KEYS)
+current_key_index = 1
 
 # Initialize Github instance
 g = Github(API_KEYS[current_key_index])
@@ -91,15 +92,30 @@ def insert_repository(data):
 # RETREIVE ISSUES 
 def get_issues(g, repo, limit, date):
     rate_limit_check()
+    
     issues_array = []
+    
+    print("API Call for issues")
     issues = repo.get_issues(state='all', since=date)
     
+    print("Sleeping for 10 seconds...")
+    time.sleep(10)  # Sleep for 10 seconds after the initial API call
+
+    issue_count = 0
+    
     for issue in issues:
+        issue_count += 1
+        print(f"Looping through issue")
+
+        # Check rate limit every 10 issues
+        if issue_count % 10 == 0:
+            rate_limit_check()
+        
+
+        issue_author = issue.user.login.lower()
         if issue.pull_request:
             continue
-        elif issue.created_at < date:
-            continue
-        elif 'bot' in issue.user.login.lower() or '[bot]' in issue.user.login.lower():
+        elif 'bot' in issue_author or '[bot]' in issue_author:
             continue
         
         issues_array.append(issue)
@@ -113,9 +129,12 @@ def get_issues(g, repo, limit, date):
 def get_pull_requests(g, repo, limit, date):
     rate_limit_check()
     pr_array = []
+    print("API Call for pull requests")
     pulls = repo.get_pulls()
 
     for pr in pulls:
+        print("Looping through pull request " + pr.html_url)
+        rate_limit_check()
         if pr.created_at < date:
             continue
         elif 'bot' in pr.user.login.lower() or '[bot]' in pr.user.login.lower():
@@ -132,9 +151,12 @@ def get_pull_requests(g, repo, limit, date):
 def get_all_commits(g, repo, limit, date):
     rate_limit_check()
     commit_array = []
+    print("API call for commits: ")
     commits = repo.get_commits()
 
     for commit in commits:
+        print("Looping through commit " + commit.sha)
+        rate_limit_check()
         if commit.commit.author.date < date:
             continue
         elif 'bot' in commit.commit.author.name.lower() or '[bot]' in commit.commit.author.name.lower():
@@ -541,6 +563,7 @@ if __name__ == '__main__':
     
     # Loop through each subscriber repo and insert data
     for repo in subscriber_repo_list:
+        print("Gathering data for " + repo)
 
         # Skip repos that have already been processed
         if repo in processed_repos:
@@ -551,10 +574,14 @@ if __name__ == '__main__':
         # If repo already exists in database
         if repo in current_repo_list:
             insert_all_data(g, repository, limit, one_week_ago)
+            print("Inserting all data for " + repo)
         else: # Repo doesn't exist in database, so insert it
+            print("Retrieving data for " + repo)
             repo_data = get_a_repository(repo, headers)
+            print("Inserting the repository " + repo)
             insert_repository(repo_data)
 
+            print("Inserting data for " + repo)
             insert_all_data(g, repository, limit, one_year_ago)
 
         processed_repos.add(repo)

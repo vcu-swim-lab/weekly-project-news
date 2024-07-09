@@ -16,28 +16,49 @@ from dotenv import load_dotenv
 from github import Github
 from datetime import datetime, timedelta, timezone
 import time
+import random
 
 load_dotenv()
+# Load API keys from .env file
+API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
+current_key_index = 0
+
+# Initialize Github instance
+g = Github(API_KEYS[current_key_index])
 
 # Checks the rate limit
-def rate_limit_check(g):
+def rate_limit_check():
     rate_limit = g.get_rate_limit().core
+    print(rate_limit)
+    
     if rate_limit.remaining < 10:  
-        print("Approaching rate limit, pausing...")
-        now = datetime.now(tz=timezone.utc)
-        sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
-        time.sleep(sleep_duration)
+        # print("Approaching rate limit, pausing...")
+        # now = datetime.now(tz=timezone.utc)
+        # sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
+        # time.sleep(sleep_duration)
+        print("Approaching rate limit, switching API key...")
+        switch_api_key()
+        rate_limit_check()
 
+# Function to switch API keys
+def switch_api_key():
+    global current_key_index, g
+    current_key_index = (current_key_index + 1) % len(API_KEYS)
+    g = Github(API_KEYS[current_key_index])
+    print(f"Switched to API key {current_key_index + 1}")
+    return g
+        
 
-# def get_a_repository(repository):
-#     url = f'https://api.github.com/repos/{repository}'
-#     print(url)
-#     response = requests.get(url, headers=headers)
-#     if response.status_code == 200:
-#         repo_info = response.json()
-#         return repo_info
-#     else:
-#         print(f'Failed to fetch repository information: {response.status_code}')
+# Retreives a repository
+def get_a_repository(repository, headers):
+    url = f'https://api.github.com/repos/{repository}'
+    print(url)
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        repo_info = response.json()
+        return repo_info
+    else:
+        print(f'Failed to fetch repository information: {response.status_code}')
 
 # Retreives the repo name from the url
 def get_repo_name(url):
@@ -69,7 +90,7 @@ def insert_repository(data):
 
 # RETREIVE ISSUES 
 def get_issues(g, repo, limit, date):
-    
+    rate_limit_check()
     issues_array = []
     issues = repo.get_issues(state='all', since=date)
     
@@ -90,9 +111,9 @@ def get_issues(g, repo, limit, date):
 
 # RETREIVE PULL REQUESTS
 def get_pull_requests(g, repo, limit, date):
+    rate_limit_check()
     pr_array = []
     pulls = repo.get_pulls()
-    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
 
     for pr in pulls:
         if pr.created_at < date:
@@ -109,6 +130,7 @@ def get_pull_requests(g, repo, limit, date):
 
 # RETREIVE COMMITS
 def get_all_commits(g, repo, limit, date):
+    rate_limit_check()
     commit_array = []
     commits = repo.get_commits()
 
@@ -434,38 +456,41 @@ def insert_commit(data):
 
 # Insert all repository data relative to a specific date (e.g. one week, one year, etc.)
 def insert_all_data(g, repository, limit, date):
+    
     issues = get_issues(g, repository, limit, date)
     for issue in issues:
+        print("Inserting issue" )
         insert_issue(issue)
+        
+        rate_limit_check()
         issue_comments = issue.get_comments()
-
+        
         for comment in issue_comments:
+            print("Inserting issue comment")
             insert_issue_comment(comment, issue.id)
-
-        rate_limit_check(g)
 
     # Get pull requests and insert them into the database
     pulls = get_pull_requests(g, repository, limit, date)
     for pr in pulls:
         insert_pull_request(pr)
-
+        print("Inserting pull request")
+        rate_limit_check()
         pr_comments = pr.get_comments()
         
         for comment in pr_comments:
+            print("Inserting pull request comment")
             insert_pr_comment(comment, pr.id)
         
-        rate_limit_check(g)
-
+  
     # Get commits and insert them into the database
     commits = get_all_commits(g, repository, limit, date)
     for commit in commits:
+        print("Inserting commit")
         insert_commit(commit)
         
-        rate_limit_check(g)
  
-
 # TODO Add check for rate limit if 403 error
-   
+# TODO Use get_readme to retreive and parse the readme file
 # Main
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
@@ -480,17 +505,15 @@ if __name__ == '__main__':
     session = Session()
 
     # GitHub API key and headers
-    GITHUB_API_KEY = os.environ['GITHUB_API_KEY']
+    headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
     
-    # PyGithub
-    g = Github(GITHUB_API_KEY)
     
     # Datetime variables
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Define the limit for API calls
-    limit = 100
+    limit = 10000
 
     # Get owners and repos
     with open("subscribers.json", 'r') as f:
@@ -521,7 +544,8 @@ if __name__ == '__main__':
         if repo in current_repo_list:
             insert_all_data(g, repository, limit, one_week_ago)
         else: # Repo doesn't exist in database, so insert it
-            insert_repository(repository)
+            repo_data = get_a_repository(repo, headers)
+            insert_repository(repo_data)
             insert_all_data(g, repository, limit, one_year_ago)
             
     

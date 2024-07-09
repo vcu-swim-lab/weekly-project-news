@@ -240,17 +240,27 @@ if __name__ == '__main__':
 
     # PyGithub
     g = Github(os.environ['GITHUB_API_KEY'])
+
+    # Making a set to keep track of processed repos to save time
+    processed_repos = set()
     
     # Get a list of repos in the database
     repo_list = [r[0] for r in session.query(Repository.full_name).all()]
 
     # Loop through each and update
     for repo_name in repo_list:
+
+        # Skip repos that have already been processed
+        if repo_name in processed_repos:
+            continue
+
         repo = g.get_repo(repo_name)
         
         update_all_issues(repo, session, one_week_ago)
         
         update_all_prs(repo, session, one_week_ago)
+
+        processed_repos.add(repo_name)
         
     # Check how long the function takes to run and print result
     elapsed_time = time.time() - start_time

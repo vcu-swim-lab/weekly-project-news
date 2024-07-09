@@ -374,12 +374,12 @@ def commits(repo):
   all_commits = ""
   commit_instructions = individual_instructions("a commit", "commit", "commit", "only one detailed sentence")
   overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
-  overall_instructions += "You must go through all of the commits first and then group similar commits together. Do NOT output duplicate topics. There should be much fewer bullet points than commits. Show the output in markdown in a code block.\n"
+  overall_instructions += "Do NOT create a bullet point for each individual sentence above, and do NOT output duplicate topics. You must go through all of the commits first and then group similar commits together. There should be multiple commits per bullet point. Show the output in markdown in a code block.\n"
 
   # Step 1: get summaries for each commit first from the llm
   for commit in repo['commits']:
     data = commit
-   
+    
     if (data['message']):
       data['message'] = re.sub(r'<img[^>]*>|\r\n', '', data['message'])
 
@@ -468,11 +468,11 @@ if __name__ == '__main__':
   # result = session.execute(query)
   # repositories = [row[0] for row in result]
   repositories = [
-    # "tensorflow/tensorflow"
+    "tensorflow/tensorflow"
     # "stevenbui44/test-vscode",
     # "stevenbui44/flashcode"
     # "cnovalski1/APIexample"
-    "luis605/Lit-Engine"
+    # "luis605/Lit-Engine"
   ]
 
   # PART TWO: create the markdown for a newsletter
@@ -517,7 +517,7 @@ if __name__ == '__main__':
     # print("num_open_prs", repo_data['num_open_prs'])
     # print("num_closed_prs", repo_data['num_closed_prs'])
     # print("commits: ", repo_data['commits'])
-    # print("num_commits", repo_data['num_commits'])
+    # print("num_commits: ", repo_data['num_commits'])
     # print("active_contributors", repo_data['active_contributors'])
     # print()
 
@@ -542,7 +542,7 @@ if __name__ == '__main__':
 
 
 
-      # 1: Issues
+        # 1: Issues
         outfile.write("# I. Issues\n\n")
 
         # 1.1: Open Issues

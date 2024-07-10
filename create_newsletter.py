@@ -379,6 +379,15 @@ def pull_request_discussion_insights(repo):
 
 
 
+
+# def general_instructions(param1, param2, param3, param4, param5, param6):
+#   instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
+#   if param5:
+#     instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https:// in brackets, but only including the https:// in parentheses (ex. [github.com/...](https://github.com/...) ). "
+#   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
+#   return instructions
+
+
 # 9 - Commits
 def commits(repo):
   if repo['commits'] == []:
@@ -386,10 +395,31 @@ def commits(repo):
 
   all_commits = ""
   commit_instructions = individual_instructions("a commit", "commit", "commit", "only one detailed sentence")
-  overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
-  overall_instructions += "Do NOT create a bullet point for each individual sentence above, and do NOT output duplicate topics. You must go through all of the commits first and then group similar commits together. There should be multiple commits per bullet point. Show the output in markdown in a code block.\n"
+  overall_instructions = """You are an expert software developer with deep knowledge of this GitHub project. I have a list of the most recent commits to the project. Your task is to:
+
+1. Carefully read and understand all of the commits.
+2. Identify common themes, areas of development, or types of changes across these commits.
+3. Group the commits into at most 25 broad topics that collectively cover all of the commits.
+4. For each topic, write a summary that encapsulates the main ideas from all related commits.
+
+Present your analysis as a markdown bulleted list where each bullet point:
+- Starts with the topic name in bold
+- Is followed by a colon
+- Contains a 2-sentence summary covering multiple related commits
+
+Important notes:
+- Every single commit must be accounted for in your groupings.
+- Do not create a separate topic for each commit. Each topic should cover multiple related commits.
+- Ensure your summary sentences for each topic reflect changes from various commits, not just one.
+
+Example format:
+- **Dispatch Optimization**: A redundant bounds check has been removed from the code since the condition is already verified in the EvaluateEpilogue function. Profiling observations also indicate that tp_richcompare is marginally faster to dispatch than eq.
+
+Provide your comprehensive analysis of all of the commits, generated as a bulleted list in markdown as described above."""
+
 
   # Step 1: get summaries for each commit first from the llm
+  number = 1
   for commit in repo['commits']:
     data = commit
     
@@ -398,7 +428,8 @@ def commits(repo):
 
     # commit_summary = data
     commit_summary = generate_summary(data, commit_instructions, max_retries=5, base_wait=1)
-    all_commits += f"{commit_summary}\n\n"
+    all_commits += f"{number}. {commit_summary}\n"
+    number += 1
 
   print("\n", all_commits, "\n\n\n")
 
@@ -485,11 +516,12 @@ if __name__ == '__main__':
   # result = session.execute(query)
   # repositories = [row[0] for row in result]
   repositories = [
-    "tensorflow/tensorflow"
+    # "tensorflow/tensorflow"
     # "stevenbui44/test-vscode",
     # "stevenbui44/flashcode"
     # "cnovalski1/APIexample"
     # "luis605/Lit-Engine"
+    "pytorch/pytorch"
   ]
 
   # PART TWO: create the markdown for a newsletter
@@ -544,34 +576,34 @@ if __name__ == '__main__':
     try:
       with open(output_filename, "w") as outfile:
         
-        # # 0: Title
-        # title = f"# Weekly GitHub Report for {capitalized_name}\n\n"
-        # outfile.write(title)
+        # 0: Title
+        title = f"# Weekly GitHub Report for {capitalized_name}\n\n"
+        outfile.write(title)
 
-        # # 0.1: Description underneath the title
-        # caption = ("Thank you for subscribing to our weekly newsletter! Each week, we " +
-        #             "deliver a comprehensive summary of your GitHub project's latest activity " +
-        #             "right to your inbox, including an overview of your project's issues, " +
-        #             "pull requests, contributors, and commit activity.\n\n")
-        # outfile.write(caption)
+        # 0.1: Description underneath the title
+        caption = ("Thank you for subscribing to our weekly newsletter! Each week, we " +
+                    "deliver a comprehensive summary of your GitHub project's latest activity " +
+                    "right to your inbox, including an overview of your project's issues, " +
+                    "pull requests, contributors, and commit activity.\n\n")
+        outfile.write(caption)
 
-        # outfile.write("***\n\n")
+        outfile.write("***\n\n")
 
 
 
-        # # 1: Issues
-        # outfile.write("# I. Issues\n\n")
+        # 1: Issues
+        outfile.write("# I. Issues\n\n")
 
-        # # 1.1: Open Issues
-        # outfile.write("## 1.1 Open Issues\n\n")
+        # 1.1: Open Issues
+        outfile.write("## 1.1 Open Issues\n\n")
 
-        # # 1.1.1 Open Issues This Week
-        # outfile.write(f"**Open Issues This Week:** {repo_data.get('num_weekly_open_issues', None)}\n\n")
+        # 1.1.1 Open Issues This Week
+        outfile.write(f"**Open Issues This Week:** {repo_data.get('num_weekly_open_issues', None)}\n\n")
 
-        # # 1.1.2 Issues
-        # outfile.write("**Summarized Issues:**\n\n")
-        # result = open_issues(repo_data)
-        # outfile.write(result)
+        # 1.1.2 Issues
+        outfile.write("**Summarized Issues:**\n\n")
+        result = open_issues(repo_data)
+        outfile.write(result)
 
 
         # 1.2 Top 5 Active Issues
@@ -580,105 +612,102 @@ if __name__ == '__main__':
         outfile.write(result)
 
 
-        # # 1.3 Top 5 Quiet Issues
-        # outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-        # result = quiet_issues(repo_data)
-        # outfile.write(result)
+        # 1.3 Top 5 Quiet Issues
+        outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
+        result = quiet_issues(repo_data)
+        outfile.write(result)
 
 
-        # # 1.4: Closed Issues
-        # outfile.write("## 1.4 Closed Issues\n\n")
+        # 1.4: Closed Issues
+        outfile.write("## 1.4 Closed Issues\n\n")
 
-        # # 1.4.1 Closed Issues This Week
-        # outfile.write(f"**Closed Issues This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
+        # 1.4.1 Closed Issues This Week
+        outfile.write(f"**Closed Issues This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
 
-        # # 1.4.2 Average Time to Close Issues This Week
-        # outfile.write(f"**Average Issue Close Time (This Week):** {repo_data.get('average_issue_close_time_weekly', None)}\n\n")
+        # 1.4.2 Average Time to Close Issues This Week
+        outfile.write(f"**Average Issue Close Time (This Week):** {repo_data.get('average_issue_close_time_weekly', None)}\n\n")
 
-        # # 1.4.3 Average Time to Close Issues All Time
-        # outfile.write(f"**Average Issue Close Time (All Time):** {repo_data.get('average_issue_close_time', None)}\n\n")
-
-        # # 1.4.4 Issues
-        # outfile.write("**Summarized Issues:**\n\n")
-        # result = closed_issues(repo_data)
-        # outfile.write(result)
+        # 1.4.3 Issues
+        outfile.write("**Summarized Issues:**\n\n")
+        result = closed_issues(repo_data)
+        outfile.write(result)
 
 
-        # # 1.5 Issue Discussion Insights
-        # outfile.write("## 1.5 Issue Discussion Insights\n\n")
-        # result = issue_discussion_insights(repo_data)
-        # outfile.write(result)
+        # 1.5 Issue Discussion Insights
+        outfile.write("## 1.5 Issue Discussion Insights\n\n")
+        result = issue_discussion_insights(repo_data)
+        outfile.write(result)
 
-        # outfile.write("***\n\n")
+        outfile.write("***\n\n")
 
 
 
-        # # 2: Pull Requests
-        # outfile.write("# II. Pull Requests\n\n")
+        # 2: Pull Requests
+        outfile.write("# II. Pull Requests\n\n")
 
-        # # 2.1: Open Pull Requests
-        # outfile.write("## 2.1 Open Pull Requests\n\n")
+        # 2.1: Open Pull Requests
+        outfile.write("## 2.1 Open Pull Requests\n\n")
 
-        # # 2.1.1 Open Pull Requests This Week
-        # outfile.write(f"**Open Pull Requests This Week:** {repo_data.get('num_open_prs', None)}\n\n")
+        # 2.1.1 Open Pull Requests This Week
+        outfile.write(f"**Open Pull Requests This Week:** {repo_data.get('num_open_prs', None)}\n\n")
 
-        # # 2.1.2 Pull Requests
-        # outfile.write("**Pull Requests:**\n\n")
-        # result = open_pull_requests(repo_data)
-        # outfile.write(result)
-
-
-        # # 2.2: Closed Pull Requests
-        # outfile.write("## 2.2 Closed Pull Requests\n\n")
-
-        # # 2.2.1 Closed Pull Requests This Week
-        # outfile.write(f"**Closed Pull Requests This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
-
-        # # 2.2.2 Pull Requests
-        # outfile.write("**Summarized Pull Requests:**\n\n")
-        # result = closed_pull_requests(repo_data)
-        # outfile.write(result)
+        # 2.1.2 Pull Requests
+        outfile.write("**Pull Requests:**\n\n")
+        result = open_pull_requests(repo_data)
+        outfile.write(result)
 
 
-        # # 2.3 Pull Request Discussion Insights
-        # outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
-        # result = pull_request_discussion_insights(repo_data)
-        # outfile.write(result)
+        # 2.2: Closed Pull Requests
+        outfile.write("## 2.2 Closed Pull Requests\n\n")
 
-        # outfile.write("***\n\n")
+        # 2.2.1 Closed Pull Requests This Week
+        outfile.write(f"**Closed Pull Requests This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
+
+        # 2.2.2 Pull Requests
+        outfile.write("**Summarized Pull Requests:**\n\n")
+        result = closed_pull_requests(repo_data)
+        outfile.write(result)
 
 
+        # 2.3 Pull Request Discussion Insights
+        outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
+        result = pull_request_discussion_insights(repo_data)
+        outfile.write(result)
 
-        # # 3: Commits
-        # outfile.write("# III. Commits\n\n")
-
-        # # 3.1: Open Commits
-        # outfile.write("## 3.1 Commits\n\n")
-
-        # # 3.1.1 Open Commits This Week
-        # outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
-
-        # # 3.1.2 Commits
-        # outfile.write("**Summarized Commits:**\n\n")
-        # result = commits(repo_data)
-        # outfile.write(result)
-
-        # outfile.write("***\n\n")
+        outfile.write("***\n\n")
 
 
 
-        # # 4: Contributors
-        # outfile.write("# IV. Contributors\n\n")
+        # 3: Commits
+        outfile.write("# III. Commits\n\n")
 
-        # # 4.1: Contributors
-        # outfile.write("## 4.1 Contributors\n\n")
+        # 3.1: Open Commits
+        outfile.write("## 3.1 Commits\n\n")
 
-        # # 4.1.3 Active Contributors
-        # outfile.write("**Active Contributors:**\n\n")
-        # result = active_contributors(repo_data)
-        # outfile.write(result)
+        # 3.1.1 Open Commits This Week
+        outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
 
-        # outfile.write("\n\n")
+        # 3.1.2 Commits
+        outfile.write("**Summarized Commits:**\n\n")
+        result = commits(repo_data)
+        outfile.write(result)
+
+        outfile.write("***\n\n")
+
+
+
+        # 4: Contributors
+        outfile.write("# IV. Contributors\n\n")
+
+        # 4.1: Contributors
+        outfile.write("## 4.1 Contributors\n\n")
+
+        # 4.1.3 Active Contributors
+        outfile.write("**Active Contributors:**\n\n")
+        result = active_contributors(repo_data)
+        outfile.write(result)
+
+        outfile.write("\n\n")
       
       print(f"Successfully added {repository} to {output_filename}")
 

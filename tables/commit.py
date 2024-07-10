@@ -13,7 +13,6 @@ class Commit(Base):
     committer_login = Column(String)
     committer_date = Column(DateTime)
     committer_name = Column(String)
-
     commit_message = Column(Text)
     
     repository_full_name = Column(String)

@@ -25,6 +25,7 @@ API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
 print(API_KEYS)
 current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
+default_user_id = 1
 
 # Initialize Github instance
 g = Github(API_KEYS[current_key_index])
@@ -33,22 +34,43 @@ logging.basicConfig(filename='newsletter_preparation.log', level=logging.INFO, f
 
 # Checks the rate limit
 def rate_limit_check():
-    rate_limit = g.get_rate_limit().core
-    print(rate_limit)
-    
-    if rate_limit.remaining < 10:  
-        print("Approaching rate limit, switching API key...")
-        switch_api_key()
-        rate_limit_check()
+    global g
+    try:
+        rate_limit = g.get_rate_limit().core
+        print(rate_limit)
+        print(f"Current key number: {current_key_index + 1}")
+        
+        if rate_limit.remaining < 50:  
+            print("Approaching rate limit, switching API key...")
+            switch_api_key()
+            rate_limit_check()
+    except Exception as e:
+        logging.error("Error checking rate limit: %s", e)
+        print("Error checking rate limit:", e)
 
 # Function to switch API keys
 def switch_api_key():
-    global current_key_index, g
+    global current_key_index, g, headers
     current_key_index = (current_key_index + 1) % len(API_KEYS)
+    del headers
+    headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
+    print(API_KEYS[current_key_index])
+    del g
     g = Github(API_KEYS[current_key_index])
     print(f"Switched to API key {current_key_index + 1}")
+    logging.info(f"Switched to API key {current_key_index + 1}")
     return g
-        
+    
+def create_default_user():
+    global default_user_id
+    default_user_id += 1
+    
+    user_data = {
+        'id': default_user_id,
+        'login': 'default_login',
+        'html_url': 'https://github.com'
+    }
+    return user_data
 
 # Retreives a repository
 def get_a_repository(repository, headers):
@@ -207,25 +229,10 @@ def get_commits(repo, date):
 
 # Insert user into database
 def insert_user(data): 
+    if not data:
+        return
+    
     user_fields = {column.name for column in User.__table__.columns}
-    
-    # Extract data from the NamedUser object
-    # if isinstance(data, dict):
-    #     # Extract data from the dictionary using .get() to avoid KeyError
-    #     user_data = {
-    #         'id': data.get('id'),
-    #         'login': data.get('login'),
-    #         'html_url': data.get('html_url'),
-    #     }
-    # else:
-    #     # Assume data is a NamedUser object
-    #     user_data = {
-    #         'id': getattr(data, 'id', None),
-    #         'login': getattr(data, 'login', None),
-    #         'html_url': getattr(data, 'html_url', None)
-    #     }
-    
-    # Filter out only the fields present in the User model
     filtered_data = {key: value for key, value in data.items() if key in user_fields}
     
     # Check if the user already exists
@@ -244,24 +251,29 @@ def insert_user(data):
 def insert_issue(issue, repo_name):
     # Extract only the fields that exist in the Issue model
     issue_fields = {column.name for column in Issue.__table__.columns}
-    
     filtered_data = {key: value for key, value in issue.items() if key in issue_fields}
 
     if session.query(Issue).filter_by(id=filtered_data['id']).first() is not None:
         print("Issue already exists!")
         return
 
-    user_data = {
-        'id': issue['user']['id'],
-        'login': issue['user']['login'],
-        'html_url': issue['user']['html_url']
+    user_data = {}
+    
+    if issue['user']:
+        user_data = {
+        'id': issue['user']['id'] if not None else None,
+        'login': issue['user']['login'] if not None else None,
+        'html_url': issue['user']['html_url'] if not None else None
         }
+    else:
+        user_data = create_default_user()
+        
     user = session.query(User).filter_by(login=user_data['login']).first()
     if not user:
         insert_user(user_data)
 
     # Set user login and repo name
-    filtered_data['user_login'] = issue['user']['login']
+    filtered_data['user_login'] = user_data['login']
     filtered_data['repository_full_name'] = repo_name
     
     # Convert datetime fields
@@ -289,12 +301,16 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         print("Issue comment already exists!")
         return
     
+    user_data = {}
     # Define user data to insert
-    user_data = {
-        'id': comment_data['user']['id'],
-        'login': comment_data['user']['login'],
-        'html_url': comment_data['user']['html_url']
+    if comment_data['user']:
+        user_data = {
+        'id': comment_data['user']['id'] if not None else None,
+        'login': comment_data['user']['login'] if not None else None,
+        'html_url': comment_data['user']['html_url'] if not None else None
         }
+    else:
+        user_data = create_default_user()
 
     # Handle user data in the comment
     user = session.query(User).filter_by(login=user_data['login']).first()
@@ -304,7 +320,7 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
     # Add issue ID to database, user login and repo name
     filtered_comment_data['issue_id'] = issue_id
     filtered_comment_data['repository_full_name'] = repo_name
-    filtered_comment_data['user_login'] = comment_data['user']['login']
+    filtered_comment_data['user_login'] = user_data['login']
 
     # Convert datetime fields if they are not None
     comment_datetime_fields = ['created_at', 'updated_at']
@@ -333,12 +349,16 @@ def insert_pull_request(pull_request, repo_name):
         print("Pull Request already exists!")
         return
     
+    user_data = {}
     # Extract data from the pull request object
-    user_data = {
-        'id': pull_request['user']['id'],
-        'login': pull_request['user']['login'],
-        'html_url': pull_request['user']['html_url']
+    if pull_request['user']:
+        user_data = {
+        'id': pull_request['user']['id'] if not None else None,
+        'login': pull_request['user']['login'] if not None else None,
+        'html_url': pull_request['user']['html_url'] if not None else None
         }
+    else:
+        user_data = create_default_user()
     
     # Check if user exists and insert
     user = session.query(User).filter_by(login=user_data['login']).first()
@@ -346,7 +366,7 @@ def insert_pull_request(pull_request, repo_name):
         insert_user(user_data)
 
     # Set user login and repo name
-    filtered_data['user_login'] = pull_request['user']['login']
+    filtered_data['user_login'] = user_data['login']
     filtered_data['repository_full_name'] = repo_name
     
     # Convert datetime fields
@@ -377,12 +397,17 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
         print("Pull Request Comment already exists!")
         return
     
+    user_data = {}
+    
     # Define user data to insert
-    user_data = {
-        'id': comment_data['user']['id'],
-        'login': comment_data['user']['login'],
-        'html_url': comment_data['user']['html_url']
+    if comment_data['user']:
+        user_data = {
+        'id': comment_data['user']['id'] if not None else None,
+        'login': comment_data['user']['login'] if not None else None,
+        'html_url': comment_data['user']['html_url'] if not None else None
         }
+    else:
+        user_data = create_default_user()
 
     # Handle user data in the comment
     user = session.query(User).filter_by(login=user_data['login']).first()
@@ -392,7 +417,7 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
     # Add pr ID to database, user login and repo name
     filtered_comment_data['pull_request_id'] = pr_id
     filtered_comment_data['repository_full_name'] = repo_name
-    filtered_comment_data['user_login'] = comment_data['user']['login']
+    filtered_comment_data['user_login'] = user_data['login'] # Should be "None" if None
 
     # Convert datetime fields if necessary
     datetime_fields = ['created_at', 'updated_at']
@@ -420,11 +445,14 @@ def insert_commit(commit, repo_name):
         return
     
     # Extract user data from the commit
-    user_data = {
-        'id': commit['author']['id'],
-        'login': commit['author']['login'],
-        'html_url': commit['author']['html_url']
+    if commit['author']:
+        user_data = {
+        'id': commit['author']['id'] if not None else None,
+        'login': commit['author']['login'] if not None else None,
+        'html_url': commit['author']['html_url'] if not None else None
         }
+    else:
+        user_data = create_default_user()
     
     # Check if user exists and insert
     user = session.query(User).filter_by(login=user_data['login']).first()
@@ -432,8 +460,8 @@ def insert_commit(commit, repo_name):
         insert_user(user_data)
 
     # Set user login and repo name
-    filtered_data['committer_login'] = commit['author']['login']
-    filtered_data['committer_name'] = commit['commit']['committer']['name']
+    filtered_data['committer_login'] = user_data['login']
+    filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else None
     filtered_data['repository_full_name'] = repo_name
     filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date'])
     
@@ -449,13 +477,13 @@ def insert_commit(commit, repo_name):
 def insert_all_data(date, repo_name):
     
     issues = get_issues(repo_name, date)
-    issue_count = 0
+    num_issues = 0
     issues_inserted = 0
     pulls_inserted = 0
 
     for issue in issues:
-        issue_count += 1
-        print(f"Processing issue {issue_count} of {len(issues)}")
+        num_issues += 1
+        print(f"Processing issue {num_issues} of {len(issues)}")
         # TODO Print login and check for bot
         # Check for bots
         if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
@@ -471,11 +499,16 @@ def insert_all_data(date, repo_name):
             
             pr_comments = get_pr_comments(repo_name, pull_request)
             for comment in pr_comments:
+                # TODO Check for bots in comments
                 insert_pr_comment(comment, pull_request['id'], repo_name)
                 print("Inserting pr comment")
+            
+            if num_issues % 10 == 0:
+                rate_limit_check()
+            
             continue
         
-        print("Inserting issue" )
+        print("Inserting issue")
         insert_issue(issue, repo_name)
         issues_inserted += 1
         
@@ -485,7 +518,7 @@ def insert_all_data(date, repo_name):
             print("Inserting issue comment")
             insert_issue_comment(comment, issue['id'], repo_name)
 
-        if issue_count % 10 == 0:
+        if num_issues % 10 == 0:
             rate_limit_check()
         
     print(f"Successfully inserted {issues_inserted} issues into the database")
@@ -510,13 +543,14 @@ def insert_all_data(date, repo_name):
         insert_commit(commit, repo_name)
         commits_inserted += 1
         
-        if num_commits % 10 == 0:
+        if num_commits % 9 == 0:
             rate_limit_check()
     
     print(f"Successfully inserted {commits_inserted} commits into the database")
         
  
 # TODO Use get_readme to retreive and parse the readme file
+# TODO Fix issues when user data is "None"
 # Main
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 

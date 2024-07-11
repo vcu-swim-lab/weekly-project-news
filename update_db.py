@@ -11,6 +11,7 @@ from datetime import datetime  # Import datetime
 import logging
 from sqlalchemy import create_engine
 import time
+from parse_github_data import *
 
 load_dotenv()
 
@@ -187,41 +188,66 @@ def update_pr_comment_updated_at(session, new_comment_id, new_update_date):
         session.rollback()
         print(f"Error updating issue comment update date in {comment.repository_full_name}: {e}")
 
-# UPDATE ALL ISSUESE
-def update_all_issues(repo, session, one_week_ago):
-    new_issues = repo.get_issues(state='all', since=one_week_ago)
-    for issue in new_issues:
-        comments = issue.get_comments()
-        num_comments = comments.totalCount
+# UPDATE ALL DATA
+def update_all_data(session, repo_name, one_week_ago):
+    issues = get_issues(repo_name, one_week_ago)
+    num_issues = 0
+    issues_updated = 0
+    pulls_updated = 0
+    
+    for issue in issues:
+        num_issues += 1
+        print(f"Processing issue {num_issues} of {len(issues)}")
         
-        update_issue_state(session, issue.id, issue.state)
-        update_issue_num_comments(session, issue.id, num_comments)
-        update_issue_closed_at(session, issue.id, issue.closed_at)
-        update_issue_updated_at(session, issue.id, issue.updated_at)
-        
-        for comment in comments:
-            update_issue_comment_updated_at(session, comment.id, comment.updated_at)
-            
-# UPDATE ALL PULL REQUESTS
-def update_all_prs(repo, session, one_week_ago):
-    new_pulls = repo.get_pulls(state='all')
-
-    for pr in new_pulls:
-        if pr.updated_at < one_week_ago:
+        # Check for bots
+        if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
+            print("Skipping issue with bot")
             continue
         
-        comments = pr.get_comments()
-        num_comments = comments.totalCount
+        # Checks if issue is pull request and update
+        if 'pull' in issue['html_url']:
+            pr = issue
+            print("Updating pull request")
+            pr_comments = get_pr_comments(repo_name, pr)
+            num_comments = len(pr_comments)
+            
+            update_pr_state(session, pr['id'], pr['state'])
+            update_pr_num_comments(session, pr['id'], num_comments)
+            update_pr_closed_at(session, pr['id'], pr['closed_at'])
+            update_pr_updated_at(session, pr['id'], pr['updated_at'])
+            
+            for comment in pr_comments:
+                update_pr_comment_updated_at(session, comment['id'], comment['updated_at'])
+                print("Updating pr comment")
+            
+            pulls_updated += 1
+            
+            if num_issues % 10 == 0:
+                rate_limit_check()
+            
+            continue
         
-        update_pr_state(session, pr.id, pr.state)
-        update_pr_num_comments(session, pr.id, num_comments)
-        update_pr_closed_at(session, pr.id, pr.closed_at)
-        update_pr_updated_at(session, pr.id, pr.updated_at)
+        print("Updating issue")
+        issue_comments = get_issue_comments(repo_name, issue)
+        num_comments = len(issue_comments)
         
-        for comment in comments:
-            update_pr_comment_updated_at(session, comment.id, comment.updated_at)
+        update_issue_state(session, issue['id'], issue['state'])
+        update_issue_num_comments(session, issue['id'], num_comments)
+        update_issue_closed_at(session, issue['id'], issue['closed_at'])
+        update_issue_updated_at(session, issue['id'], issue['updated_at'])
+        
+        for comment in issue_comments:
+            update_issue_comment_updated_at(session, comment['id'], comment['updated_at'])
+        
+        issues_updated += 1
+        
+        if num_issues % 10 == 0:
+                rate_limit_check()
+    
+    print(f"Successfully inserted {issues_updated} issues into the database")
+    print(f"Successfully inserted {pulls_updated} pull requests into the database")
 
-
+    
 
 # Main
 if __name__ == '__main__':
@@ -256,9 +282,7 @@ if __name__ == '__main__':
 
         repo = g.get_repo(repo_name)
         
-        update_all_issues(repo, session, one_week_ago)
-        
-        update_all_prs(repo, session, one_week_ago)
+        update_all_data(session, repo_name, one_week_ago)
 
         processed_repos.add(repo_name)
         

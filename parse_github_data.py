@@ -464,6 +464,7 @@ def insert_commit(commit, repo_name):
     filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else None
     filtered_data['repository_full_name'] = repo_name
     filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date'])
+    filtered_data['commit_message'] = commit['commit']['message'] if not None else None
     
     try:
         new_commit = Commit(**filtered_data)

@@ -17,27 +17,10 @@ response = requests.request(METHOD, f"{BASE_URL}/v1{ENDPOINT}", headers=headers)
 
 if response.status_code == 200:
   subscribers_data = response.json()
-  filtered_data = {
-    'results': [],
-    'next': subscribers_data.get('next'),
-    'previous': subscribers_data.get('previous'),
-    'count': subscribers_data.get('count')
-  }
-  
-  # Loop through and only pull out email and repo name
-  for data in subscribers_data['results']:
-    user_data = {
-      'id': data['id'],
-      'email': data['email'],
-      'metadata': {
-          'repo_name': data['metadata'].get('repo_name', '')
-      }
-    }
-    filtered_data['results'].append(user_data)
 
   # save it to subscribers.json
   with open('subscribers.json', 'w') as file:
-    json.dump(filtered_data, file, indent=2)
+    json.dump(subscribers_data, file, indent=2)
 
   print('Successfully saved to subscribers.json')
 else:

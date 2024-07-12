@@ -15,7 +15,6 @@ load_dotenv()
 
 API_KEY = os.environ.get("OPENAI_KEY")
 
-# https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
 llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
@@ -512,63 +511,18 @@ if __name__ == '__main__':
   limit = 100;
 
   # 1.4: getting all of the repositories
-  # query = text("SELECT full_name FROM repositories")
-  # result = session.execute(query)
-  # repositories = [row[0] for row in result]
-  repositories = [
-    # "tensorflow/tensorflow"
-    # "stevenbui44/test-vscode",
-    # "stevenbui44/flashcode"
-    # "cnovalski1/APIexample"
-    # "luis605/Lit-Engine"
-    "pytorch/pytorch"
-  ]
+  query = text("SELECT full_name FROM repositories")
+  result = session.execute(query)
+  repositories = [row[0] for row in result]
+
 
   # PART TWO: create the markdown for a newsletter
   for repository in repositories:
 
     # 2.1: call all sort_data.py functions on the repo
-    repo_data = {
-      "repo_name": repository,
-      "open_issues": get_open_issues(session, one_week_ago, repository),
-      "closed_issues": get_closed_issues(session, one_week_ago, repository),
-      "active_issues": get_active_issues(session, one_week_ago, repository),
-      "num_weekly_open_issues": get_num_open_issues_weekly(get_open_issues(session, one_week_ago, repository)),
-      "num_weekly_closed_issues": get_num_closed_issues_weekly(get_closed_issues(session, one_week_ago, repository)),
-      "issues_by_open_date": sort_issues_open_date(session, repository, limit),
-      "issues_by_number_of_comments": sort_issues_num_comments(session, repository, limit),
-      "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repository),
-      "open_pull_requests": get_open_prs(session, one_week_ago, repository),
-      "closed_pull_requests": get_closed_prs(session, one_week_ago, repository),
-      "active_pull_requests": get_active_prs(session, one_week_ago, repository),
-      "num_open_prs": get_num_open_prs(get_open_prs(session, one_week_ago, repository)),
-      "num_closed_prs": get_num_closed_prs(get_closed_prs(session, one_week_ago, repository)),
-      "commits": get_commit_messages(session, one_week_ago, repository),
-      "num_commits": get_num_commits(get_commit_messages(session, one_week_ago, repository)),
-      "active_contributors": get_active_contributors(session, thirty_days_ago, repository)
-    }
-    output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
+    repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name)
 
-    # print(output_filename)
-    # print("repo_name: ", repo_data['repo_name'])
-    # print("open_issues: ", repo_data['open_issues'])
-    # print("closed_issues", repo_data['closed_issues'])
-    # print("active_issues", repo_data['active_issues'])
-    # print("num_weekly_open_issues", repo_data['num_weekly_open_issues'])
-    # print("num_weekly_closed_issues", repo_data['num_weekly_closed_issues'])
-    # print("issues_by_open_date", repo_data['issues_by_open_date'])
-    # print("issues_by_number_of_comments", repo_data['issues_by_number_of_comments'])
-    # print("average_issue_close_time", repo_data['average_issue_close_time'])
-    # print("average_issue_close_time_weekly", repo_data['average_issue_close_time_weekly'])
-    # print("open_pull_requests: ", repo_data['open_pull_requests'])
-    # print("closed_pull_requests", repo_data['closed_pull_requests'])
-    # print("active_pull_requests: ", repo_data['active_pull_requests'])
-    # print("num_open_prs", repo_data['num_open_prs'])
-    # print("num_closed_prs", repo_data['num_closed_prs'])
-    # print("commits: ", repo_data['commits'])
-    # print("num_commits: ", repo_data['num_commits'])
-    # print("active_contributors", repo_data['active_contributors'])
-    # print()
+    output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
 
     name = repo_data['repo_name'].split('/')[-1]
     capitalized_name = name[0].upper() + name[1:]

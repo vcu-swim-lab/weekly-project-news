@@ -5,7 +5,7 @@ from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
 from tables.user import User
-from datetime import datetime  # Import datetime
+from datetime import datetime
 import json
 import requests 
 import os 
@@ -16,7 +16,6 @@ from dotenv import load_dotenv
 from github import Github
 from datetime import datetime, timedelta, timezone
 import time
-import random
 import logging
 
 load_dotenv()
@@ -484,11 +483,10 @@ def insert_all_data(date, repo_name):
 
     for issue in issues:
         num_issues += 1
-        print(f"Processing issue {num_issues} of {len(issues)}")
+        print(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
         # TODO Print login and check for bot
         # Check for bots
         if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
-            print("Skipping issue with bot")
             continue
         
         # Checks for pull request and inserts it
@@ -496,7 +494,6 @@ def insert_all_data(date, repo_name):
             pull_request = issue
             insert_pull_request(pull_request, repo_name)
             pulls_inserted += 1
-            print("Inserting pull request")
             
             pr_comments = get_pr_comments(repo_name, pull_request)
             for comment in pr_comments:
@@ -507,18 +504,16 @@ def insert_all_data(date, repo_name):
                     comment_login = comment['user']['login']
 
                 if '[bot]' in comment_login.lower() or 'bot' in comment_login.lower():
-                    print("Skipping bot comment")
                     continue
                 
                 insert_pr_comment(comment, pull_request['id'], repo_name)
-                print("Inserting pr comment")
             
             if num_issues % 10 == 0:
                 rate_limit_check()
             
             continue
         
-        print("Inserting issue")
+        # Insert issue
         insert_issue(issue, repo_name)
         issues_inserted += 1
         
@@ -532,17 +527,15 @@ def insert_all_data(date, repo_name):
                 comment_login = comment['user']['login']
 
             if '[bot]' in comment_login.lower() or 'bot' in comment_login.lower():
-                print("Skipping bot comment")
                 continue
 
-            print("Inserting issue comment")
             insert_issue_comment(comment, issue['id'], repo_name)
 
         if num_issues % 10 == 0:
             rate_limit_check()
         
-    print(f"Successfully inserted {issues_inserted} issues into the database")
-    print(f"Successfully inserted {pulls_inserted} pull requests into the database")
+    print(f"Successfully inserted {issues_inserted} issues for {repo_name} into the database for {repo_name}")
+    print(f"Successfully inserted {pulls_inserted} pull requests for {repo_name} into the database for {repo_name}")
   
     # Get commits and insert them into the database
     commits = get_commits(repo_name, date)
@@ -555,12 +548,10 @@ def insert_all_data(date, repo_name):
         commit_date = datetime.fromisoformat(commit['commit']['committer']['date'])
         
         if commit_date < date:
-            print("Skipping commit out of date")
             continue
 
         committer_name = commit['commit']['committer']['name'].lower()
         if 'bot' in committer_name or '[bot]' in committer_name:
-            print("Skipping bot commit")
             continue
         
         print(f"Inserting commit {num_commits} of {len(commits)}")
@@ -571,11 +562,10 @@ def insert_all_data(date, repo_name):
         if num_commits % 10 == 0:
             rate_limit_check()
     
-    print(f"Successfully inserted {commits_inserted} commits into the database")
+    print(f"Successfully inserted {commits_inserted} commits for {repo_name} into the database for {repo_name}")
         
  
 # TODO Use get_readme to retreive and parse the readme file
-# TODO Fix issues when user data is "None"
 # Main
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 

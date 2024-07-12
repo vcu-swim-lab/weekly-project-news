@@ -113,9 +113,6 @@ if __name__ == '__main__':
     # Define limit
     limit = 100
 
-    # PyGithub
-    g = Github(os.environ['GITHUB_API_KEY'])
-    
     # Get a list of repos in the database
     repo_list = [r[0] for r in session.query(Repository.full_name).all()]
     
@@ -135,6 +132,8 @@ if __name__ == '__main__':
         
         # Delete issues
         issues = session.query(Issue).filter(Issue.repository_full_name == repo_name).all()
+        
+        num_issues_deleted = 0
         for issue in issues:
             create_date = issue.created_at
             update_date = issue.updated_at
@@ -152,9 +151,13 @@ if __name__ == '__main__':
             # Delete closed issues older than one month and issues not in either of the two lists
             elif (close_date and close_date < one_month_ago) or (not found_in_num_comments and not found_in_open_date):
                 delete_issue(session, issue.id)
-                
+                num_issues_deleted += 1
+        
+        print(f"Deleted {num_issues_deleted} issues from the database for {repo_name}")        
             
         # Delete pull requests
+        num_prs_deleted = 0
+        
         pull_requests = session.query(PullRequest).filter(PullRequest.repository_full_name == repo_name).all()
         for pr in pull_requests:
             # Handle timezone info
@@ -168,6 +171,9 @@ if __name__ == '__main__':
             # Delete closed prs older than a month and delete open prs older than a month and not active
             elif (close_date and close_date < one_month_ago) or (create_date < one_month_ago and update_date < one_week_ago):
                 delete_pr(session, pr.id)
+                num_prs_deleted += 1
+        
+        print(f"Deleted {num_prs_deleted} pull requests from the database for {repo_name}") 
                 
                 
     # Check how long the function takes to run and print result

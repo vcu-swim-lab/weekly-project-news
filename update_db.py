@@ -14,6 +14,11 @@ import time
 from parse_github_data import *
 
 load_dotenv()
+API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
+print(API_KEYS)
+current_key_index = 0
+headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
+g = Github(API_KEYS[current_key_index])
 
 # ISSUES 1: Update the state of an issue
 def update_issue_state(session, new_issue_id, new_state):
@@ -188,6 +193,11 @@ def update_pr_comment_updated_at(session, new_comment_id, new_update_date):
         session.rollback()
         print(f"Error updating issue comment update date in {comment.repository_full_name}: {e}")
 
+def handle_datetime(datetime_str):
+    if datetime_str:
+        return datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%SZ')
+    return None
+
 # UPDATE ALL DATA
 def update_all_data(session, repo_name, one_week_ago):
     issues = get_issues(repo_name, one_week_ago)
@@ -197,28 +207,25 @@ def update_all_data(session, repo_name, one_week_ago):
     
     for issue in issues:
         num_issues += 1
-        print(f"Processing issue {num_issues} of {len(issues)}")
+        print(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
         
         # Check for bots
         if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
-            print("Skipping issue with bot")
             continue
         
         # Checks if issue is pull request and update
         if 'pull' in issue['html_url']:
             pr = issue
-            print("Updating pull request")
             pr_comments = get_pr_comments(repo_name, pr)
             num_comments = len(pr_comments)
             
             update_pr_state(session, pr['id'], pr['state'])
             update_pr_num_comments(session, pr['id'], num_comments)
-            update_pr_closed_at(session, pr['id'], pr['closed_at'])
-            update_pr_updated_at(session, pr['id'], pr['updated_at'])
+            update_pr_closed_at(session, pr['id'], handle_datetime(pr['closed_at']))
+            update_pr_updated_at(session, pr['id'], handle_datetime(pr['updated_at']))
             
             for comment in pr_comments:
-                update_pr_comment_updated_at(session, comment['id'], comment['updated_at'])
-                print("Updating pr comment")
+                update_pr_comment_updated_at(session, comment['id'], handle_datetime(comment['updated_at']))
             
             pulls_updated += 1
             
@@ -227,25 +234,24 @@ def update_all_data(session, repo_name, one_week_ago):
             
             continue
         
-        print("Updating issue")
         issue_comments = get_issue_comments(repo_name, issue)
         num_comments = len(issue_comments)
         
         update_issue_state(session, issue['id'], issue['state'])
         update_issue_num_comments(session, issue['id'], num_comments)
-        update_issue_closed_at(session, issue['id'], issue['closed_at'])
-        update_issue_updated_at(session, issue['id'], issue['updated_at'])
+        update_issue_closed_at(session, issue['id'], handle_datetime(issue['closed_at']))
+        update_issue_updated_at(session, issue['id'], handle_datetime(issue['updated_at']))
         
         for comment in issue_comments:
-            update_issue_comment_updated_at(session, comment['id'], comment['updated_at'])
+            update_issue_comment_updated_at(session, comment['id'], handle_datetime(comment['updated_at']))
         
         issues_updated += 1
         
         if num_issues % 10 == 0:
                 rate_limit_check()
     
-    print(f"Successfully inserted {issues_updated} issues into the database")
-    print(f"Successfully inserted {pulls_updated} pull requests into the database")
+    print(f"Successfully updated {issues_updated} issues in the database for {repo_name}")
+    print(f"Successfully updated {pulls_updated} pull requests in the database for {repo_name}")
 
     
 
@@ -257,15 +263,13 @@ if __name__ == '__main__':
     
     # Create SQLAlchemy engine and session
     logging.getLogger('sqlalchemy').disabled = True
+    logging.disable(logging.WARNING)
     engine = create_engine('sqlite:///github.db')
     Session = sessionmaker(bind=engine)
     session = Session()
     
     # Time variables
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-
-    # PyGithub
-    g = Github(os.environ['GITHUB_API_KEY'])
 
     # Making a set to keep track of processed repos to save time
     processed_repos = set()

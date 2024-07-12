@@ -24,27 +24,59 @@ def db_session():
     session.close()
 
 @pytest.fixture(scope="module")
-def valid_issue():
-    valid_issue = Issue(
+def valid_issues():
+    valid_issue1 = Issue(
             id = 1,
-            html_url='https://github.com/issue1',
+            html_url = 'https://github.com/issue1',
             number = 1,
             state = 'open',
             title = 'Issue 1',
             body = 'test open issue',
             comments = 2,
-            created_at = datetime.now() - timedelta(days=3),
+            created_at = datetime.datetime(2020, 5, 17),
             closed_at = None,
-            updated_at = datetime.now() - timedelta(days=3),
+            updated_at = datetime.datetime(2020, 6, 24),
             user_login = 'user1',
             repository_full_name = 'repo1'
         )
     
-    return valid_issue
+    return valid_issue1
 
-# TODO Test for 'bot'
+@pytest.fixture(scope="module")
+def invalid_bot_issues():
+    bot_issue1 = Issue(
+        id = 10,
+        html_url = 'https://github.com/issue1',
+        number = 1,
+        state = 'open',
+        title = 'Issue 1',
+        body = 'test open issue',
+        comments = 2,
+        created_at = datetime.datetime(2021, 5, 7),
+        closed_at = None,
+        updated_at = datetime.datetime(2023, 8, 25),
+        user_login = 'testbot',
+        repository_full_name = 'repo1'
+    )
 
-# TODO Test for '[bot]'
+    bot_issue2 = Issue(
+        id = 11,
+        html_url = 'https://github.com/issue1',
+        number = 1,
+        state = 'open',
+        title = 'Issue 1',
+        body = 'test open issue',
+        comments = 2,
+        created_at = datetime.datetime(2020, 1, 19),
+        closed_at = None,
+        updated_at = datetime.datetime(2020, 10, 28),
+        user_login = 'test[bot]',
+        repository_full_name = 'repo1'
+    )
+    
+    return bot_issue1, bot_issue2
+
+# TODO Test for invalid issue (already exists)
 
 # Contains all test cases
 class TestDB:      
@@ -60,13 +92,11 @@ class TestDB:
         assert issue.title == 'Issue 1'
         assert issue.body == 'test open issue'
         assert issue.comments == 2
-        assert issue.created_at == datetime.now() - timedelta(days=3)
+        assert issue.created_at == datetime.datetime(2020, 5, 17)
         assert issue.closed_at == None
-        assert issue.updated_at == datetime.now() - timedelta(days=3)
+        assert issue.updated_at == datetime.datetime(2020, 6, 24)
         assert issue.user_login == 'user1'
         assert issue.repository_full_name == 'repo1'
     
-    @pytest.mark.xfail(raises=IntegrityError)
-    def test_bot_issue(self, db_session):
-        print()
+
         

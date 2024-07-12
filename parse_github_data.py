@@ -30,7 +30,7 @@ default_user_id = 1
 # Initialize Github instance
 g = Github(API_KEYS[current_key_index])
 
-logging.basicConfig(filename='newsletter_preparation.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='parse-log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Checks the rate limit
 def rate_limit_check():
@@ -509,7 +509,7 @@ def insert_all_data(date, repo_name):
                 if '[bot]' in comment_login.lower() or 'bot' in comment_login.lower():
                     print("Skipping bot comment")
                     continue
-
+                
                 insert_pr_comment(comment, pull_request['id'], repo_name)
                 print("Inserting pr comment")
             
@@ -557,7 +557,7 @@ def insert_all_data(date, repo_name):
         if commit_date < date:
             print("Skipping commit out of date")
             continue
-        
+
         committer_name = commit['commit']['committer']['name'].lower()
         if 'bot' in committer_name or '[bot]' in committer_name:
             print("Skipping bot commit")
@@ -580,6 +580,7 @@ def insert_all_data(date, repo_name):
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
+    logging.info("- - - - - - - - - - - - - - - - - - - - - - - -")
     logging.info("Starting to run parse_github_data.py")
     
     # Disable logging
@@ -606,54 +607,59 @@ if __name__ == '__main__':
     
     # Keep a list of the subscriber repos
     subscriber_repo_list = []
-    
-    for subscriber in subscriber_data['results']:
-        repo_name = subscriber['metadata'].get('repo_name', '')
-        if repo_name and 'github.com' in repo_name:
-            # ex. https://github.com/cnovalski1/APIexample
-            parts = repo_name.split('/')
-            if len(parts) >= 5:
-                full_repo_name = f"{parts[3]}/{parts[4]}"
-                subscriber_repo_list.append(full_repo_name)
-                
-                
-    # List of the current repositories in the database
-    current_repo_list = session.query(Repository.full_name).all()
-    current_repo_list = [item[0] for item in current_repo_list]
 
-    # Making a set to keep track of processed repos to save time
-    processed_repos = set()
-    
-    # Loop through each subscriber repo and insert data
-    for repo in subscriber_repo_list:
-        # Skip repos that have already been processed
-        if repo in processed_repos:
-            continue
+    try:
         
-        repo_name = repo
-        
-        # If repo already exists in database
-        if repo in current_repo_list:
-            insert_all_data(one_week_ago, repo_name)
-        else: # Repo doesn't exist in database, so insert it
-            repo_data = get_a_repository(repo, headers)
-            insert_repository(repo_data)
-            insert_all_data(one_year_ago, repo_name)
+        for subscriber in subscriber_data['results']:
+            repo_name = subscriber['metadata'].get('repo_name', '')
+            if repo_name and 'github.com' in repo_name:
+                # ex. https://github.com/cnovalski1/APIexample
+                parts = repo_name.split('/')
+                if len(parts) >= 5:
+                    full_repo_name = f"{parts[3]}/{parts[4]}"
+                    subscriber_repo_list.append(full_repo_name)
+                    
+                    
+        # List of the current repositories in the database
+        current_repo_list = session.query(Repository.full_name).all()
+        current_repo_list = [item[0] for item in current_repo_list]
 
-        processed_repos.add(repo)
+        # Making a set to keep track of processed repos to save time
+        processed_repos = set()
+        
+        # Loop through each subscriber repo and insert data
+        for repo in subscriber_repo_list:
+            # Skip repos that have already been processed
+            if repo in processed_repos:
+                continue
             
-    
-       # Check how long the function takes to run and print result
-    elapsed_time = time.time() - start_time
-    if (elapsed_time >= 60):
-        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
-    else:
-        print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+            repo_name = repo
+            logging.info(f"Starting {repo_name}")
+            
+            # If repo already exists in database
+            if repo in current_repo_list:
+                insert_all_data(one_week_ago, repo_name)
+            else: # Repo doesn't exist in database, so insert it
+                repo_data = get_a_repository(repo, headers)
+                insert_repository(repo_data)
+                insert_all_data(one_year_ago, repo_name)
+
+            processed_repos.add(repo)
+            elapsed_time = time.time() - start_time
+            logging.info("Total time elapsed since the start: {:.2f} minutes".format(elapsed_time/60))
         
-    # logging.info(f"Elapsed time: {elapsed_time}")
-    logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+        # Check how long the function takes to run and print result
+        elapsed_time = time.time() - start_time
+        if (elapsed_time >= 60):
+            print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+        else:
+            print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+            
+        # logging.info(f"Elapsed time: {elapsed_time}")
+        logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
     
-    
+    except Exception as e:
+        logging.error(f"An error occurred in the main process: {e}")
         
 
 

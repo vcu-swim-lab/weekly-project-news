@@ -1,11 +1,11 @@
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
-from tables.repository import Repository, RepositoryAuthor
+from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
 from tables.user import User
-from datetime import datetime  # Import datetime
+from datetime import datetime
 import json
 import requests 
 import os 
@@ -16,20 +16,63 @@ from dotenv import load_dotenv
 from github import Github
 from datetime import datetime, timedelta, timezone
 import time
+import logging
 
 load_dotenv()
+# Load API keys from .env file
+API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
+print(API_KEYS)
+current_key_index = 0
+headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
+default_user_id = 1
+
+# Initialize Github instance
+g = Github(API_KEYS[current_key_index])
+
+logging.basicConfig(filename='parse-log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Checks the rate limit
-def rate_limit_check(g):
-    rate_limit = g.get_rate_limit().core
-    if rate_limit.remaining < 10:  
-        print("Approaching rate limit, pausing...")
-        now = datetime.now(tz=timezone.utc)
-        sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
-        time.sleep(sleep_duration)
+def rate_limit_check():
+    global g
+    try:
+        rate_limit = g.get_rate_limit().core
+        print(rate_limit)
+        print(f"Current key number: {current_key_index + 1}")
+        
+        if rate_limit.remaining < 50:  
+            print("Approaching rate limit, switching API key...")
+            switch_api_key()
+            rate_limit_check()
+    except Exception as e:
+        logging.error("Error checking rate limit: %s", e)
+        print("Error checking rate limit:", e)
 
+# Function to switch API keys
+def switch_api_key():
+    global current_key_index, g, headers
+    current_key_index = (current_key_index + 1) % len(API_KEYS)
+    del headers
+    headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
+    print(API_KEYS[current_key_index])
+    del g
+    g = Github(API_KEYS[current_key_index])
+    print(f"Switched to API key {current_key_index + 1}")
+    logging.info(f"Switched to API key {current_key_index + 1}")
+    return g
+    
+def create_default_user():
+    global default_user_id
+    default_user_id += 1
+    
+    user_data = {
+        'id': default_user_id,
+        'login': 'default_login',
+        'html_url': 'https://github.com'
+    }
+    return user_data
 
-def get_a_repository(repository):
+# Retreives a repository
+def get_a_repository(repository, headers):
     url = f'https://api.github.com/repos/{repository}'
     print(url)
     response = requests.get(url, headers=headers)
@@ -59,7 +102,7 @@ def insert_repository(data):
             filtered_data[field] = datetime.strptime(filtered_data[field], "%Y-%m-%dT%H:%M:%SZ")
     
     if session.query(Repository).filter_by(id=filtered_data['id']).first() is not None:
-        print("Already Exists!")
+        print("Repository already exists!")
         return
 
     # Create and add the repository to the session
@@ -67,90 +110,129 @@ def insert_repository(data):
     session.add(new_repo)
     session.commit()
 
-# RETREIVE ISSUES 
-def get_issues(repo, limit, date):
-    
+
+# RETRIEVE ISSUES
+def get_issues(repo, date):
     issues_array = []
-    issues = repo.get_issues(state='all', since=date)
-    
-    for issue in issues:
-        if issue.pull_request:
-            continue
-        elif issue.created_at < date:
-            continue
-        elif 'bot' in issue.user.login.lower() or '[bot]' in issue.user.login.lower():
-            continue
-        
-        issues_array.append(issue)
-        if len(issues_array) >= limit:
+    page = 1
+
+    while True:
+        # Repo must be in form "owner/repo" for request to work
+        url = f"https://api.github.com/repos/{repo}/issues"
+        params = {
+            'state': 'all',
+            'page': page,
+            'per_page': 100,
+            'since': date,
+        }
+
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch issues: {response.status_code}")
+
+        page_issues = response.json()
+        if not page_issues:
             break
+        
+
+        issues_array.extend(page_issues)
+        page += 1
 
     return issues_array
 
+# RETRIEVE ISSUE COMMENTS
+def get_issue_comments(repo, issue):
+    comment_array = []
+    page = 1
+    issue_number = issue['number']
 
-# RETREIVE PULL REQUESTS
-def get_pull_requests(repo, limit, date):
-    pr_array = []
-    pulls = repo.get_pulls()
-    one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
+    while True:
+        # Repo must be in form "owner/repo" for request to work
+        url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
+        params = {
+            'page': page,
+            'per_page': 100
+        }
 
-    for pr in pulls:
-        if pr.created_at < date:
-            continue
-        elif 'bot' in pr.user.login.lower() or '[bot]' in pr.user.login.lower():
-            continue
-        
-        pr_array.append(pr)
-        if len(pr_array) >= limit:
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch issues: {response.status_code}")
+
+        page_issues = response.json()
+        if not page_issues:
             break
-    
-    return pr_array
-
-
-# RETREIVE COMMITS
-def get_all_commits(repo, limit, date):
-    commit_array = []
-    commits = repo.get_commits()
-
-    for commit in commits:
-        if commit.commit.author.date < date:
-            continue
-        elif 'bot' in commit.commit.author.name.lower() or '[bot]' in commit.commit.author.name.lower():
-            continue
         
-        commit_array.append(commit)
-        if len(commit_array) > limit:
+
+        comment_array.extend(page_issues)
+        page += 1
+
+    return comment_array
+
+# RETRIEVE PULL REQUEST COMMENTS
+def get_pr_comments(repo, pr):
+    comment_array = []
+    page = 1
+    pr_number = pr['number']
+
+    while True:
+        # Repo must be in form "owner/repo" for request to work
+        url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/comments"
+        params = {
+            'page': page,
+            'per_page': 100
+        }
+
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch issues: {response.status_code}")
+
+        page_issues = response.json()
+        if not page_issues:
             break
-    
-    return commit_array
+        
+
+        comment_array.extend(page_issues)
+        page += 1
+
+    return comment_array
+
+# RETRIEVE COMMITS
+def get_commits(repo, date):
+    commits_array = []
+    page = 1
+
+    while True:
+        # Repo must be in form "owner/repo" for request to work
+        url = f"https://api.github.com/repos/{repo}/commits"
+        params = {
+            'page': page,
+            'per_page': 100,
+            'since': date
+        }
+
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch issues: {response.status_code}")
+
+        page_issues = response.json()
+        if not page_issues:
+            break
+        
+
+        commits_array.extend(page_issues)
+        page += 1
+
+    return commits_array
+
 
 
 # Insert user into database
 def insert_user(data): 
+    if not data:
+        return
+    
     user_fields = {column.name for column in User.__table__.columns}
-    
-    # Extract data from the NamedUser object
-    if isinstance(data, dict):
-        # Extract data from the dictionary using .get() to avoid KeyError
-        user_data = {
-            'id': data.get('id'),
-            'login': data.get('login'),
-            'url': data.get('url'),
-            'html_url': data.get('html_url'),
-            'name': data.get('name'),
-        }
-    else:
-        # Assume data is a NamedUser object
-        user_data = {
-            'id': getattr(data, 'id', None),
-            'login': getattr(data, 'login', None),
-            'url': getattr(data, 'url', None),
-            'html_url': getattr(data, 'html_url', None),
-            'name': getattr(data, 'name', None),
-        }
-    
-    # Filter out only the fields present in the User model
-    filtered_data = {key: value for key, value in user_data.items() if key in user_fields}
+    filtered_data = {key: value for key, value in data.items() if key in user_fields}
     
     # Check if the user already exists
     existing_user = session.query(User).filter_by(login=filtered_data['login']).first()
@@ -165,48 +247,33 @@ def insert_user(data):
 
 
 # ISSUES 1: INSERT ISSUE
-def insert_issue(issue):
+def insert_issue(issue, repo_name):
     # Extract only the fields that exist in the Issue model
     issue_fields = {column.name for column in Issue.__table__.columns}
-    
-    # Extract data from the issue object
-    data = {
-        'id': issue.id,
-        'url': issue.url,
-        'comments_url': issue.comments_url,
-        'html_url': issue.html_url,
-        'number': issue.number,
-        'state': issue.state,
-        'title': issue.title,
-        'body': issue.body,
-        'locked': issue.locked,
-        'active_lock_reason': issue.active_lock_reason,
-        'comments': issue.comments,
-        'closed_at': issue.closed_at.isoformat() if issue.closed_at else None,
-        'created_at': issue.created_at.isoformat() if issue.created_at else None,
-        'updated_at': issue.updated_at.isoformat() if issue.updated_at else None,
-        'user_login': issue.user.login
-    }
-    
-    filtered_data = {key: value for key, value in data.items() if key in issue_fields}
+    filtered_data = {key: value for key, value in issue.items() if key in issue_fields}
 
     if session.query(Issue).filter_by(id=filtered_data['id']).first() is not None:
-        print("Already Exists!")
+        print("Issue already exists!")
         return
 
-    user_data = {'login': issue.user.login}
+    user_data = {}
+    
+    if issue['user']:
+        user_data = {
+        'id': issue['user']['id'] if not None else None,
+        'login': issue['user']['login'] if not None else None,
+        'html_url': issue['user']['html_url'] if not None else None
+        }
+    else:
+        user_data = create_default_user()
+        
     user = session.query(User).filter_by(login=user_data['login']).first()
     if not user:
         insert_user(user_data)
-    user = session.query(User).filter_by(login=user_data['login']).first()
-    filtered_data['user_login'] = user.login
-    
-    # Retrieve the repo name and insert into database
-    repo_name = get_repo_name(issue.html_url)
-    if repo_name is not None:
-        filtered_data['repository_full_name'] = repo_name
-    else:
-        filtered_data['repository_full_name'] = get_repo_name(issue.url)
+
+    # Set user login and repo name
+    filtered_data['user_login'] = user_data['login']
+    filtered_data['repository_full_name'] = repo_name
     
     # Convert datetime fields
     datetime_fields = ['created_at', 'updated_at', 'closed_at']
@@ -223,41 +290,36 @@ def insert_issue(issue):
     session.commit()
     
 # ISSUES 2: INSERT ISSUE COMMENT
-def insert_issue_comment(comment_data, issue_id):
+def insert_issue_comment(comment_data, issue_id, repo_name):
     # Extract only the fields that exist in the IssueComment model
     comment_fields = {column.name for column in IssueComment.__table__.columns}
+    filtered_comment_data = {key: value for key, value in comment_data.items() if key in comment_fields}
 
-    # Initialize filtered_comment_data with mandatory fields
-    filtered_comment_data = {
-        'id': comment_data.id,
-        'url': comment_data.url,
-        'html_url': comment_data.html_url,
-        'body': comment_data.body,
-        'user_login': comment_data.user.login,
-        'created_at': comment_data.created_at,
-        'updated_at': comment_data.updated_at,
-        'issue_id': issue_id
-    }
-
-    # Retreive the repo name and insert into database
-    repo_name = get_repo_name(comment_data.html_url)
-    if repo_name is not None:
-        filtered_comment_data['repository_full_name'] = repo_name
+    # Check if comment already exists in the database
+    if session.query(IssueComment).filter_by(id=filtered_comment_data['id']).first() is not None:
+        print("Issue comment already exists!")
+        return
+    
+    user_data = {}
+    # Define user data to insert
+    if comment_data['user']:
+        user_data = {
+        'id': comment_data['user']['id'] if not None else None,
+        'login': comment_data['user']['login'] if not None else None,
+        'html_url': comment_data['user']['html_url'] if not None else None
+        }
     else:
-        filtered_comment_data['repository_full_name'] = get_repo_name(comment_data['url'])
-
-    # Filter out fields not in comment_fields
-    filtered_comment_data = {key: value for key, value in filtered_comment_data.items() if key in comment_fields}
+        user_data = create_default_user()
 
     # Handle user data in the comment
-    if filtered_comment_data['user_login']:
-        user = session.query(User).filter_by(login=filtered_comment_data['user_login']).first()
-        if not user:
-            user_data = {'login': filtered_comment_data['user_login']}
-            user = insert_user(user_data)
-            if not user:
-                print(f"Failed to insert or retrieve user: {user_data}")
-                return
+    user = session.query(User).filter_by(login=user_data['login']).first()
+    if not user:
+        insert_user(user_data)
+        
+    # Add issue ID to database, user login and repo name
+    filtered_comment_data['issue_id'] = issue_id
+    filtered_comment_data['repository_full_name'] = repo_name
+    filtered_comment_data['user_login'] = user_data['login']
 
     # Convert datetime fields if they are not None
     comment_datetime_fields = ['created_at', 'updated_at']
@@ -277,48 +339,43 @@ def insert_issue_comment(comment_data, issue_id):
 
 
 # PRS 1: INSERT PULL REQUEST
-def insert_pull_request(data):
+def insert_pull_request(pull_request, repo_name):
     pull_fields = {column.name for column in PullRequest.__table__.columns}
-    
-    # Extract data from the pull request object
-    filtered_data = {
-        'id': data.id,
-        'url': data.url,
-        'comments_url': data.comments_url,
-        'html_url': data.html_url,
-        'number': data.number,
-        'state': data.state,
-        'title': data.title,
-        'body': data.body,
-        'comments': data.comments,
-        'created_at': data.created_at,
-        'updated_at': data.updated_at,
-        'closed_at': data.closed_at,
-        'user_login': data.user.login if data.user else None
-    }
-    # Filter out only the fields present in the PullRequest model
-    filtered_data = {key: value for key, value in filtered_data.items() if key in pull_fields}
+    filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
     
     # Check if the pull request already exists
     if session.query(PullRequest).filter_by(id=filtered_data['id']).first() is not None:
         print("Pull Request already exists!")
         return
     
-    # Handle user data
-    if data.user:
-        user = session.query(User).filter_by(login=data.user.login).first()
-        if not user:
-            insert_user(data.user)  # Passing the NamedUser object directly
-        user = session.query(User).filter_by(login=data.user.login).first()
-        filtered_data['user_login'] = user.login
-    
-    # Retrieve the repo name and insert into database
-    repo_name = get_repo_name(data.html_url)
-    if repo_name is not None:
-        filtered_data['repository_full_name'] = repo_name
+    user_data = {}
+    # Extract data from the pull request object
+    if pull_request['user']:
+        user_data = {
+        'id': pull_request['user']['id'] if not None else None,
+        'login': pull_request['user']['login'] if not None else None,
+        'html_url': pull_request['user']['html_url'] if not None else None
+        }
     else:
-        filtered_data['repository_full_name'] = get_repo_name(data.url)
+        user_data = create_default_user()
+    
+    # Check if user exists and insert
+    user = session.query(User).filter_by(login=user_data['login']).first()
+    if not user:
+        insert_user(user_data)
 
+    # Set user login and repo name
+    filtered_data['user_login'] = user_data['login']
+    filtered_data['repository_full_name'] = repo_name
+    
+    # Convert datetime fields
+    datetime_fields = ['created_at', 'updated_at', 'closed_at']
+    for field in datetime_fields:
+        if field in filtered_data:
+            if filtered_data[field] is None:
+                filtered_data[field] = None
+            else:
+                filtered_data[field] = datetime.fromisoformat(filtered_data[field])
     try:
         new_pr = PullRequest(**filtered_data)
         session.add(new_pr)
@@ -329,46 +386,43 @@ def insert_pull_request(data):
 
     
 # PRS 2: INSERT PR COMMENT
-def insert_pr_comment(data, pr_id):
+def insert_pr_comment(comment_data, pr_id, repo_name):
     comment_fields = {column.name for column in PullRequestComment.__table__.columns}
+    filtered_comment_data = {key: value for key, value in comment_data.items() if key in comment_fields}
+
+        
+    # Check if comment already exists in the database
+    if session.query(PullRequestComment).filter_by(id=filtered_comment_data['id']).first() is not None:
+        print("Pull Request Comment already exists!")
+        return
     
-    # Extract data from the comment object
-    filtered_comment_data = {
-        'id': data.id,
-        'url': data.url,
-        'html_url': data.html_url,
-        'body': data.body,
-        'created_at': data.created_at,
-        'updated_at': data.updated_at,
-        'pull_request_id': pr_id
+    user_data = {}
+    
+    # Define user data to insert
+    if comment_data['user']:
+        user_data = {
+        'id': comment_data['user']['id'] if not None else None,
+        'login': comment_data['user']['login'] if not None else None,
+        'html_url': comment_data['user']['html_url'] if not None else None
         }
-    
-    # Handle user data
-    if hasattr(data, 'user'):
-        user_data = data.user
-        user = session.query(User).filter_by(login=user_data.login).first()
-        if not user:
-            user = insert_user(user_data)
-            if not user:
-                print(f"Failed to insert or retrieve user: {user_data}")
-                return
-        filtered_comment_data['user_login'] = user.login
+    else:
+        user_data = create_default_user()
+
+    # Handle user data in the comment
+    user = session.query(User).filter_by(login=user_data['login']).first()
+    if not user:
+        insert_user(user_data)
+        
+    # Add pr ID to database, user login and repo name
+    filtered_comment_data['pull_request_id'] = pr_id
+    filtered_comment_data['repository_full_name'] = repo_name
+    filtered_comment_data['user_login'] = user_data['login'] # Should be "None" if None
 
     # Convert datetime fields if necessary
     datetime_fields = ['created_at', 'updated_at']
     for field in datetime_fields:
         if field in filtered_comment_data and isinstance(filtered_comment_data[field], str):
             filtered_comment_data[field] = datetime.strptime(filtered_comment_data[field], "%Y-%m-%dT%H:%M:%SZ")
-
-    # Retrieve the repo name and insert into database
-    repo_name = get_repo_name(data.html_url)
-    if repo_name is not None:
-        filtered_comment_data['repository_full_name'] = repo_name
-    else:
-        filtered_comment_data['repository_full_name'] = get_repo_name(data.url)
-
-    # Filter out only the fields present in the PullRequestComment model
-    filtered_comment_data = {key: value for key, value in filtered_comment_data.items() if key in comment_fields}
 
     try:
         new_comment = PullRequestComment(**filtered_comment_data)
@@ -379,50 +433,37 @@ def insert_pr_comment(data, pr_id):
         print(f"IntegrityError: {e}")
     
 
-
 # COMMITS 1: INSERT COMMIT
-def insert_commit(data):
+def insert_commit(commit, repo_name):
     commit_fields = {column.name for column in Commit.__table__.columns}
-    
-    # Extract data from the commit object
-    filtered_data = {
-        'sha': data.sha,
-        'url': data.url,
-        'html_url': data.html_url,
-        'comments_url': data.comments_url,
-        'committer_login': data.commit.author if data.commit.author else None,
-        'committer_date': data.commit.committer.date,
-        'committer_name': data.commit.author.name,
-        'commit_message': data.commit.message,
-        'commit_url': data.commit.url,
-    }
-    
-    # Filter out only the fields present in the Commit model
-    filtered_data = {key: value for key, value in filtered_data.items() if key in commit_fields}
+    filtered_data = {key: value for key, value in commit.items() if key in commit_fields}
     
     # Check if the commit already exists
     if session.query(Commit).filter_by(sha=filtered_data['sha']).first() is not None:
         print("Commit already exists!")
         return
     
-    # Handle user data
-    if data.committer:
-        user = session.query(User).filter_by(login=data.committer.login).first()
-        if not user:
-            insert_user({'login': data.committer.login})  # Assuming insert_user function takes a dictionary
-        user = session.query(User).filter_by(login=data.committer.login).first()
-        filtered_data['committer_login'] = user.login
-    
-    # Convert datetime fields if necessary
-    if isinstance(filtered_data['committer_date'], str):
-        filtered_data['committer_date'] = datetime.strptime(filtered_data['committer_date'], "%Y-%m-%dT%H:%M:%SZ")
-    
-    # Retrieve the repo name and insert into database
-    repo_name = get_repo_name(data.html_url)
-    if repo_name is not None:
-        filtered_data['repository_full_name'] = repo_name
+    # Extract user data from the commit
+    if commit['author']:
+        user_data = {
+        'id': commit['author']['id'] if not None else None,
+        'login': commit['author']['login'] if not None else None,
+        'html_url': commit['author']['html_url'] if not None else None
+        }
     else:
-        filtered_data['repository_full_name'] = get_repo_name(data.url)
+        user_data = create_default_user()
+    
+    # Check if user exists and insert
+    user = session.query(User).filter_by(login=user_data['login']).first()
+    if not user:
+        insert_user(user_data)
+
+    # Set user login and repo name
+    filtered_data['committer_login'] = user_data['login']
+    filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else None
+    filtered_data['repository_full_name'] = repo_name
+    filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date'])
+    filtered_data['commit_message'] = commit['commit']['message'] if not None else None
     
     try:
         new_commit = Commit(**filtered_data)
@@ -433,36 +474,104 @@ def insert_commit(data):
         print(f"IntegrityError: {e}")
 
 # Insert all repository data relative to a specific date (e.g. one week, one year, etc.)
-def insert_all_data(repository, limit, date):
-    issues = get_issues(repository, limit, date)
+def insert_all_data(date, repo_name):
+    
+    issues = get_issues(repo_name, date)
+    num_issues = 0
+    issues_inserted = 0
+    pulls_inserted = 0
+
     for issue in issues:
-        insert_issue(issue)
-        issue_comments = issue.get_comments()
-
-        for comment in issue_comments:
-            insert_issue_comment(comment, issue.id)
-
-    # Get pull requests and insert them into the database
-    pulls = get_pull_requests(repository, limit, date)
-    for pr in pulls:
-        insert_pull_request(pr)
-
-        pr_comments = pr.get_comments()
+        num_issues += 1
+        print(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
+        # TODO Print login and check for bot
+        # Check for bots
+        if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
+            continue
         
-        for comment in pr_comments:
-            insert_pr_comment(comment, pr.id)
+        # Checks for pull request and inserts it
+        if 'pull' in issue['html_url']:
+            pull_request = issue
+            insert_pull_request(pull_request, repo_name)
+            pulls_inserted += 1
+            
+            pr_comments = get_pr_comments(repo_name, pull_request)
+            for comment in pr_comments:
+                # Check for bots in comments
+                comment_login = ""
 
+                if comment['user']:
+                    comment_login = comment['user']['login']
+
+                if '[bot]' in comment_login.lower() or 'bot' in comment_login.lower():
+                    continue
+                
+                insert_pr_comment(comment, pull_request['id'], repo_name)
+            
+            if num_issues % 10 == 0:
+                rate_limit_check()
+            
+            continue
+        
+        # Insert issue
+        insert_issue(issue, repo_name)
+        issues_inserted += 1
+        
+        # Loop through comments and insert
+        issue_comments = get_issue_comments(repo_name, issue) 
+        for comment in issue_comments:
+            # Check for bots in comments
+            comment_login = ""
+
+            if comment['user']:
+                comment_login = comment['user']['login']
+
+            if '[bot]' in comment_login.lower() or 'bot' in comment_login.lower():
+                continue
+
+            insert_issue_comment(comment, issue['id'], repo_name)
+
+        if num_issues % 10 == 0:
+            rate_limit_check()
+        
+    print(f"Successfully inserted {issues_inserted} issues for {repo_name} into the database for {repo_name}")
+    print(f"Successfully inserted {pulls_inserted} pull requests for {repo_name} into the database for {repo_name}")
+  
     # Get commits and insert them into the database
-    commits = get_all_commits(repository, limit, date)
+    commits = get_commits(repo_name, date)
+    num_commits = 0
+    commits_inserted = 0
+    
     for commit in commits:
-        insert_commit(commit)
- 
+        num_commits += 1
+        
+        commit_date = datetime.fromisoformat(commit['commit']['committer']['date'])
+        
+        if commit_date < date:
+            continue
 
-   
+        committer_name = commit['commit']['committer']['name'].lower()
+        if 'bot' in committer_name or '[bot]' in committer_name:
+            continue
+        
+        print(f"Inserting commit {num_commits} of {len(commits)}")
+        
+        insert_commit(commit, repo_name)
+        commits_inserted += 1
+        
+        if num_commits % 10 == 0:
+            rate_limit_check()
+    
+    print(f"Successfully inserted {commits_inserted} commits for {repo_name} into the database for {repo_name}")
+        
+ 
+# TODO Use get_readme to retreive and parse the readme file
 # Main
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
+    logging.info("- - - - - - - - - - - - - - - - - - - - - - - -")
+    logging.info("Starting to run parse_github_data.py")
     
     # Disable logging
     logging.getLogger('sqlalchemy').disabled = True
@@ -473,61 +582,74 @@ if __name__ == '__main__':
     session = Session()
 
     # GitHub API key and headers
-    GITHUB_API_KEY = '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'
-    headers = {'Authorization': f'token {GITHUB_API_KEY}'}
+    headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
     
-    # PyGithub
-    g = Github(os.environ['GITHUB_API_KEY'])
     
     # Datetime variables
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     
     # Define the limit for API calls
-    limit = 1000
-
+    limit = 10000
     # Get owners and repos
     with open("subscribers.json", 'r') as f:
-        data = json.load(f)
+        subscriber_data = json.load(f)
     
     # Keep a list of the subscriber repos
     subscriber_repo_list = []
-    
-    for subscriber in data['results']:
-        repo_name = subscriber['metadata'].get('repo_name', '')
-        if repo_name and 'github.com' in repo_name:
-            # ex. https://github.com/cnovalski1/APIexample
-            parts = repo_name.split('/')
-            if len(parts) >= 5:
-                full_repo_name = f"{parts[3]}/{parts[4]}"
-                subscriber_repo_list.append(full_repo_name)
-                
-                
-    # List of the current repositories in the database
-    current_repo_list = session.query(Repository.full_name).all()
-    current_repo_list = [item[0] for item in current_repo_list]
-    
-    # Loop through each subscriber repo and insert data
-    for repo in subscriber_repo_list:
-        repository = g.get_repo(repo)
+
+    try:
         
-        # If repo already exists in database
-        if repo in current_repo_list:
-            insert_all_data(repository, limit, one_week_ago)
-        else: # Repo doesn't exist in database, so insert it
-            repo_data = get_a_repository(repo)
-            insert_repository(repo_data)
-            insert_all_data(repository, limit, one_year_ago)
+        for subscriber in subscriber_data['results']:
+            repo_name = subscriber['metadata'].get('repo_name', '')
+            if repo_name and 'github.com' in repo_name:
+                # ex. https://github.com/cnovalski1/APIexample
+                parts = repo_name.split('/')
+                if len(parts) >= 5:
+                    full_repo_name = f"{parts[3]}/{parts[4]}"
+                    subscriber_repo_list.append(full_repo_name)
+                    
+                    
+        # List of the current repositories in the database
+        current_repo_list = session.query(Repository.full_name).all()
+        current_repo_list = [item[0] for item in current_repo_list]
+
+        # Making a set to keep track of processed repos to save time
+        processed_repos = set()
+        
+        # Loop through each subscriber repo and insert data
+        for repo in subscriber_repo_list:
+            # Skip repos that have already been processed
+            if repo in processed_repos:
+                continue
             
+            repo_name = repo
+            logging.info(f"Starting {repo_name}")
+            
+            # If repo already exists in database
+            if repo in current_repo_list:
+                insert_all_data(one_week_ago, repo_name)
+            else: # Repo doesn't exist in database, so insert it
+                repo_data = get_a_repository(repo, headers)
+                insert_repository(repo_data)
+                insert_all_data(one_year_ago, repo_name)
+
+            processed_repos.add(repo)
+            elapsed_time = time.time() - start_time
+            logging.info("Total time elapsed since the start: {:.2f} minutes".format(elapsed_time/60))
+        
+        # Check how long the function takes to run and print result
+        elapsed_time = time.time() - start_time
+        if (elapsed_time >= 60):
+            print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+        else:
+            print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+            
+        # logging.info(f"Elapsed time: {elapsed_time}")
+        logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
     
-       # Check how long the function takes to run and print result
-    elapsed_time = time.time() - start_time
-    if (elapsed_time >= 60):
-        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
-    else:
-        print("This entire program took {:.2f} seconds to run".format(elapsed_time))
-    
-    
+    except Exception as e:
+        logging.error(f"An error occurred in the main process: {e}")
         
 
 

@@ -12,7 +12,7 @@ import aiohttp
 from aiohttp import ClientSession
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
-from tables.repository import Repository, RepositoryAuthor
+from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit

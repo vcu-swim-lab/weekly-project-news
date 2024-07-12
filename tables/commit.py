@@ -8,18 +8,13 @@ class Commit(Base):
     
     # id = Column(Integer, primary_key=True)
     sha = Column(String, primary_key=True)
-    url = Column(String)
     html_url = Column(String)
-    comments_url = Column(String)
 
     committer_login = Column(String)
     committer_date = Column(DateTime)
     committer_name = Column(String)
-
     commit_message = Column(Text)
-    commit_url = Column(String)
-    commit_comment_count = Column(Integer)
-
+    
     repository_full_name = Column(String)
     
 

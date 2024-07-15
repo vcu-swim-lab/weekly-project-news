@@ -519,6 +519,11 @@ if __name__ == '__main__':
   # PART TWO: create the markdown for a newsletter
   for repository in repositories:
 
+    # print('a')
+    # print(repository)
+    # print('b')
+    repo_name = repository
+
     # 2.1: call all sort_data.py functions on the repo
     repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name)
 

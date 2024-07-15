@@ -2,14 +2,16 @@ import json
 import re
 
 def process_repo_names(data):
-    for result in data['results']:
-        repo_name = result['metadata'].get('repo_name', '')
-        if repo_name:
-            repo_name = re.sub(r'github\.com', 'github.com', repo_name, flags=re.IGNORECASE)
-            if repo_name.lower().startswith('github.com'):
-                repo_name = 'https://' + repo_name            
-            result['metadata']['repo_name'] = repo_name
-
+    for subscriber in data['results']:
+        repo_name = subscriber['metadata'].get('repo_name', '')
+        slug_match = re.search(r'(?:github\.com/)?([^/]+/[^/]+)/?$', repo_name, re.IGNORECASE)
+        if slug_match:
+            slug = slug_match.group(1)
+            subscriber['metadata']['repo_name'] = f'https://github.com/{slug}'
+        else:
+            # If they give something other than owner_name/repo_name, they're dumb
+            pass
+            
     return data
 
 def main():

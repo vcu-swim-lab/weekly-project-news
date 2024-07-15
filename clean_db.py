@@ -124,11 +124,16 @@ if __name__ == '__main__':
         
         # Delete commits older than one month
         commits = session.query(Commit).filter(Commit.repository_full_name == repo_name).all()
+        
+        num_commits_deleted = 0
         for commit in commits:
             commit_date = commit.committer_date
             
             if commit_date < one_month_ago:
                 delete_commit(session, commit.sha)
+                num_commits_deleted += 1
+        
+        print(f"Deleted {num_commits_deleted} commits from the database for {repo_name}")
         
         # Delete issues
         issues = session.query(Issue).filter(Issue.repository_full_name == repo_name).all()
@@ -149,7 +154,7 @@ if __name__ == '__main__':
             if create_date >= one_month_ago or update_date >= one_week_ago:
                 continue
             # Delete closed issues older than one month and issues not in either of the two lists
-            elif (close_date and close_date < one_month_ago) or (not found_in_num_comments and not found_in_open_date):
+            elif (close_date and close_date < one_month_ago) or (not found_in_num_comments and not found_in_open_date) or (create_date < one_year_ago):
                 delete_issue(session, issue.id)
                 num_issues_deleted += 1
         
@@ -169,7 +174,7 @@ if __name__ == '__main__':
             if create_date >= one_month_ago or update_date >= one_week_ago:
                 continue
             # Delete closed prs older than a month and delete open prs older than a month and not active
-            elif (close_date and close_date < one_month_ago) or (create_date < one_month_ago and update_date < one_week_ago):
+            elif (close_date and close_date < one_month_ago) or (create_date < one_month_ago and update_date < one_week_ago) or (create_date < one_year_ago):
                 delete_pr(session, pr.id)
                 num_prs_deleted += 1
         

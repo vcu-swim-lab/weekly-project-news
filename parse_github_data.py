@@ -47,7 +47,7 @@ def rate_limit_check():
         logging.error("Error checking rate limit: %s", e)
         print("Error checking rate limit:", e)
 
-# Function to switch API keys
+# Switches API keys. When hits array limit, goes back to index 0
 def switch_api_key():
     global current_key_index, g, headers
     current_key_index = (current_key_index + 1) % len(API_KEYS)
@@ -59,7 +59,8 @@ def switch_api_key():
     print(f"Switched to API key {current_key_index + 1}")
     logging.info(f"Switched to API key {current_key_index + 1}")
     return g
-    
+
+# Creates a default user to add to the database when the user doesn't exist
 def create_default_user():
     global default_user_id
     default_user_id += 1
@@ -70,6 +71,22 @@ def create_default_user():
         'html_url': 'https://github.com'
     }
     return user_data
+
+# Makes sure the repo is public and the link is actually a link
+def check_repo(url):
+    if ".com" not in url:
+        print(f"Error: {url} does not contain a link.")
+        return True
+    try:
+        response = requests.head(url, allow_redirects=True)
+        if response.status_code == 404:
+            print(f"Error 404: {url} not found.")
+            return True
+        else:
+            print(f"{url} exists. Status code: {response.status_code}")
+    except requests.RequestException as e:
+        print(f"Error accessing {url}: {e}")
+        return True
 
 # Retreives a repository
 def get_a_repository(repository, headers):
@@ -479,7 +496,7 @@ def insert_commit(commit, repo_name):
         print(f"IntegrityError: {e}")
 
 # Insert all repository data relative to a specific date (e.g. one week, one year, etc.)
-def insert_all_data(date, repo_name):
+def insert_all_data(date, repo_name, one_year_ago, thirty_days_ago):
     
     issues = get_issues(repo_name, date)
     num_issues = 0
@@ -488,10 +505,15 @@ def insert_all_data(date, repo_name):
 
     for issue in issues:
         num_issues += 1
+        issue_create_date = datetime.fromisoformat(issue['created_at'])
+        
         print(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
         # TODO Print login and check for bot
         # Check for bots
         if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
+            continue
+        elif issue_create_date < one_year_ago:
+            print("Skipping issue out of date")
             continue
         
         # Checks for pull request and inserts it
@@ -543,7 +565,7 @@ def insert_all_data(date, repo_name):
     print(f"Successfully inserted {pulls_inserted} pull requests for {repo_name} into the database for {repo_name}")
   
     # Get commits and insert them into the database
-    commits = get_commits(repo_name, date)
+    commits = get_commits(repo_name, thirty_days_ago)
     num_commits = 0
     commits_inserted = 0
     
@@ -551,8 +573,8 @@ def insert_all_data(date, repo_name):
         num_commits += 1
         
         commit_date = datetime.fromisoformat(commit['commit']['committer']['date'])
-        
-        if commit_date < date:
+        if commit_date < thirty_days_ago:
+            print("Skipping commit out of date")
             continue
 
         committer_name = commit['commit']['committer']['name'].lower()
@@ -590,6 +612,7 @@ if __name__ == '__main__':
     # Datetime variables
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
     
     # Define the limit for API calls
     limit = 10000
@@ -605,6 +628,10 @@ if __name__ == '__main__':
         for subscriber in subscriber_data['results']:
             repo_name = subscriber['metadata'].get('repo_name', '')
             if repo_name and 'github.com' in repo_name:
+                # Check that the repository is public
+                if check_repo(repo_name):
+                    print(f"Repository is either private or does not exist.")
+                    continue
                 # ex. https://github.com/cnovalski1/APIexample
                 parts = repo_name.split('/')
                 if len(parts) >= 5:
@@ -630,11 +657,11 @@ if __name__ == '__main__':
             
             # If repo already exists in database
             if repo in current_repo_list:
-                insert_all_data(one_week_ago, repo_name)
+                insert_all_data(one_week_ago, repo_name, one_year_ago, thirty_days_ago)
             else: # Repo doesn't exist in database, so insert it
                 repo_data = get_a_repository(repo, headers)
                 insert_repository(repo_data)
-                insert_all_data(one_year_ago, repo_name)
+                insert_all_data(one_year_ago, repo_name, one_year_ago, thirty_days_ago)
 
             processed_repos.add(repo)
             elapsed_time = time.time() - start_time

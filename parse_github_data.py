@@ -252,9 +252,10 @@ def insert_issue(issue, repo_name):
     issue_fields = {column.name for column in Issue.__table__.columns}
     filtered_data = {key: value for key, value in issue.items() if key in issue_fields}
 
-    if session.query(Issue).filter_by(id=filtered_data['id']).first() is not None:
+    if session.query(Issue).filter_by(id=issue['id']).first() is not None:
         print("Issue already exists!")
         return
+    
 
     user_data = {}
     
@@ -285,9 +286,13 @@ def insert_issue(issue, repo_name):
                 filtered_data[field] = datetime.fromisoformat(filtered_data[field])
 
     # Create and add the issue to the session
-    new_issue = Issue(**filtered_data)
-    session.add(new_issue)
-    session.commit()
+    try:
+        new_issue = Issue(**filtered_data)
+        session.add(new_issue)
+        session.commit()
+    except IntegrityError as e:
+        session.rollback()
+        print(f"IntegrityError: {e}")
     
 # ISSUES 2: INSERT ISSUE COMMENT
 def insert_issue_comment(comment_data, issue_id, repo_name):
@@ -296,10 +301,10 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
     filtered_comment_data = {key: value for key, value in comment_data.items() if key in comment_fields}
 
     # Check if comment already exists in the database
-    if session.query(IssueComment).filter_by(id=filtered_comment_data['id']).first() is not None:
+    if session.query(IssueComment).filter_by(id=comment_data['id']).first() is not None:
         print("Issue comment already exists!")
         return
-    
+
     user_data = {}
     # Define user data to insert
     if comment_data['user']:
@@ -344,7 +349,7 @@ def insert_pull_request(pull_request, repo_name):
     filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
     
     # Check if the pull request already exists
-    if session.query(PullRequest).filter_by(id=filtered_data['id']).first() is not None:
+    if session.query(PullRequest).filter_by(id=pull_request['id']).first() is not None:
         print("Pull Request already exists!")
         return
     
@@ -392,7 +397,7 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
 
         
     # Check if comment already exists in the database
-    if session.query(PullRequestComment).filter_by(id=filtered_comment_data['id']).first() is not None:
+    if session.query(PullRequestComment).filter_by(id=comment_data['id']).first() is not None:
         print("Pull Request Comment already exists!")
         return
     
@@ -439,7 +444,7 @@ def insert_commit(commit, repo_name):
     filtered_data = {key: value for key, value in commit.items() if key in commit_fields}
     
     # Check if the commit already exists
-    if session.query(Commit).filter_by(sha=filtered_data['sha']).first() is not None:
+    if session.query(Commit).filter_by(sha=commit['sha']).first() is not None:
         print("Commit already exists!")
         return
     
@@ -566,12 +571,13 @@ def insert_all_data(date, repo_name):
         
  
 # TODO Use get_readme to retreive and parse the readme file
+# TODO Add check for if a repository is public or private
 # Main
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
-    logging.info("- - - - - - - - - - - - - - - - - - - - - - - -")
-    logging.info("Starting to run parse_github_data.py")
+    # logging.info("- - - - - - - - - - - - - - - - - - - - - - - -")
+    # logging.info("Starting to run parse_github_data.py")
     
     # Disable logging
     logging.getLogger('sqlalchemy').disabled = True
@@ -580,10 +586,6 @@ if __name__ == '__main__':
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     session = Session()
-
-    # GitHub API key and headers
-    headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
-    
     
     # Datetime variables
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
@@ -624,7 +626,7 @@ if __name__ == '__main__':
                 continue
             
             repo_name = repo
-            logging.info(f"Starting {repo_name}")
+            # logging.info(f"Starting {repo_name}")
             
             # If repo already exists in database
             if repo in current_repo_list:
@@ -646,10 +648,11 @@ if __name__ == '__main__':
             print("This entire program took {:.2f} seconds to run".format(elapsed_time))
             
         # logging.info(f"Elapsed time: {elapsed_time}")
-        logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+    #     logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
     
     except Exception as e:
-        logging.error(f"An error occurred in the main process: {e}")
+        # logging.error(f"An error occurred in the main process: {e}")
+        print(f"An error occurred: {e}")
         
 
 

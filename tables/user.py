@@ -7,7 +7,6 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     login = Column(String, nullable=False, unique=True)
     html_url = Column(String)
-    email = Column(String)
-
+    
     def __repr__(self):
         return f"<User(login={self.login}, id={self.id})>"

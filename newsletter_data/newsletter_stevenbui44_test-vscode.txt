@@ -1,0 +1,132 @@
+# Weekly GitHub Report for Test-vscode
+
+Thank you for subscribing to our weekly newsletter! Each week, we deliver a comprehensive summary of your GitHub project's latest activity right to your inbox, including an overview of your project's issues, pull requests, contributors, and commit activity.
+
+***
+
+# I. Issues
+
+## 1.1 Open Issues
+
+**Open Issues This Week:** 0
+
+**Summarized Issues:**
+
+As of our latest update, there are no open issues for the project this week.
+
+## 1.2 Top 5 Active Issues:
+
+We consider active issues to be issues that have generated much discussion in the issue's comments. 
+
+1. [**Merging changes**](https://github.com/stevenbui44/test-vscode/issues/6): This issue is about merging a new branch into the development branch to ensure it remains up to date. The discussion highlights differing opinions on the importance and readiness of the new branch for merging.
+
+   - The comments reflect a heated debate, with one person questioning the priority of keeping the branch up to date over ensuring the quality of changes. Another comment points out that the new branch is not yet complete, while a third comment escalates the argument with a personal attack.
+   - Number of comments: 3
+
+2. [**Issue 1**](https://github.com/stevenbui44/test-vscode/issues/1): This issue is about a problem or task described in the first issue of a GitHub project, with a brief description provided. The issue has garnered one comment from a user.
+
+   - The comment section contains a single comment expressing affection towards the user "stevenbui44".
+   - Number of comments: 1
+
+3. [**Testing issues**](https://github.com/stevenbui44/test-vscode/issues/7): This issue is about a user testing the process of posting an issue on GitHub for the first time. The user is likely new to the platform and is experimenting with its features.
+
+   - The only comment on the issue is negative, questioning the user's decision to post and suggesting they leave.
+   - Number of comments: 1
+
+4. [**Testing making a new issue**](https://github.com/stevenbui44/test-vscode/issues/8): This issue is about testing the creation of a new issue in a GitHub project. The issue does not contain a detailed description or body text.
+
+   - One comment was made, stating that the issue is good.
+   - Number of comments: 1
+
+Since there were fewer than 5 open issues, all of the open issues have been listed above.
+
+## 1.3 Top 5 Quiet Issues:
+
+We consider quiet issues to be issues that have been opened in this project for the longest time. The team should work together to get these issues resolved and closed as soon as possible. 
+
+1. [**Issue 1**](https://github.com/stevenbui44/test-vscode/issues/1): This issue has been open for 38 days and involves a description labeled as "issue 1" within the GitHub project. The detailed description provided in the body of the issue outlines the specific concerns or tasks that need to be addressed.
+   - Open for 38 days, 00 hours, 45 minutes
+
+2. [**Merging changes**](https://github.com/stevenbui44/test-vscode/issues/6): This issue is about the need to merge a new branch into the development branch to ensure that the development branch remains current. It highlights the importance of keeping the development branch up to date with the latest changes.
+   - Open for 16 days, 23 hours, 47 minutes
+
+3. [**Testing issues**](https://github.com/stevenbui44/test-vscode/issues/7): This issue is about testing the process of posting an issue on a GitHub project for the first time. It has been open for 16 days, 22 hours, and 42 minutes, indicating that it has not yet been resolved or addressed.
+   - Open for 16 days, 22 hours, 42 minutes
+
+4. [**Testing making a new issue**](https://github.com/stevenbui44/test-vscode/issues/8): This issue is about testing the creation of a new issue within the GitHub project repository. It has been open for 16 days, 22 hours, and 26 minutes, and does not contain any additional descriptive body text.
+   - Open for 16 days, 22 hours, 26 minutes
+
+5. [**Find a way to resolve this bug**](https://github.com/stevenbui44/test-vscode/issues/10): This issue pertains to a bug in the code that the user is currently experiencing and is seeking assistance to resolve. The user is inquiring if anyone else has encountered a similar problem within the project.
+   - Open for 9 days, 22 hours, 28 minutes
+
+## 1.4 Closed Issues
+
+**Closed Issues This Week:** 0
+
+**Average Issue Close Time (This Week):** 0.00 days
+
+**Summarized Issues:**
+
+As of our latest update, there are no closed issues for the project this week.
+
+## 1.5 Issue Discussion Insights
+
+This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. 
+
+As of our last update, there are no open issues with discussions going on within the past week. 
+
+***
+
+# II. Pull Requests
+
+## 2.1 Open Pull Requests
+
+**Open Pull Requests This Week:** 0
+
+**Pull Requests:**
+
+As of our latest update, there are no open pull requests for the project this week.
+
+## 2.2 Closed Pull Requests
+
+**Closed Pull Requests This Week:** 0
+
+**Summarized Pull Requests:**
+
+As of our latest update, there are no closed pull requests for the project this week.
+
+## 2.3 Pull Request Discussion Insights
+
+This section will analyze the tone and sentiment of discussions within this project's open pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. 
+
+As of our last update, there are no open pull requests with discussions going on within the past week. 
+
+***
+
+# III. Commits
+
+## 3.1 Commits
+
+**Commits This Week:** 0
+
+**Summarized Commits:**
+
+As of our latest update, there are no commits for the project this week.
+
+***
+
+# IV. Contributors
+
+## 4.1 Contributors
+
+**Active Contributors:**
+
+We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past month. 
+
+Contributor | Commits | Pull Requests | Issues 
+---|---|---|---
+stevenbui44 | 0 | 2 | 4 | 
+
+
+
+

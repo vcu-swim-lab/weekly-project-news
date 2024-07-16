@@ -1,0 +1,524 @@
+# Weekly GitHub Report for Llama.cpp
+
+Thank you for subscribing to our weekly newsletter! Each week, we deliver a comprehensive summary of your GitHub project's latest activity right to your inbox, including an overview of your project's issues, pull requests, contributors, and commit activity.
+
+***
+
+# I. Issues
+
+## 1.1 Open Issues
+
+**Open Issues This Week:** 23
+
+**Summarized Issues:**
+
+- **Model Configuration Issues**: The Falcon 2 11B GGUF model conversion process works but fails to correctly read the 8K context length from the `config.json` file, potentially due to a misconfiguration in the model's settings. Additionally, the Meta-Llama-3-8B-Instruct-Q8_0 model fails to properly follow system prompts when accessed via direct requests to the `/completion` endpoint, resulting in messy outputs. These issues highlight the importance of accurate configuration settings for model performance.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8330)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8393)
+
+- **Compilation and Build Errors**: Compilation errors such as "newline in constant" encountered while compiling `test-grammar-integration.cpp` with MSVC, and warnings during the compilation of the `ggml.c` file, indicate potential issues with the build process. Additionally, building the project with the `DGGML_VULKAN=ON` flag on Ubuntu 20.04 for the `aarch64` architecture results in incorrect program output.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8334)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8378)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8365)
+
+- **Feature Requests and Enhancements**: Requests for new features such as adding support for `num_beams` and `do_sample` parameters, dynamic NTK rope scaling, and an indicator for MMQ or cuBLAS usage during compile-time or run-time, aim to enhance the functionality and performance of the project. These enhancements are crucial for optimizing model performance and user experience.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8350)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8353)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8361)
+
+- **Segmentation Faults and Crashes**: Segmentation faults occurring with Yi 1.5 on build 3346 and on a 32GB Mac when using the mlock command with large models indicate stability issues. These faults suggest potential problems with specific models or system configurations that need to be addressed to ensure reliable operation.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8369)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8424)
+
+- **Documentation and Usability Issues**: Misplaced documentation files and broken links, as well as issues with the Docker run command in the documentation, highlight the need for accurate and accessible project documentation. Additionally, recent renaming of executables has caused existing tutorials to break, suggesting a need for better version control and user guidance.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8381)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8419)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8397)
+
+- **Performance Optimization**: Enhancements to improve performance, such as inverting quantization to fp16 in the `ggml_cuda_mul_mat_batched_cublas` function, are crucial for optimizing prompt evaluation and generation times. These optimizations can significantly impact the efficiency and speed of model operations.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8385)
+
+- **GPU Offloading Issues**: Problems with GPU offloading, such as none of the model layers being offloaded to the GPU when using Llama.cpp with SYCL for the Qwen2 MoE model, indicate potential inefficiencies in utilizing GPU resources. Addressing these issues is important for maximizing hardware acceleration benefits.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8387)
+
+- **Model Evaluation and Benchmarking**: Guidance on evaluating converted gguf models using benchmarks like MMLU, ARC, and Perplexity is sought to ensure accurate performance assessment. Proper benchmarking is essential for validating model accuracy and efficiency.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8409)
+
+- **Memory Allocation Bugs**: The `--mem` parameter in the `rpc-server` command not correctly allocating the specified amount of backend memory leads to inconsistencies and potential crashes. Proper memory management is critical for stable and efficient model operation.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8417)
+
+- **Library Dependency Issues**: Missing library dependencies, such as "libllama.so" for binaries compiled using the Android NDK on Linux and for the Llava model on Android, prevent successful execution. Ensuring all necessary libraries are included is vital for cross-platform compatibility.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8428)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8436)
+
+- **Tool Call and Token Handling Issues**: Problems with the InternLM 2.5 Chat Tool Calls, including inconsistent formatting and difficulties with special token handling, affect the usability and accuracy of the tool. Addressing these issues is important for maintaining high-quality outputs.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8405)
+
+- **Model Training Precision**: Inquiries about training models from scratch using f16 or q8 precision instead of f32 indicate a demand for more flexible training options. While not currently available, this feature is a goal for future implementation to enhance training efficiency.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8429)
+
+- **Executable Renaming Issues**: Users encountering "No such file or directory" errors due to renamed tools, such as "perplexity" being renamed to "llama-perplexity," highlight the need for clear communication about changes. Ensuring users are aware of such changes can prevent confusion and improve user experience.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8431)
+
+- **Vulkan Device Detection Issues**: No output being generated after detecting the Vulkan device "PowerVR B-Series BXE-2-32" on a RISC-V board suggests compatibility issues with specific hardware. Ensuring proper device detection and output generation is crucial for reliable performance.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8437)
+
+## 1.2 Top 5 Active Issues:
+
+We consider active issues to be issues that have generated much discussion in the issue's comments. 
+
+1. [**server : improvements and maintenance**](https://github.com/ggerganov/llama.cpp/issues/4216): This issue is about improving and maintaining the server example in the GitHub project, which has grown in functionality but is currently unstable and missing important features. The issue aims to track these points and draw community attention to them, as some tasks are significant and require considerable effort to complete.
+
+-   The comments discuss various improvements and suggestions, including adding new features like look-ahead decoding, contrastive search, speculative sampling, and function calling. There are also discussions about refactoring the code, improving stability, and making the server production-ready. Some comments suggest focusing on specific use cases, like large-scale deployments and hobbyist workflows, while others emphasize the need for a simple, maintainable codebase. The conversation also touches on the challenges of implementing chat templates and the potential use of Jinja2 for this purpose.
+   - Number of comments: 108
+
+2. [**Support BitNet b1.58 ternary models**](https://github.com/ggerganov/llama.cpp/issues/5761): This issue is about implementing support for BitNet b1.58 ternary models, which use 1.58 bits with ternary values (1, 0, -1) for training, showing performance improvements over fp16 models. The issue highlights the potential benefits of this approach, such as running larger models with less VRAM, and discusses the need for new models to be trained in this ternary mode from the start.
+
+   - The comments discuss the novelty and potential of training models directly in a quantized state, the need to wait for the release of the actual code, and the feasibility of implementing ternary models in llama.cpp. There are also discussions about the technical details, potential benefits, and challenges of this approach, including memory usage, inference efficiency, and the need for specialized hardware or optimized kernels. The conversation includes various perspectives on the practicality and future of ternary models, with some expressing skepticism and others optimism about the potential impact.
+   - Number of comments: 88
+
+3. [**Investigate gemma 2 generation quality**](https://github.com/ggerganov/llama.cpp/issues/8240): This issue is about investigating the quality of the Gemma 2 model generation in the llama.cpp project, with initial reports suggesting potential problems with the tokenizer. The discussion includes various tests and comparisons with other implementations to identify discrepancies and potential fixes.
+
+   - The comments section includes detailed discussions on the hard-coded window size, issues with math questions indicating tokenizer problems, differences in quantization quality, and various tests comparing outputs from different implementations. There are also suggestions for potential fixes, such as changes in the conversion code and tokenizer handling, and discussions on the impact of different floating-point formats and quantization methods on model performance.
+   - Number of comments: 88
+
+4. [**Support for Phi-3 models**](https://github.com/ggerganov/llama.cpp/issues/6849): This issue is about adding support for Microsoft's newly released Phi-3 models, which come in three variants: mini, small, and medium. The request is to integrate these models into the project, with a particular focus on addressing compatibility issues and implementing new techniques like "longrope" for extended context lengths.
+
+-   The comments discuss various aspects of integrating Phi-3 models, including initial successes and challenges with compatibility, particularly with the 128K context length variant. Users share their experiences, errors encountered, and potential solutions, including references to relevant research papers and code implementations. The conversation also includes updates on ongoing efforts to support these models, with some users testing and providing feedback on new implementations.
+   - Number of comments: 83
+
+5. [**Bug: QWEN2 quantization GGML_ASSERT**](https://github.com/ggerganov/llama.cpp/issues/7805): This issue is about a bug encountered when attempting to quantize the Qwen2 7B instruct model to IQ2_XS, resulting in a GGML_ASSERT error. The user also reports that the same error occurs when trying IQ2_S, and they are seeking assistance to debug the problem.
+
+   - The comments discuss various errors encountered with different quantization methods, potential causes such as `nan` values in the imatrix, and suggestions for fixes including using flash attention and modifying the code to handle specific architectures. Users share their experiences, patches, and workarounds, with some confirming successful fixes and others still facing issues.
+   - Number of comments: 71
+
+## 1.3 Top 5 Quiet Issues:
+
+We consider quiet issues to be issues that have been opened in this project for the longest time. The team should work together to get these issues resolved and closed as soon as possible. 
+
+1. [**Study how LM Evaluation Harness works and try to implement it**](https://github.com/ggerganov/llama.cpp/issues/231): This issue involves studying and implementing the LM Evaluation Harness to perform quantitative analysis of `ggml`-based inference models. The goal is to integrate this evaluation tool into the project to estimate the quality of the generated output and ensure the project is progressing correctly.
+   - Open for 483 days, 08 hours, 30 minutes
+
+2. [**llama : add RWKV models support**](https://github.com/ggerganov/llama.cpp/issues/846): This issue is about adding support for RWKV models, which are 100% RNN language models that can match transformers in quality and scaling while being faster and more memory-efficient. The RWKV model architecture is particularly CPU-friendly for large context lengths, requiring only the state from the previous step to calculate logits, unlike transformers that have O(n^2) attention complexity.
+   - Open for 461 days, 10 hours, 30 minutes
+
+3. [**The procedure entry point PrefetchVirtualMemory could not be located in the dynamic link library KERNEL32.dll**](https://github.com/ggerganov/llama.cpp/issues/894): This issue describes a problem where running a specific command with certain versions of the software results in an error message stating that the procedure entry point PrefetchVirtualMemory could not be located in the dynamic link library KERNEL32.dll. The problem appears to have started with version master-180b693 and persists in subsequent versions, with the last working version being master-f2d1c47.
+   - Open for 458 days, 03 hours, 20 minutes
+
+4. [**[Feature request] Any plans for AMD XDNA AI Engine support on Ryzen 7x40 processors?**](https://github.com/ggerganov/llama.cpp/issues/1499): This issue is a feature request inquiring about the potential support for the AMD XDNA AI Engine on AMD Ryzen 7x40 series processors. The user has followed the necessary prerequisites and is seeking information on whether there are any plans to integrate this support into the project.
+   - Open for 422 days, 07 hours, 05 minutes
+
+5. [**Support CoreML like whisper.cpp?**](https://github.com/ggerganov/llama.cpp/issues/1714): This issue is about a user inquiring whether the llama.cpp project could support CoreML, similar to how whisper.cpp operates efficiently on an iPhone. The user has observed the fast performance of whisper.cpp on their device and is curious if the same could be achieved with llama.cpp.
+   - Open for 402 days, 07 hours, 39 minutes
+
+## 1.4 Closed Issues
+
+**Closed Issues This Week:** 45
+
+**Average Issue Close Time (This Week):** 46.07 days
+
+**Summarized Issues:**
+
+- **Script Errors and Compatibility Issues**: The `convert.py` script in the `llama.cpp` project fails due to a `BadZipFile` error, specifically a "Bad CRC-32" error, which is related to Python 3.12 compatibility issues. Another issue involves a failure in the assertion `vocab.id_to_token.size() == vocab.token_to_id.size()` when running inference with the `main` function after converting the PLaMo model. Additionally, there is a problem with the `convert-hf-to-gguf-update.py` script breaking due to missing or inaccessible files.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/4365)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/5669)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7207)
+
+- **Model Conversion and Quantization Issues**: Errors are encountered while converting and quantizing models from Hugging Face using llama.cpp, including a Unicode token handling issue and a "Duplicated tensor name" error. There are also warnings about unrecognized BPE pre-tokenizers during the conversion of Llama-3 MoE models.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/6132)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7069)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7486)
+
+- **Performance Regressions and Optimization**: Significant performance regressions are reported on Windows ARM64 PCs and AMD EPYC servers, with discussions on potential causes and specific commits. Optimizations are proposed, including using CUDA Graphs for a 10-15% speedup and memory allocation changes for AMD/HIP GPUs.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/6417)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7443)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/6763)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7399)
+
+- **GPU and Hardware Support**: Issues with Intel Arc A370M dGPU preventing iGPU functionality, and requests for native support of Intel IPEX-LLM and NVPL BLAS for NVIDIA Grace CPU. There are also problems with GPU-based fine-tuning and Docker container errors.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/6808)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7190)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8329)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7101)
+
+- **Inference and Tokenization Issues**: Problems with token sampling randomness, response length limitations, and generation artifacts in various models. There are also issues with the tokenizer handling tab and space characters incorrectly, and a bug in the Gemma2 tokenizer.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7498)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7512)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7520)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8338)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8349)
+
+- **Feature Requests and Enhancements**: Requests for features like exporting conversations to text files, multi-task parallel processing, and support for AVX2 SIMD instructions. There are also proposals for changing perplexity computation and quantizing models using Qx_K.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7545)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7558)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7532)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7111)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8345)
+
+- **Bug Reports and Crashes**: Various bugs and crashes are reported, including segmentation faults, `std::out_of_range` errors, and issues with the `llama-server` and `llama-cli`. There are also problems with the `GGML_CCACHE` option and missing `tokenizer.chat_template` keys.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8076)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8179)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8246)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8438)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8380)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8403)
+
+- **Documentation and Configuration Issues**: Errors in documentation, such as incorrect web URL links and misleading output messages. There are also configuration issues with running programs on specific CPU cores and starting RPC servers on conflicting ports.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8346)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/7577)
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/issues/8401)
+
+
+## 1.5 Issue Discussion Insights
+
+This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. 
+
+1. [**Can't run the program**](https://github.com/ggerganov/llama.cpp/issues/7181)
+   - Toxicity Score: 0.55 (Frustration, condescending response, criticism, suggestion to close issue)
+   - This GitHub conversation begins with mike2003 expressing frustration over a technical issue, which is met with a helpful suggestion from another user. However, mike2003's follow-up indicates that the suggestion did not resolve the problem, leading to a slightly condescending response from another participant. The conversation continues with additional users sharing their experiences and potential solutions, but the tone becomes increasingly tense. A notable point of tension arises when a user criticizes mike2003 for not following issue templates and suggests closing the issue, emphasizing the need for respect and proper issue reporting.
+
+***
+
+# II. Pull Requests
+
+## 2.1 Open Pull Requests
+
+**Open Pull Requests This Week:** 13
+
+**Pull Requests:**
+
+- **LoRA adapter support refactoring**: This pull request refactors the LoRA adapter support by introducing a new `llama_lora_adapter` structure. It enables hot-swapping of LoRA adapters and provides proper support for the GGUF format. The implementation is inspired by the control vector implementation.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8332)
+
+- **Building example/main.cpp as shared library**: This pull request aims to build `example/main.cpp` as a shared library. It intercepts token printing using Foreign Function Interface (FFI). This facilitates integration with languages like Python.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8339)
+
+- **Improving build process efficiency**: This pull request addresses the issue of long compilation times and out-of-memory errors for the unicode-data.cpp file. It targets specific low-powered systems and configurations. The goal is to improve the build process efficiency.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8354)
+
+- **Updating convert-hf-to-gguf-update.py script**: This pull request adds functionality to specify the model name, tokenizer type, and URL in the `convert-hf-to-gguf-update.py` script. It ensures no unexpected downloads occur. The code is updated to include an empty model list.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8357)
+
+- **KV cache context issue**: This pull request addresses an issue where the KV cache breaks when the context exceeds `n_ctx`. It introduces a second tweakable offset named `n_truncate`. This allows the client to choose the appropriate offset to use depending on the situation.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8359)
+
+- **SonarQube loop counter issue**: This pull request addresses a specific issue reported by SonarQube. It involves improper assignment of loop counters within the loop body on line 224 in the `public_simplechat/datautils.mjs` file. The fix ensures proper loop counter assignment.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8362)
+
+- **GGML graph caching**: This pull request introduces caching of the GGML graph to avoid unnecessary full rebuilds between each token. KV cache parameters are updated directly in the cached graph. An option to disable this feature using the GGML_DISABLE_GRAPH_CACHING environment variable is also provided.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8366)
+
+- **Tokenizer issues**: This pull request addresses various issues with the tokenizer. It includes fixes for incorrect detokenization results. It also resolves discrepancies in expected versus actual outputs for different vocabulary files.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8379)
+
+- **Runtime SVE configuration**: This pull request addresses the issue of reading the runtime Scalable Vector Extension (SVE) configuration of the CPU in the ggml library. It ensures that the correct SVE width is obtained using `prctl(PR_SVE_GET_VL)` instead of `svcntb()`.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8382)
+
+- **Moore Threads GPU (MTGPU) support**: This pull request introduces initial support for Moore Threads GPU (MTGPU). It integrates MUSA APIs into llama.cpp, replacing CUDA APIs. New build options are added to enhance large language model (LLM) inference performance.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8383)
+
+- **Hosting multiple fine-tuned models**: This pull request introduces a method to host multiple fine-tuned derived models on memory-constrained devices. It splits GGUF files into shared and task-specific tensors. This allows dynamic loading and swapping of task-specific tensors while keeping only one copy of shared tensors in memory.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8415)
+
+- **Adding Ukrainian tokens**: This pull request adds Ukrainian tokens into the strings of the `convert_hf_to_gguf.py` and `convert_hf_to_gguf_update.py` scripts.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8435)
+
+- **BF16 support for metal component**: This pull request aims to add BF16 support to the metal component of the project. Pending tasks include MoE and Flash Attention. It also includes a self-reported review complexity assessment.
+  - [github.com/...](https://github.com/ggerganov/llama.cpp/pull/8439)
+
+## 2.2 Closed Pull Requests
+
+**Closed Pull Requests This Week:** 62
+
+**Summarized Pull Requests:**
+
+
+
+
+## 2.3 Pull Request Discussion Insights
+
+This section will analyze the tone and sentiment of discussions within this project's open pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. 
+
+Based on our analysis, there are no instances of toxic discussions in the project's open pull requests from the past week. 
+
+***
+
+# III. Commits
+
+## 3.1 Commits
+
+**Commits This Week:** 53
+
+**Summarized Commits:**
+
+- **SYCL Unit Tests and Deprecation Warnings**: Fixes were made to the `mul_mat_id` unit tests and deprecated warnings in the SYCL codebase were addressed by using the `multi_ptr` feature. Additionally, the `powf` function call within the device code was corrected, and the mmvq path for the SYCL Nvidia Backend was re-enabled.
+
+- **BLAS and GEMM Optimizations**: NVPL BLAS support was introduced to the ggml library, and optimized GEMV and GEMM kernels for AArch64 architecture were added. The sgemm source files were also relocated to a subfolder named 'llamafile'.
+
+- **CUDA and HIPBLAS Improvements**: The CUDA MMQ was optimized and refactored with explicit q8_1 memory layouts, and a warning related to the 'noreturn' attribute in the no_device_code function was addressed. A CUDA implementation for the `ggml_conv_transpose_1d` function was also introduced.
+
+- **Documentation and README Updates**: Multiple updates were made to the README files, including fixing broken links, adding information about supported models, and correcting typographical errors. The `gguf-py` README file was updated, and the llama-cli documentation was revised.
+
+- **Build and Configuration Changes**: The build process was modified to ensure the deprecation-warning 'main' binary is built every time, and the macro `LLAMA_NO_CCACHE` was replaced with `GGML_NO_CCACHE` in the CMake files. Changes were also made to allow the use of an external GGML library.
+
+- **Tokenization and Detokenization Enhancements**: The `--no-parse-special` option was introduced to the tokenize feature, and multiple improvements were made to the detokenizer functionality, including adding the `llama_detokenize()` function and refining random test generators.
+
+- **Sampling and Performance Optimizations**: Default slot sampling parameters were initialized from the global context, and sampling performance was optimized by preallocating the sampling token data vector to the vocabulary size. An early return for empty ranges in the `llama_kv_cache_seq_add` and `llama_kv_cache_seq_div` functions was also introduced.
+
+- **Attention Mechanism and Precision Updates**: The Qwen2 attention mechanism was updated to use F32 precision, and the FA component was removed. The default value for the 'n_rot' parameter in the llama project was also fixed.
+
+- **Python Code and Linting Fixes**: The internlm2 converter in the Python code was updated, and an extra space in the `convert_hf_to_gguf.py` script was fixed. Type-checking for all Python scripts using Pyright was introduced, and various code style and lint errors were resolved.
+
+- **Server and CLI Enhancements**: The server was enhanced by exposing the model's Jinja2 prompt template through the /props endpoint, and support for Authorization Bearer tokens when downloading models was introduced. A CLI tool for hashing GGUF files was also added.
+
+- **Common Code and Logits Optimization**: Unnecessary fetching of logits was avoided, and multiple improvements and fixes were made to the detokenizer functionality. Assertions were added to ensure the `llama_encode()` function is called.
+
+- **Synchronization and CI Improvements**: The project was synchronized with the latest changes from the ggml repository, and checks for cmake, make, and ctest were introduced in the ci/run.sh script. The continuous integration workflow was optimized by disabling the pip cache and filtering out non-critical messages.
+
+- **Miscellaneous Fixes and Updates**: Deprecated binary files were excluded from the repository, and whitespace issues in the test files were corrected. The `requirements.txt` file was updated to specify the use of the CPU-only version of PyTorch.
+
+***
+
+# IV. Contributors
+
+## 4.1 Contributors
+
+**Active Contributors:**
+
+We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past month. 
+
+Contributor | Commits | Pull Requests | Issues 
+---|---|---|---
+GitHub | 212 | 0 | 0 | 
+ggerganov | 0 | 29 | 1 | 
+ngxson | 0 | 15 | 3 | 
+Georgi Gerganov | 15 | 0 | 0 | 
+JohannesGaessler | 0 | 14 | 0 | 
+slaren | 0 | 14 | 0 | 
+danbev | 0 | 11 | 0 | 
+0wwafa | 0 | 0 | 11 | 
+Someone | 8 | 0 | 0 | 
+HanClinto | 0 | 7 | 0 | 
+rgerganov | 0 | 5 | 0 | 
+joeatodd | 0 | 5 | 0 | 
+fairydreaming | 0 | 5 | 0 | 
+jukofyork | 0 | 4 | 1 | 
+ochafik | 0 | 5 | 0 | 
+compilade | 0 | 5 | 0 | 
+CISC | 0 | 4 | 0 | 
+AidanBeltonS | 0 | 4 | 0 | 
+luoyu-intel | 0 | 4 | 0 | 
+OuadiElfarouki | 0 | 4 | 0 | 
+Alcpz | 0 | 4 | 0 | 
+RunningLeon | 0 | 1 | 3 | 
+oldmanjk | 0 | 0 | 4 | 
+Galunid | 0 | 3 | 0 | 
+hamdoudhakem | 0 | 3 | 0 | 
+mdegans | 0 | 2 | 1 | 
+HatsuneMikuUwU33 | 0 | 2 | 1 | 
+criminact | 0 | 2 | 1 | 
+dspasyuk | 0 | 1 | 2 | 
+iboB | 0 | 3 | 0 | 
+RakshitAralimatti | 0 | 0 | 3 | 
+ghchris2021 | 0 | 0 | 3 | 
+Wheelspawn | 0 | 1 | 1 | 
+Eddie-Wang1120 | 0 | 2 | 0 | 
+thxCode | 0 | 2 | 0 | 
+abgulati | 0 | 1 | 1 | 
+arthw | 0 | 2 | 0 | 
+0cc4m | 0 | 2 | 0 | 
+sasha0552 | 0 | 2 | 0 | 
+Adriankhl | 0 | 1 | 1 | 
+youth123 | 0 | 2 | 0 | 
+matteoserva | 0 | 1 | 1 | 
+jaime-m-p | 0 | 2 | 0 | 
+airMeng | 0 | 2 | 0 | 
+mofosyne | 0 | 2 | 0 | 
+AragonerUA | 0 | 2 | 0 | 
+daniandtheweb | 0 | 2 | 0 | 
+iamlemec | 0 | 2 | 0 | 
+isaac-mcfadyen | 0 | 1 | 1 | 
+bandoti | 0 | 1 | 1 | 
+ZeusXuan | 0 | 2 | 0 | 
+jpodivin | 0 | 2 | 0 | 
+LDLINGLINGLING | 0 | 1 | 1 | 
+standby24x7 | 0 | 2 | 0 | 
+b4b4o | 0 | 1 | 1 | 
+kevmo314 | 0 | 2 | 0 | 
+nicholaiTukanov | 0 | 1 | 1 | 
+bartowski1182 | 0 | 0 | 2 | 
+duynt575 | 0 | 0 | 2 | 
+stduhpf | 0 | 0 | 2 | 
+liuda1980 | 0 | 0 | 2 | 
+uwu-420 | 0 | 0 | 2 | 
+cmp-nct | 0 | 0 | 2 | 
+Billzhong2022 | 0 | 0 | 2 | 
+takosalad | 0 | 0 | 2 | 
+kidoln | 0 | 0 | 2 | 
+Smupk2778 | 0 | 0 | 2 | 
+wangzi7654321 | 0 | 0 | 2 | 
+jygmysoul | 0 | 0 | 2 | 
+QIANXUNZDL123 | 0 | 0 | 2 | 
+ch1y0q | 0 | 0 | 2 | 
+SimplyCorbett | 0 | 0 | 2 | 
+bashbaug | 0 | 1 | 0 | 
+olexiyb | 0 | 1 | 0 | 
+hanishkvc | 0 | 1 | 0 | 
+calvin-laurenson | 0 | 1 | 0 | 
+hopkins385 | 0 | 1 | 0 | 
+zkh2016 | 0 | 1 | 0 | 
+akx | 0 | 1 | 0 | 
+drepper | 0 | 1 | 0 | 
+abhishek-rn | 0 | 1 | 0 | 
+0xspringtime | 0 | 1 | 0 | 
+edude03 | 0 | 1 | 0 | 
+NickCrews | 0 | 1 | 0 | 
+netrunnereve | 0 | 1 | 0 | 
+ltoniazzi | 0 | 1 | 0 | 
+ddh0 | 0 | 1 | 0 | 
+joecryptotoo | 0 | 1 | 0 | 
+IMbackK | 0 | 1 | 0 | 
+fmz | 0 | 1 | 0 | 
+katsu560 | 0 | 1 | 0 | 
+kustaaya | 0 | 1 | 0 | 
+contentis | 0 | 1 | 0 | 
+pculliton | 0 | 1 | 0 | 
+zhentaoyu | 0 | 1 | 0 | 
+loonerin | 0 | 1 | 0 | 
+salaxieb | 0 | 1 | 0 | 
+mgroeber9110 | 0 | 1 | 0 | 
+abetlen | 0 | 1 | 0 | 
+AlexsCode | 0 | 1 | 0 | 
+iacore | 0 | 1 | 0 | 
+Zor-X-L | 0 | 1 | 0 | 
+crashr | 0 | 1 | 0 | 
+hackingthekernel | 0 | 1 | 0 | 
+andy-tai | 0 | 1 | 0 | 
+mcharytoniuk | 0 | 1 | 0 | 
+Quantaindew | 0 | 1 | 0 | 
+MistApproach | 0 | 1 | 0 | 
+foldl | 0 | 1 | 0 | 
+ho2103 | 0 | 1 | 0 | 
+hopto-dot | 0 | 1 | 0 | 
+akemimadoka | 0 | 1 | 0 | 
+NeoZhangJianyu | 0 | 1 | 0 | 
+dwoolworth | 0 | 1 | 0 | 
+pouwerkerk | 0 | 1 | 0 | 
+bviksoe | 0 | 1 | 0 | 
+mtasic85 | 0 | 1 | 0 | 
+diimdeep | 0 | 1 | 0 | 
+perpendicularai | 0 | 1 | 0 | 
+prfd | 0 | 1 | 0 | 
+brochure | 0 | 1 | 0 | 
+agray3 | 0 | 1 | 0 | 
+jdomke | 0 | 1 | 0 | 
+yeahdongcn | 0 | 1 | 0 | 
+daghanerdonmez | 0 | 1 | 0 | 
+andysalerno | 0 | 1 | 0 | 
+laik | 0 | 1 | 0 | 
+monatis | 0 | 1 | 0 | 
+zhipenghan | 0 | 1 | 0 | 
+msy-kato | 0 | 1 | 0 | 
+ClarkChin08 | 0 | 1 | 0 | 
+kriation | 0 | 1 | 0 | 
+g1henx | 0 | 0 | 1 | 
+gakugaku | 0 | 0 | 1 | 
+FNsi | 0 | 0 | 1 | 
+mych4nge | 0 | 0 | 1 | 
+wangshuai09 | 0 | 0 | 1 | 
+xcottos | 0 | 0 | 1 | 
+fang1121cs | 0 | 0 | 1 | 
+Harsha-Nori | 0 | 0 | 1 | 
+jarca0123 | 0 | 0 | 1 | 
+khimaros | 0 | 0 | 1 | 
+nakoeni | 0 | 0 | 1 | 
+Zibri | 0 | 0 | 1 | 
+Nexesenex | 0 | 0 | 1 | 
+INZA111 | 0 | 0 | 1 | 
+rankaiyx | 0 | 0 | 1 | 
+xiangyang-95 | 0 | 0 | 1 | 
+steampunque | 0 | 0 | 1 | 
+ztrong-forever | 0 | 0 | 1 | 
+chigkim | 0 | 0 | 1 | 
+apar2021 | 0 | 0 | 1 | 
+apcameron | 0 | 0 | 1 | 
+aymane-eljerari | 0 | 0 | 1 | 
+lld1995 | 0 | 0 | 1 | 
+vecorro | 0 | 0 | 1 | 
+arch-btw | 0 | 0 | 1 | 
+richardanaya | 0 | 0 | 1 | 
+vt-alt | 0 | 0 | 1 | 
+farnazj | 0 | 0 | 1 | 
+anunknowperson | 0 | 0 | 1 | 
+JMPSequeira | 0 | 0 | 1 | 
+skoulik | 0 | 0 | 1 | 
+zhaoyuchen1128 | 0 | 0 | 1 | 
+Deputation | 0 | 0 | 1 | 
+Ther-nullptr | 0 | 0 | 1 | 
+mneedham | 0 | 0 | 1 | 
+Edw590 | 0 | 0 | 1 | 
+EverythingForAI | 0 | 0 | 1 | 
+cikkle | 0 | 0 | 1 | 
+marcingomulkiewicz | 0 | 0 | 1 | 
+mirekphd | 0 | 0 | 1 | 
+hnfong | 0 | 0 | 1 | 
+ffroquemartinez | 0 | 0 | 1 | 
+idekel | 0 | 0 | 1 | 
+nivibilla | 0 | 0 | 1 | 
+DerekJuba-NIST | 0 | 0 | 1 | 
+perp | 0 | 0 | 1 | 
+moqimoqidea | 0 | 0 | 1 | 
+thesyntaxinator | 0 | 0 | 1 | 
+SteelPh0enix | 0 | 0 | 1 | 
+justinsteven | 0 | 0 | 1 | 
+palindsay | 0 | 0 | 1 | 
+differentprogramming | 0 | 0 | 1 | 
+lcarrere | 0 | 0 | 1 | 
+MarsBlessed | 0 | 0 | 1 | 
+sreenivasraghavan71 | 0 | 0 | 1 | 
+Lookforworld | 0 | 0 | 1 | 
+nmandic78 | 0 | 0 | 1 | 
+Green-Sky | 0 | 0 | 1 | 
+eliranwong | 0 | 0 | 1 | 
+quarterturn | 0 | 0 | 1 | 
+rudiservo | 0 | 0 | 1 | 
+werruww | 0 | 0 | 1 | 
+unclemusclez | 0 | 0 | 1 | 
+JohnClaw | 0 | 0 | 1 | 
+micsthepick | 0 | 0 | 1 | 
+kherud | 0 | 0 | 1 | 
+tomgm777 | 0 | 0 | 1 | 
+chiranko | 0 | 0 | 1 | 
+Gomez12 | 0 | 0 | 1 | 
+starP-W | 0 | 0 | 1 | 
+nathanodle | 0 | 0 | 1 | 
+tybalex | 0 | 0 | 1 | 
+akhilkapil | 0 | 0 | 1 | 
+LiquidGunay | 0 | 0 | 1 | 
+mirek190 | 0 | 0 | 1 | 
+flatsiedatsie | 0 | 0 | 1 | 
+tihom77 | 0 | 0 | 1 | 
+sorasoras | 0 | 0 | 1 | 
+lorihuang | 0 | 0 | 1 | 
+ctb111 | 0 | 0 | 1 | 
+aahouzi | 0 | 0 | 1 | 
+jim-plus | 0 | 0 | 1 | 
+Yan-Xiangjun | 0 | 0 | 1 | 
+josharian | 0 | 0 | 1 | 
+Aridbhdkkj | 0 | 0 | 1 | 
+AUTOMATIC1111 | 0 | 0 | 1 | 
+d-kleine | 0 | 0 | 1 | 
+warren-lei | 0 | 0 | 1 | 
+yancaoweidaode | 0 | 0 | 1 | 
+andreys42 | 0 | 0 | 1 | 
+gpacix | 0 | 0 | 1 | 
+guinmoon | 0 | 0 | 1 | 
+apresence | 0 | 0 | 1 | 
+kasrahabib | 0 | 0 | 1 | 
+Hardik-Choraria | 0 | 0 | 1 | 
+yli147 | 0 | 0 | 1 | 
+99991 | 0 | 0 | 1 | 
+
+
+
+

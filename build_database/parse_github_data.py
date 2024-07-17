@@ -246,7 +246,7 @@ def get_commits(repo, date):
 # Insert user into database
 def insert_user(data): 
     if not data:
-        return
+        return None
     
     user_fields = {column.name for column in User.__table__.columns}
     filtered_data = {key: value for key, value in data.items() if key in user_fields}
@@ -257,10 +257,17 @@ def insert_user(data):
         return existing_user  # Return the existing user if found
     
     # Create and add the user to the session
-    new_user = User(**filtered_data)
-    session.add(new_user)
-    session.commit()
-    return new_user
+    try:
+        new_user = User(**filtered_data)
+        session.add(new_user)
+        session.commit()
+        return new_user
+    except IntegrityError as e:
+        session.rollback()
+        print(f"Failed to insert user into database: {e}")
+    except Exception as e:
+        session.rollback()
+        print(f"Failed to insert user into database: {e}")
 
 
 # ISSUES 1: INSERT ISSUE
@@ -285,7 +292,7 @@ def insert_issue(issue, repo_name):
     else:
         user_data = create_default_user()
         
-    user = session.query(User).filter_by(login=user_data['login']).first()
+    user = session.query(User).filter_by(id=user_data['id']).first()
     if not user:
         insert_user(user_data)
 
@@ -334,7 +341,7 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         user_data = create_default_user()
 
     # Handle user data in the comment
-    user = session.query(User).filter_by(login=user_data['login']).first()
+    user = session.query(User).filter_by(id=user_data['id']).first()
     if not user:
         insert_user(user_data)
         
@@ -382,7 +389,7 @@ def insert_pull_request(pull_request, repo_name):
         user_data = create_default_user()
     
     # Check if user exists and insert
-    user = session.query(User).filter_by(login=user_data['login']).first()
+    user = session.query(User).filter_by(id=user_data['id']).first()
     if not user:
         insert_user(user_data)
 
@@ -431,7 +438,7 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
         user_data = create_default_user()
 
     # Handle user data in the comment
-    user = session.query(User).filter_by(login=user_data['login']).first()
+    user = session.query(User).filter_by(id=user_data['id']).first()
     if not user:
         insert_user(user_data)
         

@@ -11,7 +11,7 @@ from datetime import datetime  # Import datetime
 import logging
 from sqlalchemy import create_engine
 import time
-from build_database.parse_github_data import *
+from parse_github_data import *
 
 load_dotenv()
 API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')

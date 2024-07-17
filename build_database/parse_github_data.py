@@ -252,7 +252,7 @@ def insert_user(data):
     filtered_data = {key: value for key, value in data.items() if key in user_fields}
     
     # Check if the user already exists
-    existing_user = session.query(User).filter_by(login=filtered_data['login']).first()
+    existing_user = session.query(User).filter_by(id=filtered_data['id']).first()
     if existing_user is not None:
         return existing_user  # Return the existing user if found
     
@@ -465,24 +465,35 @@ def insert_commit(commit, repo_name):
         print("Commit already exists!")
         return
     
+    # If committer login has a bot, use the author name, if not, use committer login. 
+    # MAYBE add it into the insert function rather than here? 
+    committer_login = commit['commit']['committer']['name']
+    if '[bot]' in committer_login or 'bot' in committer_login:
+        committer_login = commit['author']['login']
+        if '[bot]' in committer_login or 'bot' in committer_login:
+            print("Skipping bot commit")
+            return
+    
     # Extract user data from the commit
     if commit['author']:
         user_data = {
         'id': commit['author']['id'] if not None else None,
-        'login': commit['author']['login'] if not None else None,
+        'login': committer_login if not None else None,
         'html_url': commit['author']['html_url'] if not None else None
         }
     else:
         user_data = create_default_user()
     
     # Check if user exists and insert
-    user = session.query(User).filter_by(login=user_data['login']).first()
+    user = session.query(User).filter_by(id=user_data['id']).first()
     if not user:
         insert_user(user_data)
 
     # Set user login and repo name
     filtered_data['committer_login'] = user_data['login']
-    filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else None
+    # Make sure the AUTHOR of the commit is added, committers can be bots but the author must be a real person
+    # TODO Change committer_name to committer_author
+    filtered_data['committer_name'] = commit['commit']['author']['name'] if not None else None
     filtered_data['repository_full_name'] = repo_name
     filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date'])
     filtered_data['commit_message'] = commit['commit']['message'] if not None else None
@@ -512,7 +523,9 @@ def insert_all_data(repo_name, date):
         # Check for bots
         if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
             continue
-        elif issue_create_date <= date: # Make sure the issue create date are within the date
+        
+        one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
+        if issue_create_date <= one_year_ago: # Make sure the issue create date are within the date
             print("Skipping issue out of date")
             continue
         
@@ -576,10 +589,11 @@ def insert_all_data(repo_name, date):
         if commit_date <= date:
             print("Skipping commit out of date")
             continue
-
-        committer_name = commit['commit']['committer']['name'].lower()
-        if 'bot' in committer_name or '[bot]' in committer_name:
-            continue
+        
+        # TODO Try to add code to check for bots here but check for bots later. Streamline this
+        # committer_name = commit['author']['login'].lower()
+        # if 'bot' in committer_name or '[bot]' in committer_name:
+        #     continue
         
         print(f"Inserting commit {num_commits} of {len(commits)}")
         

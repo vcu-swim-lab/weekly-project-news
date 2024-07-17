@@ -10,6 +10,7 @@ class Commit(Base):
     sha = Column(String, primary_key=True)
     html_url = Column(String)
 
+    # TODO Add commit_author
     committer_login = Column(String)
     committer_date = Column(DateTime)
     committer_name = Column(String)

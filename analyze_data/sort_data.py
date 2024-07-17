@@ -16,7 +16,8 @@ import sys
 from datetime import datetime  # Import datetime
 import json
 import requests 
-from build_database.parse_github_data import *
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build_database')))
+from parse_github_data import *
 from sqlalchemy import and_
 from sqlalchemy_json import NestedMutableJson
 from sqlalchemy import create_engine
@@ -42,13 +43,7 @@ def rate_limit_check(g):
 
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(session, one_week_ago, repository_full_name):
-    issues = session.query(
-        Issue.id,
-        Issue.title,
-        Issue.body,
-        Issue.html_url,
-        Issue.user_login
-    ).filter(
+    issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
             Issue.state == 'open', 
@@ -70,7 +65,7 @@ def get_open_issues(session, one_week_ago, repository_full_name):
         "url": issue.html_url,
         "comments": []
         }
-        comments = session.query(IssueComment.body, IssueComment.issue_id).filter(IssueComment.issue_id == issue.id).all()
+        comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         for comment in comments:
             issue_data["comments"].append({"body": comment.body})
         
@@ -81,13 +76,7 @@ def get_open_issues(session, one_week_ago, repository_full_name):
     
 # ISSUES 2: Gets all closed issues within one_week_ago
 def get_closed_issues(session, one_week_ago, repository_full_name):
-    issues = session.query(
-        Issue.id,
-        Issue.title,
-        Issue.body,
-        Issue.html_url,
-        Issue.user_login
-    ).filter(
+    issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
             Issue.state == 'closed', 
@@ -108,7 +97,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
         "url": issue.html_url,
         "comments": []
         }
-        comments = session.query(IssueComment.body).filter(IssueComment.issue_id == issue.id).all()
+        comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         for comment in comments:
             issue_data["comments"].append({"body": comment.body})
         
@@ -119,15 +108,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
 # ISSUES 3: Get list of "active" issues, which are issues commented on/updated within the last week
 def get_active_issues(session, one_week_ago, repository_full_name):
     # Retreive issues and set up variables
-    issues = session.query(
-        Issue.id,
-        Issue.title,
-        Issue.body,
-        Issue.html_url,
-        Issue.user_login,
-        Issue.updated_at
-        
-    ).filter(
+    issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
             Issue.state == 'open', 
@@ -153,7 +134,7 @@ def get_active_issues(session, one_week_ago, repository_full_name):
         }
         
         # Query comments
-        comments = session.query(IssueComment.body).filter(IssueComment.issue_id == issue.id).all()
+        comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         for comment in comments:
             issue_data["comments"].append({"body": comment.body})
         
@@ -239,7 +220,7 @@ def sort_issues_num_comments(session, repository_full_name, limit):
         "id": issue.id,
         "comments": []
         }
-        comments = session.query(IssueComment.issue_id, IssueComment.body).filter(IssueComment.issue_id == issue.id).all()
+        comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         for comment in comments:
             data["comments"].append({"body": comment.body})
         
@@ -296,14 +277,7 @@ def get_num_closed_issues_weekly(weekly_closed_issues):
 # PRS 1: Gets open pull requests within one_week_ago
 def get_open_prs(session, one_week_ago, repository_full_name):
     # Query the database for pull requests
-    pulls = session.query(
-        PullRequest.id,
-        PullRequest.title,
-        PullRequest.body,
-        PullRequest.html_url,
-        PullRequest.user_login,
-        PullRequest.updated_at
-    ).filter(
+    pulls = session.query(PullRequest).filter(
         and_(
             PullRequest.repository_full_name == repository_full_name, 
             PullRequest.state == 'open', 
@@ -334,14 +308,7 @@ def get_open_prs(session, one_week_ago, repository_full_name):
 # PRS 2: Gets closed pull requests within one_week_ago
 def get_closed_prs(session, one_week_ago, repository_full_name):
     # Query the database for pull requests
-    pulls = session.query(
-        PullRequest.id,
-        PullRequest.title,
-        PullRequest.body,
-        PullRequest.html_url,
-        PullRequest.user_login,
-        PullRequest.updated_at
-    ).filter(
+    pulls = session.query(PullRequest).filter(
         and_(
             PullRequest.repository_full_name == repository_full_name, 
             PullRequest.state == 'closed', 
@@ -371,14 +338,7 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
 # PRS 3: Get "active" pull requests (updated within the last week)
 def get_active_prs(session, one_week_ago, repository_full_name):
     # Query the database for pull requests
-    pulls = session.query(
-        PullRequest.id,
-        PullRequest.title,
-        PullRequest.body,
-        PullRequest.html_url,
-        PullRequest.updated_at,
-        PullRequest.user_login
-    ).filter(
+    pulls = session.query(PullRequest).filter(
         and_(
             PullRequest.repository_full_name == repository_full_name, 
             PullRequest.state == 'open', 
@@ -404,7 +364,7 @@ def get_active_prs(session, one_week_ago, repository_full_name):
             }
         
         # Query PR comments and loop through them
-        comments = session.query(PullRequestComment.body).filter(PullRequestComment.pull_request_id == pr.id).all()
+        comments = session.query(PullRequestComment).filter(PullRequestComment.pull_request_id == pr.id).all()
         for comment in comments:
             pr_data["comments"].append({"body": comment.body})
 
@@ -425,12 +385,7 @@ def get_num_closed_prs(pr_data_closed):
 # COMMITS 1: Gets ALL commits within one_week_ago
 def get_commit_messages(session, one_week_ago, repository_full_name):
     # Query the database to retreive commits
-    commits = session.query(
-        Commit.sha,
-        Commit.commit_message,
-        Commit.committer_date,
-        Commit.committer_name
-    ).filter(
+    commits = session.query(Commit).filter(
         and_(
             Commit.repository_full_name == repository_full_name,
             Commit.committer_date >= one_week_ago
@@ -462,12 +417,7 @@ def get_num_commits(commit_data):
 # Active: > 0 commits this month, > 0 issues this month, AND > 0 PRs this month
 def get_active_contributors(session, thirty_days_ago, repository_full_name):
     # Query the database to retreive commits
-    commits = session.query(
-        Commit.sha,
-        Commit.commit_message,
-        Commit.committer_date,
-        Commit.committer_name
-    ).filter(
+    commits = session.query(Commit).filter(
         and_(
             Commit.repository_full_name == repository_full_name,
             Commit.committer_date >= thirty_days_ago
@@ -475,10 +425,7 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     ).all()
     
     # Query for pull requests
-    pulls = session.query(
-        PullRequest.user_login,
-        PullRequest.created_at
-    ).filter(
+    pulls = session.query(PullRequest).filter(
         and_(
             PullRequest.repository_full_name == repository_full_name,
             PullRequest.created_at >= thirty_days_ago,
@@ -486,10 +433,7 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     ).all()
     
     # Query the database for issues
-    issues = session.query(
-        Issue.user_login,
-        Issue.created_at,
-    ).filter(
+    issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name,
             Issue.created_at >= thirty_days_ago,
@@ -621,6 +565,8 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
+    database_path = '../build_database/github.db'
+    engine = create_engine(f'sqlite:///{database_path}')
 
     # DATABASE SESSION
     Session = sessionmaker(bind=engine)
@@ -629,12 +575,11 @@ if __name__ == '__main__':
     # Omit the SQL logs from printing on each run
     logging.disable(logging.WARNING)
         
-    # get all of the subscribers from subscribers.json
-    with open('subscribers.json') as file:
-        subscribers_data = json.load(file)
-
-    # Get a list of all of the repo names from subscribers_data
-    repo_names = [subscriber['metadata']['repo_name'] for subscriber in subscribers_data['results']]
+    # Making a set to keep track of processed repos to save time
+    processed_repos = set()
+    
+    # Get a list of repos in the database
+    repo_list = [r[0] for r in session.query(Repository.full_name).all()]
      
     # Time variables and limit
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
@@ -645,13 +590,14 @@ if __name__ == '__main__':
     all_repo_data = []
 
     # for-loop for every repo name (ex. tensorflow/tensorflow)
-    for repo_url in repo_names:
-        # Retreive repo name
-        repo_name = repo_url.split('https://github.com/')[-1]
+    for repo in repo_list:
+        if repo in processed_repos:
+            continue
         
-        repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name)
+        repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo)
         
         all_repo_data.append(repo_data)
+        processed_repos.add(repo)
     
     for item in all_repo_data:
         print("repo_data = " + json.dumps(item, indent=4))

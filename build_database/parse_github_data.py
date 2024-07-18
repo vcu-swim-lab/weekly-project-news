@@ -4,7 +4,6 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
-from tables.user import User
 from datetime import datetime
 import json
 import requests 
@@ -24,7 +23,6 @@ API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
 print(API_KEYS)
 current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
-default_user_id = 1
 
 # Initialize Github instance
 g = Github(API_KEYS[current_key_index])
@@ -59,18 +57,6 @@ def switch_api_key():
     print(f"Switched to API key {current_key_index + 1}")
     logging.info(f"Switched to API key {current_key_index + 1}")
     return g
-
-# Creates a default user to add to the database when the user doesn't exist
-def create_default_user():
-    global default_user_id
-    default_user_id += 1
-    
-    user_data = {
-        'id': default_user_id,
-        'login': 'default_login',
-        'html_url': 'https://github.com'
-    }
-    return user_data
 
 # Makes sure the repo is public and the link is actually a link
 def check_repo(url):
@@ -243,33 +229,6 @@ def get_commits(repo, date):
 
 
 
-# Insert user into database
-def insert_user(data): 
-    if not data:
-        return None
-    
-    user_fields = {column.name for column in User.__table__.columns}
-    filtered_data = {key: value for key, value in data.items() if key in user_fields}
-    
-    # Check if the user already exists
-    existing_user = session.query(User).filter_by(id=filtered_data['id']).first()
-    if existing_user is not None:
-        return existing_user  # Return the existing user if found
-    
-    # Create and add the user to the session
-    try:
-        new_user = User(**filtered_data)
-        session.add(new_user)
-        session.commit()
-        return new_user
-    except IntegrityError as e:
-        session.rollback()
-        print(f"Failed to insert user into database: {e}")
-    except Exception as e:
-        session.rollback()
-        print(f"Failed to insert user into database: {e}")
-
-
 # ISSUES 1: INSERT ISSUE
 def insert_issue(issue, repo_name):
     # Extract only the fields that exist in the Issue model
@@ -279,25 +238,13 @@ def insert_issue(issue, repo_name):
     if session.query(Issue).filter_by(id=issue['id']).first() is not None:
         print("Issue already exists!")
         return
-    
 
-    user_data = {}
-    
-    if issue['user']:
-        user_data = {
-        'id': issue['user']['id'] if not None else None,
-        'login': issue['user']['login'] if not None else None,
-        'html_url': issue['user']['html_url'] if not None else None
-        }
-    else:
-        user_data = create_default_user()
-        
-    user = session.query(User).filter_by(id=user_data['id']).first()
-    if not user:
-        insert_user(user_data)
-
-    # Set user login and repo name
-    filtered_data['user_login'] = user_data['login']
+    # If the user login exists, set it. If not, set it equal to None
+    try:
+        filtered_data['user_login'] = issue['user']['login']
+    except Exception as e:
+        filtered_data['user_login'] = None
+        print(f"User data does not exist for issue {issue['id']}: {e}")
     filtered_data['repository_full_name'] = repo_name
     
     # Convert datetime fields
@@ -328,27 +275,17 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
     if session.query(IssueComment).filter_by(id=comment_data['id']).first() is not None:
         print("Issue comment already exists!")
         return
-
-    user_data = {}
-    # Define user data to insert
-    if comment_data['user']:
-        user_data = {
-        'id': comment_data['user']['id'] if not None else None,
-        'login': comment_data['user']['login'] if not None else None,
-        'html_url': comment_data['user']['html_url'] if not None else None
-        }
-    else:
-        user_data = create_default_user()
-
-    # Handle user data in the comment
-    user = session.query(User).filter_by(id=user_data['id']).first()
-    if not user:
-        insert_user(user_data)
         
-    # Add issue ID to database, user login and repo name
+    # Add issue ID to database and repo name
     filtered_comment_data['issue_id'] = issue_id
     filtered_comment_data['repository_full_name'] = repo_name
-    filtered_comment_data['user_login'] = user_data['login']
+    
+    # Try/except for user data
+    try:
+        filtered_comment_data['user_login'] = comment_data['user']['login']
+    except Exception as e:
+        filtered_comment_data['user_login'] = None
+        print(f"User data does not exist for comment {comment_data['id']}: {e}")
 
     # Convert datetime fields if they are not None
     comment_datetime_fields = ['created_at', 'updated_at']
@@ -356,8 +293,8 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         if field in filtered_comment_data and filtered_comment_data[field] is not None and isinstance(filtered_comment_data[field], str):
             filtered_comment_data[field] = datetime.strptime(filtered_comment_data[field], "%Y-%m-%dT%H:%M:%SZ")
     
+    # Try except for inserting comment
     try:
-        # Create and add the comment to the session
         new_comment = IssueComment(**filtered_comment_data)
         session.add(new_comment)
         session.commit()
@@ -377,24 +314,16 @@ def insert_pull_request(pull_request, repo_name):
         print("Pull Request already exists!")
         return
     
-    user_data = {}
-    # Extract data from the pull request object
-    if pull_request['user']:
-        user_data = {
-        'id': pull_request['user']['id'] if not None else None,
-        'login': pull_request['user']['login'] if not None else None,
-        'html_url': pull_request['user']['html_url'] if not None else None
-        }
-    else:
-        user_data = create_default_user()
+    # Try/except for user login
+    try:
+        filtered_data['user_login'] = pull_request['user']['login']
+    except Exception as e:
+        filtered_data['user_login'] = None
+        print(f"User data does not exist for pull request {pull_request['id']}: {e}")
+    filtered_data['repository_full_name'] = repo_name
     
-    # Check if user exists and insert
-    user = session.query(User).filter_by(id=user_data['id']).first()
-    if not user:
-        insert_user(user_data)
 
-    # Set user login and repo name
-    filtered_data['user_login'] = user_data['login']
+    # Set repo name
     filtered_data['repository_full_name'] = repo_name
     
     # Convert datetime fields
@@ -405,6 +334,8 @@ def insert_pull_request(pull_request, repo_name):
                 filtered_data[field] = None
             else:
                 filtered_data[field] = datetime.fromisoformat(filtered_data[field])
+    
+    # Try/except for inserting pull request
     try:
         new_pr = PullRequest(**filtered_data)
         session.add(new_pr)
@@ -425,27 +356,16 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
         print("Pull Request Comment already exists!")
         return
     
-    user_data = {}
-    
-    # Define user data to insert
-    if comment_data['user']:
-        user_data = {
-        'id': comment_data['user']['id'] if not None else None,
-        'login': comment_data['user']['login'] if not None else None,
-        'html_url': comment_data['user']['html_url'] if not None else None
-        }
-    else:
-        user_data = create_default_user()
-
-    # Handle user data in the comment
-    user = session.query(User).filter_by(id=user_data['id']).first()
-    if not user:
-        insert_user(user_data)
+    # Try/except for user data
+    try:
+        filtered_comment_data['user_login'] = comment_data['user']['login']
+    except Exception as e:
+        filtered_comment_data['user_login'] = None
+        print(f"User data does not exist for comment {comment_data['id']}: {e}")
         
-    # Add pr ID to database, user login and repo name
+    # Add pr ID to database and repo name
     filtered_comment_data['pull_request_id'] = pr_id
     filtered_comment_data['repository_full_name'] = repo_name
-    filtered_comment_data['user_login'] = user_data['login'] # Should be "None" if None
 
     # Convert datetime fields if necessary
     datetime_fields = ['created_at', 'updated_at']
@@ -472,35 +392,19 @@ def insert_commit(commit, repo_name):
         print("Commit already exists!")
         return
     
-    # If committer login has a bot, use the author name, if not, use committer login. 
-    # MAYBE add it into the insert function rather than here? 
-    committer_login = commit['commit']['committer']['name']
-    if '[bot]' in committer_login or 'bot' in committer_login:
-        committer_login = commit['author']['login']
-        if '[bot]' in committer_login or 'bot' in committer_login:
-            print("Skipping bot commit")
-            return
+    # Try/except for committer and commit author data
+    try:
+        filtered_data['commit_author_login'] = commit['author']['login'] if not None else None
+        filtered_data['commit_author_name'] = commit['commit']['author']['name'] if not None else None
+        
+        filtered_data['committer_login'] = commit['committer']['login'] if not None else None
+        filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else None
+    except Exception as e:
+        print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
     
-    # Extract user data from the commit
-    if commit['author']:
-        user_data = {
-        'id': commit['author']['id'] if not None else None,
-        'login': committer_login if not None else None,
-        'html_url': commit['author']['html_url'] if not None else None
-        }
-    else:
-        user_data = create_default_user()
     
-    # Check if user exists and insert
-    user = session.query(User).filter_by(id=user_data['id']).first()
-    if not user:
-        insert_user(user_data)
-
-    # Set user login and repo name
-    filtered_data['committer_login'] = user_data['login']
-    # Make sure the AUTHOR of the commit is added, committers can be bots but the author must be a real person
-    # TODO Change committer_name to committer_author
-    filtered_data['committer_name'] = commit['commit']['author']['name'] if not None else None
+   
+    # Set repo name, committer date, and commit message
     filtered_data['repository_full_name'] = repo_name
     filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date'])
     filtered_data['commit_message'] = commit['commit']['message'] if not None else None
@@ -597,12 +501,19 @@ def insert_all_data(repo_name, date):
             print("Skipping commit out of date")
             continue
         
-        # TODO Try to add code to check for bots here but check for bots later. Streamline this
-        # committer_name = commit['author']['login'].lower()
-        # if 'bot' in committer_name or '[bot]' in committer_name:
-        #     continue
+        commit_author_login = commit['author']['login'] if not None else None
+        commit_author_name = commit['commit']['author']['name'] if not None else None
+        committer_name = commit['commit']['committer']['name'] if not None else None
+        committer_login = commit['committer']['login'] if not None else None
         
-        print(f"Inserting commit {num_commits} of {len(commits)}")
+        # Skip bot author, NOT bot committer
+        if 'bot' in commit_author_login or '[bot]' in commit_author_login or 'bot' in commit_author_name or '[bot]' in commit_author_name:
+            print("Skipping bot commit")
+            continue
+        
+        # TODO Check to make sure proper data is added for author, login, and committer data
+        
+        print(f"Inserting commit {num_commits} of {len(commits)} for {repo_name}")
         
         insert_commit(commit, repo_name)
         commits_inserted += 1
@@ -613,7 +524,7 @@ def insert_all_data(repo_name, date):
     print(f"Successfully inserted {commits_inserted} commits for {repo_name} into the database for {repo_name}")
         
  
-# TODO Use get_readme to retreive and parse the readme file
+# TODO Use get_readme to retreive and parse the readme file and check release data
 
 # Main
 if __name__ == '__main__':

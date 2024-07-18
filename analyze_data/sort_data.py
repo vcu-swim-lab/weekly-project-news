@@ -27,7 +27,6 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
-from tables.user import User
 
 
 load_dotenv()
@@ -396,8 +395,9 @@ def get_commit_messages(session, one_week_ago, repository_full_name):
     commit_data = []
 
     for commit in commits:
-        if commit.committer_name is None or "bot" in commit.committer_name.lower() or "[bot]" in commit.committer_name.lower():
-            continue
+        # Check for bots
+        # if commit.committer_name is None or "bot" in commit.committer_name.lower() or "[bot]" in commit.committer_name.lower():
+        #     continue
         
         data = {
             "message": commit.commit_message
@@ -445,10 +445,10 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     
     # By number of commits
     for commit in commits:
-        if '[bot]' in commit.committer_name or 'bot' in commit.committer_name:
-            continue
+        # if '[bot]' in commit.committer_name or 'bot' in commit.committer_name:
+        #     continue
         
-        author = commit.committer_name
+        author = commit.commit_author_name
         found = False
         
         for contributor in active_contributors:    

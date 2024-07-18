@@ -3,7 +3,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship
 from .base import Base
-from .user import User
 from .repository import Repository
 
 class PullRequest(Base):

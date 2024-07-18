@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from .base import Base
-from .user import User
 from .repository import Repository
 
 class Issue(Base):

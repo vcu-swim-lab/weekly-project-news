@@ -70,13 +70,14 @@ def format_output(results):
 if __name__ == '__main__':
     GITHUB_API_KEY = os.environ['GITHUB_API_KEY']
     repositories = [
-        'tensorflow/tensorflow',
-        'matplotlib/matplotlib',
-        'django/django',
-        'pytorch/pytorch',
-        'facebook/react',
-        'nodejs/node',
-        'jenkinsci/jenkins'
+        # 'tensorflow/tensorflow',
+        # 'matplotlib/matplotlib',
+        # 'django/django',
+        # 'pytorch/pytorch',
+        # 'facebook/react',
+        # 'nodejs/node',
+        # 'jenkinsci/jenkins'
+        'ggerganov/llama.cpp'
     ]
     
     results = process_repositories(GITHUB_API_KEY, repositories)

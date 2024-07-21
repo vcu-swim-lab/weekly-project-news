@@ -516,8 +516,9 @@ if __name__ == '__main__':
   # repositories = [row[0] for row in result]
   repositories = [
     # "ggerganov/llama.cpp",
-    # "nodejs/node"
-    "openxla/xla"
+    # "nodejs/node",
+    # "openxla/xla",
+    "stevenbui44/flashcode"
   ]
 
 

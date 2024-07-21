@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from .base import Base
-from .user import User
 from .repository import Repository
 
 class Issue(Base):
@@ -36,4 +35,3 @@ class IssueComment(Base):
     repository_full_name = Column(String)
 
     issue_id = Column(Integer)
-

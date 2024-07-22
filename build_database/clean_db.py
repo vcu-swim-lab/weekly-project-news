@@ -8,12 +8,26 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
-from tables.user import User
 from datetime import datetime  # Import datetime
 import sys
 from parse_github_data import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from analyze_data.sort_data import *
+
+# Deletes a repository from the database
+def delete_repository(session, repo_name):
+    repo = session.query(Repository).filter(Repository.name == repo_name).first()
+    
+    try:
+        if not repo:
+            print(f"Repository {repo_name} does not exist in the database")
+        else:
+            session.delete(repo)
+            session.commit()
+            print(f"Repository {repo_name} successfully deleted from the database")
+    except Exception as e:
+        session.rollback()
+        print(f"Unable to delete repository from database: {e}")
 
 # Deletes a single issue and associated comments
 def delete_issue(session, issue_id):
@@ -117,7 +131,6 @@ if __name__ == '__main__':
 
     # Get a list of repos in the database
     repo_list = [r[0] for r in session.query(Repository.full_name).all()]
-    
     
     for repo_name in repo_list:
         # Lists to compare

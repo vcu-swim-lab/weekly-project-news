@@ -105,6 +105,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
     return closed_issue_data
 
 # ISSUES 3: Get list of "active" issues, which are issues commented on/updated within the last week
+# TODO Make this COMMENTED ON within the last week
 def get_active_issues(session, one_week_ago, repository_full_name):
     # Retreive issues and set up variables
     issues = session.query(Issue).filter(

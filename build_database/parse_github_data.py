@@ -35,7 +35,7 @@ def rate_limit_check():
     try:
         rate_limit = g.get_rate_limit().core
         print(rate_limit)
-        print(f"Current key number: {current_key_index + 1}")
+        print(f"Current key number: {current_key_index + 1} of 5")
         
         if rate_limit.remaining < 50:  
             print("Approaching rate limit, switching API key...")
@@ -394,11 +394,11 @@ def insert_commit(commit, repo_name):
     
     # Try/except for committer and commit author data
     try:
-        filtered_data['commit_author_login'] = commit['author']['login'] if not None else None
-        filtered_data['commit_author_name'] = commit['commit']['author']['name'] if not None else None
+        filtered_data['commit_author_login'] = commit['author']['login'] if not None else ''
+        filtered_data['commit_author_name'] = commit['commit']['author']['name'] if not None else ''
         
-        filtered_data['committer_login'] = commit['committer']['login'] if not None else None
-        filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else None
+        filtered_data['committer_login'] = commit['committer']['login'] if not None else ''
+        filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else ''
     except Exception as e:
         print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
     
@@ -406,8 +406,8 @@ def insert_commit(commit, repo_name):
    
     # Set repo name, committer date, and commit message
     filtered_data['repository_full_name'] = repo_name
-    filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date'])
-    filtered_data['commit_message'] = commit['commit']['message'] if not None else None
+    filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date']) if not None else ''
+    filtered_data['commit_message'] = commit['commit']['message'] if not None else ''
     
     try:
         new_commit = Commit(**filtered_data)
@@ -501,13 +501,21 @@ def insert_all_data(repo_name, date):
             print("Skipping commit out of date")
             continue
         
-        commit_author_login = commit['author']['login'] if not None else None
-        commit_author_name = commit['commit']['author']['name'] if not None else None
-        committer_name = commit['commit']['committer']['name'] if not None else None
-        committer_login = commit['committer']['login'] if not None else None
-        
+        try:
+            commit_author_login = commit['author']['login'] if not None else ''
+            commit_author_name = commit['commit']['author']['name'] if not None else ''
+            committer_name = commit['commit']['committer']['name'] if not None else ''
+            committer_login = commit['committer']['login'] if not None else ''
+        except Exception as e:
+            print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
+            continue
+            
         # Skip bot author, NOT bot committer
-        if 'bot' in commit_author_login or '[bot]' in commit_author_login or 'bot' in commit_author_name or '[bot]' in commit_author_name:
+        if commit_author_login and ('bot' in commit_author_login or '[bot]' in commit_author_login):
+            print("Skipping bot commit")
+            continue
+        
+        if commit_author_name and ('bot' in commit_author_name or '[bot]' in commit_author_name):
             print("Skipping bot commit")
             continue
         

@@ -67,6 +67,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
-    
-# delete_problem_repos(processed_data)

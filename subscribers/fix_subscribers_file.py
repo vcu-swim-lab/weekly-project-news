@@ -1,6 +1,7 @@
 import json
 import re
 import requests
+import requests
 
 def process_repo_names(data):
     for subscriber in data['results']:
@@ -57,6 +58,8 @@ def main():
     # Process the data
     processed_data = process_repo_names(data)
     
+    delete_problem_repos(processed_data)
+
     delete_problem_repos(processed_data)
 
     # Write the processed data back to a new JSON file

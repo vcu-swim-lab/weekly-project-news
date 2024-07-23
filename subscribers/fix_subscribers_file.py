@@ -1,7 +1,5 @@
 import json
 import re
-import requests
-import requests
 
 def process_repo_names(data):
     for subscriber in data['results']:
@@ -16,39 +14,6 @@ def process_repo_names(data):
             
     return data
 
-# Makes sure the repo is public and the link is actually a link
-def check_repo(url):
-    if ".com" not in url:
-        print(f"Error: {url} does not contain a link.")
-        return True
-    try:
-        response = requests.head(url, allow_redirects=True)
-        if response.status_code == 404:
-            print(f"Error 404: {url} not found.")
-            return True
-    except requests.RequestException as e:
-        print(f"Error accessing {url}: {e}")
-        return True
-
-def delete_problem_repos(data):
-    repos_deleted = 0
-    index = 0
-    
-    while index < len(data['results']):
-        repo_url = data['results'][index]['metadata'].get('repo_name', '')
-
-        if check_repo(repo_url):
-            data['results'].pop(index)
-            print(f"Deleted {repo_url} from subscribers.json as the link was not valid.")
-            repos_deleted += 1
-            continue
-        else:
-            print(f"Repo link {repo_url} is valid.")
-            index += 1
-            
-        
-    data['count'] = data['count'] - repos_deleted
-    print(f"{repos_deleted} repositories deleted from subscribers.json")
 
 def main():
     # Read the JSON file
@@ -57,10 +22,6 @@ def main():
 
     # Process the data
     processed_data = process_repo_names(data)
-    
-    delete_problem_repos(processed_data)
-
-    delete_problem_repos(processed_data)
 
     # Write the processed data back to a new JSON file
     with open('subscribers.json', 'w') as file:

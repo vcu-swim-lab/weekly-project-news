@@ -511,13 +511,24 @@ if __name__ == '__main__':
   limit = 100;
 
   # 1.4: getting all of the repositories
-  query = text("SELECT full_name FROM repositories")
-  result = session.execute(query)
-  repositories = [row[0] for row in result]
+  # query = text("SELECT full_name FROM repositories")
+  # result = session.execute(query)
+  # repositories = [row[0] for row in result]
+  repositories = [
+    # "ggerganov/llama.cpp",
+    # "nodejs/node",
+    # "openxla/xla",
+    "stevenbui44/flashcode"
+  ]
 
 
   # PART TWO: create the markdown for a newsletter
   for repository in repositories:
+
+    # print('a')
+    # print(repository)
+    # print('b')
+    repo_name = repository
 
     # 2.1: call all sort_data.py functions on the repo
     repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name)

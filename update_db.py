@@ -10,8 +10,15 @@ from tables.pull_request import PullRequest, PullRequestComment
 from datetime import datetime  # Import datetime
 import logging
 from sqlalchemy import create_engine
+import time
+from parse_github_data import *
 
 load_dotenv()
+API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
+print(API_KEYS)
+current_key_index = 0
+headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
+g = Github(API_KEYS[current_key_index])
 
 # ISSUES 1: Update the state of an issue
 def update_issue_state(session, new_issue_id, new_state):
@@ -186,46 +193,77 @@ def update_pr_comment_updated_at(session, new_comment_id, new_update_date):
         session.rollback()
         print(f"Error updating issue comment update date in {comment.repository_full_name}: {e}")
 
-# UPDATE ALL ISSUESE
-def update_all_issues(repo, session, one_week_ago):
-    new_issues = repo.get_issues(state='all', since=one_week_ago)
-    for issue in new_issues:
-        comments = issue.get_comments()
-        num_comments = comments.totalCount
-        
-        update_issue_state(session, issue.id, issue.state)
-        update_issue_num_comments(session, issue.id, num_comments)
-        update_issue_closed_at(session, issue.id, issue.closed_at)
-        update_issue_updated_at(session, issue.id, issue.updated_at)
-        
-        for comment in comments:
-            update_issue_comment_updated_at(session, comment.id, comment.updated_at)
-            
-# UPDATE ALL PULL REQUESTS
-def update_all_prs(repo, session, one_week_ago):
-    new_pulls = repo.get_pulls(state='all')
+def handle_datetime(datetime_str):
+    if datetime_str:
+        return datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%SZ')
+    return None
 
-    for pr in new_pulls:
-        if pr.updated_at < one_week_ago:
+# UPDATE ALL DATA
+def update_all_data(session, repo_name, one_week_ago):
+    issues = get_issues(repo_name, one_week_ago)
+    num_issues = 0
+    issues_updated = 0
+    pulls_updated = 0
+    
+    for issue in issues:
+        num_issues += 1
+        print(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
+        
+        # Check for bots
+        if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
             continue
         
-        comments = pr.get_comments()
-        num_comments = comments.totalCount
+        # Checks if issue is pull request and update
+        if 'pull' in issue['html_url']:
+            pr = issue
+            pr_comments = get_pr_comments(repo_name, pr)
+            num_comments = len(pr_comments)
+            
+            update_pr_state(session, pr['id'], pr['state'])
+            update_pr_num_comments(session, pr['id'], num_comments)
+            update_pr_closed_at(session, pr['id'], handle_datetime(pr['closed_at']))
+            update_pr_updated_at(session, pr['id'], handle_datetime(pr['updated_at']))
+            
+            for comment in pr_comments:
+                update_pr_comment_updated_at(session, comment['id'], handle_datetime(comment['updated_at']))
+            
+            pulls_updated += 1
+            
+            if num_issues % 10 == 0:
+                rate_limit_check()
+            
+            continue
         
-        update_pr_state(session, pr.id, pr.state)
-        update_pr_num_comments(session, pr.id, num_comments)
-        update_pr_closed_at(session, pr.id, pr.closed_at)
-        update_pr_updated_at(session, pr.id, pr.updated_at)
+        issue_comments = get_issue_comments(repo_name, issue)
+        num_comments = len(issue_comments)
         
-        for comment in comments:
-            update_pr_comment_updated_at(session, comment.id, comment.updated_at)
+        update_issue_state(session, issue['id'], issue['state'])
+        update_issue_num_comments(session, issue['id'], num_comments)
+        update_issue_closed_at(session, issue['id'], handle_datetime(issue['closed_at']))
+        update_issue_updated_at(session, issue['id'], handle_datetime(issue['updated_at']))
+        
+        for comment in issue_comments:
+            update_issue_comment_updated_at(session, comment['id'], handle_datetime(comment['updated_at']))
+        
+        issues_updated += 1
+        
+        if num_issues % 10 == 0:
+                rate_limit_check()
+    
+    print(f"Successfully updated {issues_updated} issues in the database for {repo_name}")
+    print(f"Successfully updated {pulls_updated} pull requests in the database for {repo_name}")
 
-
+    
 
 # Main
 if __name__ == '__main__':
+    # Measure the time it takes for every function to execute. 
+    start_time = time.time()
+    
+    
     # Create SQLAlchemy engine and session
     logging.getLogger('sqlalchemy').disabled = True
+    logging.disable(logging.WARNING)
     engine = create_engine('sqlite:///github.db')
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -233,17 +271,28 @@ if __name__ == '__main__':
     # Time variables
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
-    # PyGithub
-    g = Github(os.environ['GITHUB_API_KEY'])
+    # Making a set to keep track of processed repos to save time
+    processed_repos = set()
     
     # Get a list of repos in the database
     repo_list = [r[0] for r in session.query(Repository.full_name).all()]
 
     # Loop through each and update
     for repo_name in repo_list:
+
+        # Skip repos that have already been processed
+        if repo_name in processed_repos:
+            continue
+
         repo = g.get_repo(repo_name)
         
-        update_all_issues(repo, session, one_week_ago)
+        update_all_data(session, repo_name, one_week_ago)
+
+        processed_repos.add(repo_name)
         
-        update_all_prs(repo, session, one_week_ago)
-        
+    # Check how long the function takes to run and print result
+    elapsed_time = time.time() - start_time
+    if (elapsed_time >= 60):
+        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+    else:
+        print("This entire program took {:.2f} seconds to run".format(elapsed_time))

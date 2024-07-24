@@ -8,11 +8,27 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
-from tables.user import User
+# from tables.user import User
 from datetime import datetime  # Import datetime
-import os 
+import sys
 from parse_github_data import *
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from sort_data import *
+
+# Deletes a repository from the database
+def delete_repository(session, repo_name):
+    repo = session.query(Repository).filter(Repository.name == repo_name).first()
+
+    try:
+        if not repo:
+            print(f"Repository {repo_name} does not exist in the database")
+        else:
+            session.delete(repo)
+            session.commit()
+            print(f"Repository {repo_name} successfully deleted from the database")
+    except Exception as e:
+        session.rollback()
+        print(f"Unable to delete repository from database: {e}")
 
 # Deletes a single issue and associated comments
 def delete_issue(session, issue_id):
@@ -97,6 +113,9 @@ def delete_commit(session, commit_sha):
 
 # Main
 if __name__ == '__main__':
+    # Measure the time it takes for every function to execute. 
+    start_time = time.time()
+    
     # Create SQLAlchemy engine and session
     logging.getLogger('sqlalchemy').disabled = True
     engine = create_engine('sqlite:///github.db')
@@ -104,15 +123,13 @@ if __name__ == '__main__':
     session = Session()
     
     # Time variables
-    one_month_ago = datetime.now() - timedelta(days=30)
+    thirty_days_ago = datetime.now() - timedelta(days=30)
     one_week_ago = datetime.now() - timedelta(days=7)
+    one_year_ago = datetime.now() - timedelta(days=365)
     
     # Define limit
     limit = 100
 
-    # PyGithub
-    g = Github(os.environ['GITHUB_API_KEY'])
-    
     # Get a list of repos in the database
     repo_list = [r[0] for r in session.query(Repository.full_name).all()]
     
@@ -124,14 +141,21 @@ if __name__ == '__main__':
         
         # Delete commits older than one month
         commits = session.query(Commit).filter(Commit.repository_full_name == repo_name).all()
+        
+        num_commits_deleted = 0
         for commit in commits:
             commit_date = commit.committer_date
             
-            if commit_date < one_month_ago:
+            if commit_date < thirty_days_ago:
                 delete_commit(session, commit.sha)
+                num_commits_deleted += 1
+        
+        print(f"Deleted {num_commits_deleted} commits from the database for {repo_name}")
         
         # Delete issues
         issues = session.query(Issue).filter(Issue.repository_full_name == repo_name).all()
+        
+        num_issues_deleted = 0
         for issue in issues:
             create_date = issue.created_at
             update_date = issue.updated_at
@@ -144,14 +168,18 @@ if __name__ == '__main__':
             found_in_open_date = any(issue.id == item['id'] for item in sorted_issues_open_date)
             
             # Keep "active" issues updated within the last month
-            if create_date >= one_month_ago or update_date >= one_week_ago:
+            if create_date >= thirty_days_ago or update_date >= one_week_ago:
                 continue
             # Delete closed issues older than one month and issues not in either of the two lists
-            elif (close_date and close_date < one_month_ago) or (not found_in_num_comments and not found_in_open_date):
+            elif (close_date and close_date < thirty_days_ago) or (not found_in_num_comments and not found_in_open_date) or (create_date < one_year_ago):
                 delete_issue(session, issue.id)
-                
+                num_issues_deleted += 1
+        
+        print(f"Deleted {num_issues_deleted} issues from the database for {repo_name}")        
             
         # Delete pull requests
+        num_prs_deleted = 0
+        
         pull_requests = session.query(PullRequest).filter(PullRequest.repository_full_name == repo_name).all()
         for pr in pull_requests:
             # Handle timezone info
@@ -160,9 +188,19 @@ if __name__ == '__main__':
             close_date = pr.closed_at
 
             # Keep "active" prs updated within the last month
-            if create_date >= one_month_ago or update_date >= one_week_ago:
+            if create_date >= thirty_days_ago or update_date >= one_week_ago:
                 continue
             # Delete closed prs older than a month and delete open prs older than a month and not active
-            elif (close_date and close_date < one_month_ago) or (create_date < one_month_ago and update_date < one_week_ago):
+            elif (close_date and close_date < thirty_days_ago) or (create_date < thirty_days_ago and update_date < one_week_ago) or (create_date < one_year_ago):
                 delete_pr(session, pr.id)
+                num_prs_deleted += 1
         
+        print(f"Deleted {num_prs_deleted} pull requests from the database for {repo_name}") 
+                
+                
+    # Check how long the function takes to run and print result
+    elapsed_time = time.time() - start_time
+    if (elapsed_time >= 60):
+        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+    else:
+        print("This entire program took {:.2f} seconds to run".format(elapsed_time))

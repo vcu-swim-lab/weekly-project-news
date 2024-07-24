@@ -15,7 +15,6 @@ load_dotenv()
 
 API_KEY = os.environ.get("OPENAI_KEY")
 
-# https://stackoverflow.com/questions/77316112/langchain-how-do-input-variables-work-in-particular-how-is-context-replaced
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
 llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
@@ -27,9 +26,9 @@ def individual_instructions(param1, param2, param3, param4):
 
 # param1-4: "issues", param5: true if should include in instructions
 def general_instructions(param1, param2, param3, param4, param5, param6):
-  instructions = f"Generate a bulleted list in markdown where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. "
+  instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
   if param5:
-    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must start with 'https://github.com'. "
+    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https:// in brackets, but only including the https:// in parentheses (ex. [github.com/...](https://github.com/...) ). "
   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
   return instructions
 
@@ -104,6 +103,11 @@ def open_issues(repo):
     
     # issue_summary = data
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
+
+    print('a')
+    print(issue_summary)
+    print('b')
+
     issue_url = f"URL: {open_issue.get('url')}"
     all_open_issues += f"{issue_summary}\n{issue_url}\n\n"
 
@@ -111,10 +115,20 @@ def open_issues(repo):
   
   # Step 2: get markdown output for all open issues 
   overall_summary = generate_summary(all_open_issues, overall_instructions)
-  if overall_summary.startswith("```") and overall_summary.endswith("```"):
-    overall_summary = overall_summary[3:-3]
-  if overall_summary.startswith("markdown"):
-    overall_summary = overall_summary[len("markdown"):].lstrip()
+  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[3:-3]
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  if "```markdown" in overall_summary:
+    start = overall_summary.index("```markdown") + len("```markdown")
+    end = overall_summary.rindex("```")
+    overall_summary = overall_summary[start:end].strip() + "\n"
+
+
+  print('c')
+  print(overall_summary)
+  print('d')
+
   return overall_summary + "\n"
 
 
@@ -126,7 +140,7 @@ def active_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
-  issue_instructions += "Do not mention the URL in the summary. After each bullet point, you must give only one indented bullet point in markdown (starting with three spaces, then '-') summarizing the interaction in the comments, which can be multiple concise sentences. You must only give ONE bullet point per 10 comments. If there are fewer than 10 comments, only give 1 bullet point. Do not mention specific usernames."
+  issue_instructions += "Do not mention the URL in the summary. After that bullet point, you MUST give only one indented bullet point in markdown (which must start with three spaces, then '-') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
   issues = repo['issues_by_number_of_comments']
   size = min(len(issues), 5)
 
@@ -207,10 +221,14 @@ def closed_issues(repo):
   
   # Step 2: get markdown output for all closed issues 
   overall_summary = generate_summary(all_closed_issues, overall_instructions, max_retries=5, base_wait=1)
-  if overall_summary.startswith("```") and overall_summary.endswith("```"):
-    overall_summary = overall_summary[3:-3]
-  if overall_summary.startswith("markdown"):
-    overall_summary = overall_summary[len("markdown"):].lstrip()
+  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[3:-3]
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  if "```markdown" in overall_summary:
+    start = overall_summary.index("```markdown") + len("```markdown")
+    end = overall_summary.rindex("```")
+    overall_summary = overall_summary[start:end].strip() + "\n"
   return overall_summary + "\n\n"
 
 
@@ -260,6 +278,7 @@ def open_pull_requests(repo):
   # Step 1: get summaries for each open pull request first from the llm
   for pull_request in repo['open_pull_requests']:
     data = pull_request
+    print(data)
    
     if (data['body']):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
@@ -273,10 +292,10 @@ def open_pull_requests(repo):
 
   # Step 2: get markdown output for all open pull requests 
   overall_summary = generate_summary(all_pull_requests, overall_instructions, max_retries=5, base_wait=1)
-  if overall_summary.startswith("```") and overall_summary.endswith("```"):
-    overall_summary = overall_summary[3:-3]
-  if overall_summary.startswith("markdown"):
-    overall_summary = overall_summary[len("markdown"):].lstrip()
+  if "```markdown" in overall_summary:
+    start = overall_summary.index("```markdown") + len("```markdown")
+    end = overall_summary.rindex("```")
+    overall_summary = overall_summary[start:end].strip() + "\n"
   return overall_summary + "\n"
 
 
@@ -305,10 +324,14 @@ def closed_pull_requests(repo):
 
   # Step 2: get markdown output for all closed pull requests 
   overall_summary = generate_summary(all_pull_requests, overall_instructions, max_retries=5, base_wait=1)
-  if overall_summary.startswith("```") and overall_summary.endswith("```"):
-    overall_summary = overall_summary[3:-3]
-  if overall_summary.startswith("markdown"):
-    overall_summary = overall_summary[len("markdown"):].lstrip()
+  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[3:-3]
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  if "```markdown" in overall_summary:
+    start = overall_summary.index("```markdown") + len("```markdown")
+    end = overall_summary.rindex("```")
+    overall_summary = overall_summary[start:end].strip() + "\n"
   return overall_summary + "\n\n"
 
 
@@ -355,6 +378,15 @@ def pull_request_discussion_insights(repo):
 
 
 
+
+# def general_instructions(param1, param2, param3, param4, param5, param6):
+#   instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
+#   if param5:
+#     instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https:// in brackets, but only including the https:// in parentheses (ex. [github.com/...](https://github.com/...) ). "
+#   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
+#   return instructions
+
+
 # 9 - Commits
 def commits(repo):
   if repo['commits'] == []:
@@ -362,32 +394,58 @@ def commits(repo):
 
   all_commits = ""
   commit_instructions = individual_instructions("a commit", "commit", "commit", "only one detailed sentence")
-  overall_instructions = general_instructions("commits", "commits", "commits", "commits", False, 2)
-  overall_instructions += "You must go through all of the commits first and then group similar commits together. Do NOT output duplicate topics. There should be much fewer bullet points than commits. Show the output in markdown in a code block.\n"
+  overall_instructions = """You are an expert software developer with deep knowledge of this GitHub project. I have a list of the most recent commits to the project. Your task is to:
+
+1. Carefully read and understand all of the commits.
+2. Identify common themes, areas of development, or types of changes across these commits.
+3. Group the commits into at most 25 broad topics that collectively cover all of the commits.
+4. For each topic, write a summary that encapsulates the main ideas from all related commits.
+
+Present your analysis as a markdown bulleted list where each bullet point:
+- Starts with the topic name in bold
+- Is followed by a colon
+- Contains a 2-sentence summary covering multiple related commits
+
+Important notes:
+- Every single commit must be accounted for in your groupings.
+- Do not create a separate topic for each commit. Each topic should cover multiple related commits.
+- Ensure your summary sentences for each topic reflect changes from various commits, not just one.
+
+Example format:
+- **Dispatch Optimization**: A redundant bounds check has been removed from the code since the condition is already verified in the EvaluateEpilogue function. Profiling observations also indicate that tp_richcompare is marginally faster to dispatch than eq.
+
+Provide your comprehensive analysis of all of the commits, generated as a bulleted list in markdown as described above."""
+
 
   # Step 1: get summaries for each commit first from the llm
+  number = 1
   for commit in repo['commits']:
     data = commit
-   
+    
     if (data['message']):
       data['message'] = re.sub(r'<img[^>]*>|\r\n', '', data['message'])
 
     # commit_summary = data
     commit_summary = generate_summary(data, commit_instructions, max_retries=5, base_wait=1)
-    all_commits += f"{commit_summary}\n\n"
+    all_commits += f"{number}. {commit_summary}\n"
+    number += 1
 
   print("\n", all_commits, "\n\n\n")
 
   # Step 2: get markdown output for all commits
   overall_summary = generate_summary(all_commits, overall_instructions, max_retries=5, base_wait=1)
-  if overall_summary.startswith("```markdown"):
-    overall_summary = overall_summary[len("```markdown"):].lstrip()
-  if overall_summary.startswith("```"):
-    overall_summary = overall_summary[3:].lstrip()
-  if overall_summary.endswith("```"):
-    overall_summary = overall_summary[:-3].rstrip()
-  if overall_summary.startswith("markdown"):
-    overall_summary = overall_summary[len("markdown"):].lstrip()
+  # if overall_summary.startswith("```markdown"):
+  #   overall_summary = overall_summary[len("```markdown"):].lstrip()
+  # if overall_summary.startswith("```"):
+  #   overall_summary = overall_summary[3:].lstrip()
+  # if overall_summary.endswith("```"):
+  #   overall_summary = overall_summary[:-3].rstrip()
+  # if overall_summary.startswith("markdown"):
+  #   overall_summary = overall_summary[len("markdown"):].lstrip()
+  if "```markdown" in overall_summary:
+    start = overall_summary.index("```markdown") + len("```markdown")
+    end = overall_summary.rindex("```")
+    overall_summary = overall_summary[start:end].strip() + "\n"
   return overall_summary + "\n\n"
 
 
@@ -457,64 +515,25 @@ if __name__ == '__main__':
   # result = session.execute(query)
   # repositories = [row[0] for row in result]
   repositories = [
-    # "tensorflow/tensorflow"
-    # "stevenbui44/test-vscode"
+    # "ggerganov/llama.cpp",
+    # "nodejs/node",
+    # "openxla/xla",
     "stevenbui44/flashcode"
   ]
+
 
   # PART TWO: create the markdown for a newsletter
   for repository in repositories:
 
+    # print('a')
+    # print(repository)
+    # print('b')
+    repo_name = repository
+
     # 2.1: call all sort_data.py functions on the repo
-    repo_data = {
-      "repo_name": repository,
-      "open_issues": get_open_issues(session, one_week_ago, repository),
-      "closed_issues": get_closed_issues(session, one_week_ago, repository),
-      "active_issues": get_active_issues(session, one_week_ago, repository),
-      "num_weekly_open_issues": get_num_open_issues_weekly(get_open_issues(session, one_week_ago, repository)),
-      "num_weekly_closed_issues": get_num_closed_issues_weekly(get_closed_issues(session, one_week_ago, repository)),
-      "issues_by_open_date": sort_issues_open_date(session, repository, limit),
-      "issues_by_number_of_comments": sort_issues_num_comments(session, repository, limit),
-      "average_issue_close_time": avg_issue_close_time(session, repository),
-      "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repository),
-      "open_pull_requests": get_open_prs(session, one_week_ago, repository),
-      "closed_pull_requests": get_closed_prs(session, one_week_ago, repository),
-      "active_pull_requests": get_active_prs(session, one_week_ago, repository),
-      "num_open_prs": get_num_open_prs(get_open_prs(session, one_week_ago, repository)),
-      "num_closed_prs": get_num_closed_prs(get_closed_prs(session, one_week_ago, repository)),
-      "commits": get_commit_messages(session, one_week_ago, repository),
-      "num_commits": get_num_commits(get_commit_messages(session, one_week_ago, repository)),
+    repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name)
 
-      # "first_time_contributors": get_contributors(session, one_week_ago, repository)[0],
-      # "active_contributors": get_contributors(session, one_week_ago, repository)[1],
-
-      "active_contributors": get_active_contributors(session, one_week_ago, thirty_days_ago, repository)
-    }
     output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
-
-    # print(output_filename)
-    # print(repo_data)
-    # print(repo_data['repo_name'])
-    # print(repo_data['open_issues'])
-    # print(repo_data['closed_issues'])
-    # print(repo_data['active_issues'])
-    # print(repo_data['num_weekly_open_issues'])
-    # print(repo_data['num_weekly_closed_issues'])
-    # print(repo_data['issues_by_open_date'])
-    # print(repo_data['issues_by_number_of_comments'])
-    # print(repo_data['average_issue_close_time'])
-    # print(repo_data['average_issue_close_time_weekly'])
-    # print("open_pull_requests: ", repo_data['open_pull_requests'])
-    # print(repo_data['closed_pull_requests'])
-    # print("active_pull_requests: ", repo_data['active_pull_requests'])
-    # print(repo_data['num_open_prs'])
-    # print(repo_data['num_closed_prs'])
-    # print("commits: ", repo_data['commits'])
-    # print(repo_data['num_commits'])
-
-    # print(repo_data['first_time_contributors'])
-    # print(repo_data['active_contributors'])
-    # print()
 
     name = repo_data['repo_name'].split('/')[-1]
     capitalized_name = name[0].upper() + name[1:]
@@ -573,10 +592,7 @@ if __name__ == '__main__':
         # 1.4.2 Average Time to Close Issues This Week
         outfile.write(f"**Average Issue Close Time (This Week):** {repo_data.get('average_issue_close_time_weekly', None)}\n\n")
 
-        # 1.4.3 Average Time to Close Issues All Time
-        outfile.write(f"**Average Issue Close Time (All Time):** {repo_data.get('average_issue_close_time', None)}\n\n")
-
-        # 1.4.4 Issues
+        # 1.4.3 Issues
         outfile.write("**Summarized Issues:**\n\n")
         result = closed_issues(repo_data)
         outfile.write(result)

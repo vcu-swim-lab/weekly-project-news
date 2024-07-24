@@ -3,15 +3,12 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship
 from .base import Base
-from .user import User
 from .repository import Repository
 
 class PullRequest(Base):
     __tablename__ = 'pull_requests'
     
     id = Column(Integer, primary_key=True)
-    url = Column(String)
-    comments_url = Column(String)
     html_url = Column(String)
     number = Column(Integer, nullable=False)
     state = Column(String, nullable=False)
@@ -32,7 +29,6 @@ class PullRequest(Base):
 class PullRequestComment(Base):
     __tablename__ = 'pull_request_comments'
     id = Column(Integer, primary_key=True)
-    url = Column(String)
     html_url = Column(String)
     body = Column(Text)
     user_login = Column(String)
@@ -42,5 +38,3 @@ class PullRequestComment(Base):
     pull_request_id = Column(Integer)
     
     repository_full_name = Column(String)
-    
-

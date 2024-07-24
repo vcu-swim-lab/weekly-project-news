@@ -15,6 +15,21 @@ from parse_github_data import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from sort_data import *
 
+# Deletes a repository from the database
+def delete_repository(session, repo_name):
+    repo = session.query(Repository).filter(Repository.name == repo_name).first()
+
+    try:
+        if not repo:
+            print(f"Repository {repo_name} does not exist in the database")
+        else:
+            session.delete(repo)
+            session.commit()
+            print(f"Repository {repo_name} successfully deleted from the database")
+    except Exception as e:
+        session.rollback()
+        print(f"Unable to delete repository from database: {e}")
+
 # Deletes a single issue and associated comments
 def delete_issue(session, issue_id):
     # Query database for desired issue

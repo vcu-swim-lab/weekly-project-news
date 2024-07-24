@@ -2,6 +2,7 @@ import subprocess
 import logging
 from datetime import datetime
 import time
+import os
 
 # Set up logging
 logging.basicConfig(filename='newsletter_preparation.log', level=logging.INFO,
@@ -13,13 +14,31 @@ def format_time(seconds):
     else:
         minutes, seconds = divmod(seconds, 60)
         return f"{int(minutes)} minutes and {seconds:.2f} seconds"
+    
+def remove_file(file_name):
+    try:
+        os.remove(file_name)
+        print(f"Successfully removed {file_name}")
+        logging.info(f"Successfully removed {file_name}")
+    except FileNotFoundError:
+        print(f"{file_name} not found, skipping removal")
+        logging.info(f"{file_name} not found, skipping removal")
+    except Exception as e:
+        print(f"Error removing {file_name}: {e}")
+        logging.error(f"Error removing {file_name}: {e}")
+        raise
 
 def run_script(script_name):
     try:
         start_time = time.time()
         print(f"Starting to run {script_name}...")
+
+        # if running on server
         subprocess.run(['/home/projectnews/venv/bin/python', script_name], check=True)
-        # subprocess.run(['/usr/bin/python3', script_name], check=True)
+
+        # if running on local machine
+        # subprocess.run(['/usr/local/bin/python3', script_name], check=True)
+
         end_time = time.time()
         duration = end_time - start_time
         formatted_time = format_time(duration)
@@ -40,14 +59,22 @@ def run_script(script_name):
 def main():
     start_time = time.time()
     logging.info("Starting newsletter preparation process")
+
+    remove_file('github.db')
     
+    # scripts = [
+    #     'download_new_subscribers.py',
+    #     'fix_subscribers_file.py',
+    #     'clean_db.py',
+    #     'parse_github_data.py',
+    #     'update_db.py',
+    #     'clean_db.py',
+    # ]
+
     scripts = [
         'download_new_subscribers.py',
         'fix_subscribers_file.py',
-        'clean_db.py',
         'parse_github_data.py',
-        'update_db.py',
-        'clean_db.py',
     ]
 
     for script in scripts:

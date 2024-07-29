@@ -3,6 +3,14 @@ import os
 import json
 from dotenv import load_dotenv
 from datetime import datetime
+import time
+import logging
+
+logging.basicConfig(
+    filename='sending.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 load_dotenv()
 
@@ -27,11 +35,13 @@ def draft_email(subject, content):
 
     if response.status_code >= 200 and response.status_code < 300:
         response_data = response.json()
+        logging.info(f"Successfully drafted email with subject: {subject}")
         return response_data
     else:
         print("\nError in draft_email()")
         print(f"Status code: {response.status_code}")
         print(f"Response: {response.text}\n")
+        logging.error(f"Error in draft_email() - Status code: {response.status_code}, Response: {response.text}")
         return None
     
 
@@ -46,16 +56,19 @@ def send_email_to_subscriber(subscriber_id, email_id):
         # change email status from "about_to_send" to "sent"
         update_response = update_email_status(email_id)
         if update_response.status_code >= 200 and update_response.status_code < 300:
+            logging.info(f"Successfully sent email (ID: {email_id}) to subscriber (ID: {subscriber_id})")
             return response
         else:
             print("\nError in send_email_to_subscriber()")
             print(f"Failed to send email. Status code: {response.status_code}")
             print(f"Response: {response.text}\n")
+            logging.error(f"Failed to update email status for email ID: {email_id}")
             return None
     else:
         print("\nError in send_email_to_subscriber()")
         print(f"Failed to send email. Status code: {response.status_code}")
         print(f"Response: {response.text}\n")
+        logging.error(f"Failed to send email to subscriber. Status code: {response.status_code}, Response: {response.text}")
         return None
     
 
@@ -70,28 +83,33 @@ def update_email_status(email_id):
     }
     
     response = requests.patch(url, headers=headers, json=data)
-    print('a')
-    print(response)
-    print('subject: ', subject)
-    print('b')
 
     if response.status_code >= 200 and response.status_code < 300:
+        logging.info(f"Successfully updated email (ID: {email_id}) status to 'imported'")
         return response
     else:
         print(f"\nError in update_email_status() - Status code: {response.status_code}")
         print(f"Response: {response.text}\n")
+        logging.error(f"Error in update_email_status() - Status code: {response.status_code}, Response: {response.text}")
         return None
 
     
 
 # "Main function"
+logging.info("- - - - - - - - - - - - - - - - - - - - -")
+logging.info("Starting newsletter sending process")
+
 with open('subscribers.json', 'r') as file:
     subscribers_data = json.load(file)
 
 for subscriber in subscribers_data['results']:
+    if not subscriber.get('email') or subscriber.get('subscriber_type') != 'regular':
+        # error_message = f"Invalid subscriber: {subscriber.get('email', 'No email')} - Type: {subscriber.get('subscriber_type', 'Unknown')}"
+        # print(error_message)
+        # logging.error(error_message)
+        continue
     email = subscriber['email']
-    # if email == 'kostadin@gmail.com':
-    #     continue
+    # print('VALID: ', email)
 
     github_repo = subscriber.get('metadata', {}).get('repo_name')
     if not github_repo:
@@ -119,6 +137,8 @@ for subscriber in subscribers_data['results']:
     response = draft_email(subject, content)
     if not response:
         print(f"Draft email not able to be made for: {email}")
+        logging.error(f"Draft email not able to be made for: {email}")
+        continue
 
     # STEP 5: SEND the email to the subscriber
     email_id = response['id']
@@ -126,7 +146,13 @@ for subscriber in subscribers_data['results']:
     send_response = send_email_to_subscriber(subscriber_id, email_id)
     if send_response:
         print(f"Email sent to subscriber: {email}")
+        logging.info(f"Email sent to subscriber: {email}")
     else:
         print("Failed to send email to subscriber.")
+        logging.error(f"Failed to send email to subscriber: {email}")
 
+    # logging.info("Waiting for 60 seconds before processing next subscriber")
+    # time.sleep(60)
     print("\n\n\n")
+
+logging.info("Newsletter sending process completed")

@@ -122,6 +122,51 @@ def get_sents():
         print(f"Error: {response.status_code}")
         print(response.text)
         return None
+    
+
+
+# 4.75: Get all importeds
+def get_importeds():
+    url = f"{BASE_URL}/v1/emails"
+    params = {
+        "status": "imported",
+        "order": "-created"  # Get newest first
+    }
+    
+    response = requests.get(url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        print('c')
+        print(response.json())
+        print('d')
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+
+# 4.875: Get all importeds
+def get_deleteds():
+    url = f"{BASE_URL}/v1/emails"
+    params = {
+        "status": "deleted",
+        "order": "-created"  # Get newest first
+    }
+    
+    response = requests.get(url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        print('c')
+        print(response.json())
+        print('d')
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+
 
 
 
@@ -140,6 +185,8 @@ def display_drafts(drafts):
     for draft in drafts['results']:
         print(draft)
         print("-" * 30)
+
+
 
 
 
@@ -173,6 +220,8 @@ def delete_draft(draft_id):
     print('Response:', response)
     print('Response.json():', response.json())
     return response.status_code >= 200 and response.status_code < 300
+
+
 
 
 
@@ -211,13 +260,32 @@ def main():
     # else:
     #     print("Error: in_flights is null :(")
 
-    # 4: Get in_flights
-    sents = get_sents()
-    if sents:
-        display_drafts(sents)
+    # # 4: Get in_flights
+    # sents = get_sents()
+    # if sents:
+    #     display_drafts(sents)
+    #     # delete_all_drafts(in_flights)
+    # else:
+    #     print("Error: sents is null :(")
+
+    # 5: Get importeds
+    importeds = get_importeds()
+    if importeds:
+        display_drafts(importeds)
         # delete_all_drafts(in_flights)
     else:
-        print("Error: sents is null :(")
+        print("Error: importeds is null :(")
+
+
+    # # 6: Get deleteds
+    # deleteds = get_deleteds()
+    # if deleteds:
+    #     display_drafts(deleteds)
+    #     # delete_all_drafts(in_flights)
+    # else:
+    #     print("Error: deleteds is null :(")
+
+    # delete_draft('f9da174c-cb0c-42e2-a16b-64fa93db41c4')
         
 
 if __name__ == "__main__":

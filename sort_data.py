@@ -16,7 +16,6 @@ import sys
 from datetime import datetime  # Import datetime
 import json
 import requests 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build_database')))
 from parse_github_data import *
 from sqlalchemy import and_
 from sqlalchemy_json import NestedMutableJson
@@ -566,7 +565,7 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
-    database_path = '../build_database/github.db'
+    database_path = 'github.db'
     engine = create_engine(f'sqlite:///{database_path}')
 
     # DATABASE SESSION

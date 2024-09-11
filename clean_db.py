@@ -11,8 +11,7 @@ from tables.commit import Commit
 from datetime import datetime  # Import datetime
 import sys
 from parse_github_data import *
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from analyze_data.sort_data import *
+from sort_data import *
 
 # Deletes a repository from the database
 def delete_repository(session, repo_name):

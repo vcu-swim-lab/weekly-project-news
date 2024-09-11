@@ -17,7 +17,7 @@ API_KEY = os.environ.get("OPENAI_KEY")
 
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
-llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
 # param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"

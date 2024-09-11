@@ -558,9 +558,8 @@ if __name__ == '__main__':
     limit = 10000
     
     # Get owners and repos
-    current_directory = os.path.dirname(__file__)
-    file_path = os.path.join(current_directory, '..', 'subscribers', 'subscribers.json')
-    with open(file_path, 'r') as f:
+    file_name = 'subscribers.json'
+    with open(file_name, 'r') as f:
         subscriber_data = json.load(f)
     
     # Keep a list of the subscriber repos

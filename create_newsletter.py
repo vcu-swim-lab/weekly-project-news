@@ -578,8 +578,8 @@ if __name__ == '__main__':
         # 1.4.1 Closed Issues This Week
         outfile.write(f"**Closed Issues This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
 
-        # 1.4.2 Average Time to Close Issues This Week
-        outfile.write(f"**Average Issue Close Time (This Week):** {repo_data.get('average_issue_close_time_weekly', None)}\n\n")
+        # 1.4.2 Average Time to Close Issues This Week (REMOVED)
+
 
         # 1.4.3 Issues
         outfile.write("**Summarized Issues:**\n\n")

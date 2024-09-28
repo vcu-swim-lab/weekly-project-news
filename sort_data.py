@@ -519,10 +519,11 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
         if contributor['commits'] > commit_threshold or contributor['pull_requests'] > pr_threshold or contributor['issues'] > issue_threshold
     ]
     
-    num_active_contributors = len(active_contributors) # Gets number of active contributors
-    active_contributors.append({'number_of_active_contributors': num_active_contributors}) # Add to data set
+    # Don't need this if we are only keeping the top 10
+    # num_active_contributors = len(active_contributors) # Gets number of active contributors
+    # active_contributors.append({'number_of_active_contributors': num_active_contributors}) # Add to data set
 
-    return active_contributors
+    return active_contributors[:10]
 
 
 # Retreive all data for a given repository and format

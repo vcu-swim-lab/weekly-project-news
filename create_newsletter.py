@@ -468,7 +468,7 @@ def active_contributors(repo):
   contributors = []
   for contributor in repo['active_contributors']:
     if 'author' in contributor:  # Skip entries without 'author'
-      total_activity = contributor['commits'] + contributor['pull_requests'] + contributor['issues']
+      total_activity = contributor['commits'] + contributor['pull_requests'] + contributor['issues'] + contributor['comments']
       contributor['total_activity'] = total_activity
       contributors.append(contributor)
 

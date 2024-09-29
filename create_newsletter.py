@@ -234,6 +234,7 @@ def closed_issues(repo):
 
 
 # 5 - Issue Discussion Insights
+# TODO: Change this to look at open and closed issues, rather than active issues.
 def issue_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
   if repo['active_issues'] == []:
@@ -337,6 +338,7 @@ def closed_pull_requests(repo):
 
 
 # 8 - Pull Request Discussion Insights
+# TODO: Change this to look at open and closed pull requests
 def pull_request_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
   if repo['active_pull_requests'] == []:
@@ -452,7 +454,7 @@ Provide your comprehensive analysis of all of the commits, generated as a bullet
 
 # 10 - Active Contributors
 def active_contributors(repo):
-  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past month. \n\n"
+  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, created at least 1 pull request, or made more than 2 comments in the last month. \n\n"
   if repo['active_contributors'][-1]['number_of_active_contributors'] == 0:
     overall_summary += "As of our latest update, there are no active contributors for the project this week.\n\n"
     return overall_summary
@@ -472,6 +474,10 @@ def active_contributors(repo):
 
   # Step 2: sort contributors by total_activity in descending order
   sorted_contributors = sorted(contributors, key=lambda x: x['total_activity'], reverse=True)
+
+  # Truncate if list of contributors is > 10 members.
+  if (len(sorted_contributors) > 10):
+        sorted_contributors = sorted_contributors[:10]
 
   # Step 3: generate markdown output for all active contributors
   for contributor in sorted_contributors:

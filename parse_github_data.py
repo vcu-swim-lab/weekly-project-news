@@ -11,7 +11,7 @@ import os
 from sqlalchemy import create_engine
 import logging
 from sqlalchemy.exc import IntegrityError
-from dotenv import load_dotenv
+from dotenv import load_doten
 from github import Github
 from datetime import datetime, timedelta, timezone
 import time

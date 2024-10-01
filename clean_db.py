@@ -133,7 +133,6 @@ if __name__ == '__main__':
     # Get a list of repos in the database
     repo_list = [r[0] for r in session.query(Repository.full_name).all()]
     
-    
     for repo_name in repo_list:
         # Lists to compare
         sorted_issues_open_date = sort_issues_open_date(session, repo_name, limit)

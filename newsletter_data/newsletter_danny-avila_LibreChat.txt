@@ -1,0 +1,166 @@
+# Weekly GitHub Report for LibreChat
+
+Thank you for subscribing to our weekly newsletter! Each week, we deliver a comprehensive summary of your GitHub project's latest activity right to your inbox, including an overview of your project's issues, pull requests, contributors, and commit activity.
+
+***
+
+# I. Issues
+
+## 1.1 Open Issues
+
+**Open Issues This Week:** 6
+
+**Summarized Issues:**
+
+- **Conversation Reload Behavior**: This issue is about ensuring that when a conversation is reloaded, the messages retain their previously set branch/sibling index instead of resetting to the latest branch. This behavior is similar to the ChatGPT official website. The goal is to maintain the continuity and context of the conversation upon reloading.
+  - [github.com/danny-avila/LibreChat/issues/3278](https://github.com/danny-avila/LibreChat/issues/3278)
+
+- **Transient Chat Option**: This issue requests the addition of a feature for a transient, one-off chat option that does not persist unless explicitly saved. The aim is to reduce the friction of deleting temporary conversations in the current UI. This would streamline the user experience for temporary interactions.
+  - [github.com/danny-avila/LibreChat/issues/3279](https://github.com/danny-avila/LibreChat/issues/3279)
+
+- **Multiline Text Bug in Prompts**: This issue reports a bug where multiline text pasted into a variable in the Prompts feature loses its original line breaks. This problem is specifically observed in the Edge browser. The issue affects the formatting and readability of pasted text.
+  - [github.com/danny-avila/LibreChat/issues/3284](https://github.com/danny-avila/LibreChat/issues/3284)
+
+- **Private Assistants with supportedIds**: This issue is about enhancing the system to allow private assistants to work alongside supportedIds. The enhancement would enable global assistants for all users without disabling supportedIds. This would provide more flexibility in assistant management.
+  - [github.com/danny-avila/LibreChat/issues/3296](https://github.com/danny-avila/LibreChat/issues/3296)
+
+- **Percentage of Maximum Input Context**: This issue proposes an enhancement to display the percentage of the maximum input context used in any conversation. This feature would help users understand when the AI might forget the initial prompt due to input limits. It aims to improve user awareness of context limitations.
+  - [github.com/danny-avila/LibreChat/issues/3309](https://github.com/danny-avila/LibreChat/issues/3309)
+
+- **Interchangeable Title Endpoint/Models**: This issue is about enhancing the project to allow Title Endpoint/Models to be used interchangeably with different endpoints. For example, setting a Google model for custom endpoints. This would increase the flexibility and customization options for users.
+  - [github.com/danny-avila/LibreChat/issues/3321](https://github.com/danny-avila/LibreChat/issues/3321)
+
+## 1.2 Top 5 Active Issues:
+
+We consider active issues to be issues that have generated much discussion in the issue's comments. 
+
+1. [**Enhancement: OpenAI Assistants API V2 support**](https://github.com/danny-avila/LibreChat/issues/2490): This issue is about adding support for OpenAI Assistants API V2 to the LibreChat project, which includes addressing known issues such as the non-loading of attached files in the UI. The discussion also covers the migration steps, the progress made, and the challenges faced, particularly with Azure integration and file management.
+
+   - The comments discuss the potential for handling more than 20 files, the priority of the enhancement due to breaking changes, and the progress made so far. There are also mentions of Azure integration issues, the need for a new UI for file management, and troubleshooting steps for users facing problems with the new features.
+   - Number of comments: 16
+
+2. [**Enhancement: Amazon Bedrock Support**](https://github.com/danny-avila/LibreChat/issues/2620): This issue is about adding support for Amazon Bedrock to LibreChat, which would allow users to leverage Bedrock models for a ChatGPT-like experience. The request highlights the potential benefits for users and mentions that support for Amazon Bedrock and KB would be a valuable feature.
+
+   - The comments discuss the planned addition of native Bedrock support, suggest using LiteLLM as a temporary workaround, and mention issues with other providers like Anthropic. A user from Cornell University expresses interest in contributing to the development and discusses the technical aspects of integrating Bedrock. The conversation includes updates on using LiteLLM and requests for help with setup, concluding with confirmation that native AWS setup is being tested.
+   - Number of comments: 14
+
+3. [**Enhancement: Import/export from ChatGPT + backup (and restore) all conversations for LibreChat**](https://github.com/danny-avila/LibreChat/issues/1660): This issue proposes adding features to LibreChat that allow users to import and export conversations, similar to the functionality available in ChatGPT. The goal is to facilitate the transition for users switching from ChatGPT to LibreChat by enabling them to retain their chat history and manage their data more effectively.
+
+   - The comments discuss the successful implementation of the import feature, requests for an export feature, and various user experiences and suggestions for improving the process, including handling duplicate imports and using tools like MongoDB Compass and mongodump for data management.
+   - Number of comments: 13
+
+4. [**Enhancement: Claude  Artifacts**](https://github.com/danny-avila/LibreChat/issues/3139): This issue is about a request to add a feature called "Claude Artifacts" to the LibreChat project, which involves creating an experimental interface with two windows. The user describes their positive experience with this feature and suggests its integration into LibreChat.
+
+   - The comments section includes various suggestions and discussions about the implementation of the feature, including ideas for sandboxed containers, direct edit capabilities, and references to similar open-source projects and existing implementations in other applications.
+   - Number of comments: 13
+
+5. [**Enhancement: Show cost of conversation**](https://github.com/danny-avila/LibreChat/issues/1215): This issue is about adding a feature to display the cost of API calls for the currently open conversation in the LibreChat project. The user suggests implementing a detailed cost breakdown similar to another project, including per message token usage, total conversation cost, and token usage per model.
+
+   - The comments discuss the feasibility and priority of implementing the feature, with several users expressing support. One user provides a detailed description of the desired functionality, while another offers a temporary solution using a script. There are also inquiries about how to contribute to the implementation.
+   - Number of comments: 10
+
+## 1.3 Top 5 Quiet Issues:
+
+We consider quiet issues to be issues that have been opened in this project for the longest time. The team should work together to get these issues resolved and closed as soon as possible. 
+
+1. [**Enhancement: Add Socks proxy support**](https://github.com/danny-avila/LibreChat/issues/580): This issue is a request for the addition of SOCKS proxy support, specifically SOCKS5/4, to the project, as the current implementation only accepts HTTP and HTTPS proxies. The user has encountered problems with Bing blocking VPS IP addresses and is seeking a workaround or enhancement to include support for SOCKS proxies.
+   - Open for 374 days, 08 hours, 15 minutes
+
+2. [**Enhancement: Adding embedding and fine-tuning for training**](https://github.com/danny-avila/LibreChat/issues/900): This issue is about enhancing the project by implementing embedding and fine-tuning capabilities for training, which involves uploading files to OpenAI from both backend and frontend settings. It suggests adding features for users to upload files via drag-and-drop or conventional input methods to facilitate the training process.
+   - Open for 308 days, 00 hours, 27 minutes
+
+3. [**Enhancement: Chat rating button**](https://github.com/danny-avila/LibreChat/issues/901): This issue is about adding a chat rating system to LibreChat, similar to the one used by ChatGPT, which allows users to provide feedback on messages through a thumbs up or down mechanism and include additional comments. The proposed enhancement aims to provide moderation tools and a feedback system, impacting the general UI and endpoints of the project.
+   - Open for 307 days, 06 hours, 43 minutes
+
+4. [**[Enhancement]: if `user_provided` API KEY value is used, fetch models for user**](https://github.com/danny-avila/LibreChat/issues/1028): This issue pertains to a problem where the model list fails to load when a user-provided API key is used in the LibreChat application. The issue is resolved when a global API key is set, indicating a discrepancy in how the application handles different types of API keys.
+   - Open for 277 days, 23 hours, 20 minutes
+
+5. [**Enhancement: Show cost of conversation**](https://github.com/danny-avila/LibreChat/issues/1215): This issue is about adding a feature to display the cost of API calls for the currently open conversation in the project. The request highlights that some user interfaces already show this information and references another project that has implemented this feature.
+   - Open for 230 days, 23 hours, 59 minutes
+
+## 1.4 Closed Issues
+
+**Closed Issues This Week:** 19
+
+**Average Issue Close Time (This Week):** 1.76 days
+
+**Summarized Issues:**
+
+- **Text-to-Speech (TTS) Configuration Issues**: Users have reported difficulties configuring Text-to-Speech (TTS) using Azure Endpoint in LibreChat. One user provided a YAML configuration that did not work and expressed a desire to use Azure OpenAI as the TTS Endpoint. Another issue required updating the `librechat.example.yaml` file to include the missing `speech:` header for proper functionality.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3094)
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3280)
+
+- **Model Specification and API Provider Selection Bugs**: There are issues with the model specification becoming unselected when initiating a new conversation. Setting `prioritize=true` resolves this but prevents selecting a new API provider. Additionally, there are problems with configuring BingAI in a .yaml file, where selecting BingAI does not update the dropdown value.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3276)
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3300)
+
+- **Prompt Library Bugs**: Users have encountered bugs in the Prompt Library, such as the selected prompt failing to update after using and removing filters. Another issue involves pagination not working correctly when a filter is applied on a page number greater than one.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3289)
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3290)
+
+- **Plugin and API Key Issues**: Setting the `OPENAI_API_KEY` in the `.env` file causes plugins to malfunction with a 404 error. Filtering plugins using the `includedTools` setting in `librechat.yaml` results in only the calculator tool being available due to incorrect filtering based on the file name.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3288)
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3324)
+
+- **Proxy and Model Compatibility Issues**: Users have reported issues with the Gemini model failing to work via a proxy, resulting in a 400 Bad Request error. Another user seeks guidance on configuring their environment to use OpenAI with a proxy while using Llama without a proxy.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3292)
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3301)
+
+- **User Interface and Display Issues**: There are problems with LaTeX expressions in GPT-4o responses having excessive margins, disrupting paragraph formatting. Another issue involves a user-generated photo not displaying correctly on the UI, potentially due to incorrect permissions.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3285)
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3295)
+
+- **Chat Interface Enhancements**: A suggestion was made to enhance the chat interface by right-aligning the user's text to improve readability and distinction. It was proposed to make this an optional setting.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3286)
+
+- **Authentication and Configuration Issues**: Users have encountered authentication failures when changing the PostgreSQL password in the docker-compose file. This issue was resolved by reverting the password to its original value.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3327)
+
+- **Security Vulnerabilities**: The AppSec team at REA Group identified multiple security vulnerabilities in LibreChat through a penetration test. They seek to collaborate with the maintainer to discuss the impact, remediation, and potential CVE disclosures.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3314)
+
+- **Image Display Issues**: LibreChat v0.7.4-rc1 frequently fails to display images generated by DALL-E when running via Docker Compose on an Ubuntu VM. The error logs indicate an issue with saving the image file.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3318)
+
+- **Streaming Response Bug**: There is a bug where the first token of an AI's streaming response is dropped if it is identical to the user's prompt. This results in incomplete initial output.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3322)
+
+- **Logout API Error**: Attempting to log out returns a 500 error, with the error message indicating that the "data" argument must be of type string or an instance of Buffer, TypedArray, or DataView, but received null instead.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3302)
+
+- **Switching OpenAI Assistants**: There is a question about the feasibility and potential confusion of switching OpenAI assistants within the same conversation. The user seeks best practices or recommendations on whether to prompt users to start a new conversation when making such a switch.
+  - [github.com/...](https://github.com/danny-avila/LibreChat/issues/3299)
+
+
+## 1.5 Issue Discussion Insights
+
+This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. 
+
+Based on our analysis, there are no instances of toxic discussions in the project's open issues from the past week. 
+
+***
+
+# II. Pull Requests
+
+## 2.1 Open Pull Requests
+
+**Open Pull Requests This Week:** 4
+
+**Pull Requests:**
+
+- **New Feature Enhancements**: This topic covers the introduction of new features that improve user customization and system functionality. One pull request introduces a feature that allows users to send text using a slider, enhancing customization options. Another pull request disables the external engine if it is not configured, ensuring smoother operation. These features collectively aim to improve user experience and system reliability.
+  - [github.com/danny-avila/LibreChat/pull/3312](https://github.com/danny-avila/LibreChat/pull/3312)
+  - [github.com/danny-avila/LibreChat/pull/3313](https://github.com/danny-avila/LibreChat/pull/3313)
+
+- **Retrieval Augmented Generation (RAG) System Enhancements**: This topic includes several enhancements to the RAG system, focusing on improving contextual prompts and user interface. One pull request introduces modifications to the prompts, a new endpoint for adjusting the RAG_K parameter, and updates to the user interface to display and control this parameter dynamically. These changes aim to make the RAG system more flexible and user-friendly.
+  - [github.com/danny-avila/LibreChat/pull/3317](https://github.com/danny-avila/LibreChat/pull/3317)
+
+- **Security and Performance Improvements**: This topic addresses enhancements aimed at improving security and performance. A pull request replaces the use of `eval` with `parseInt` for parsing environment variables, which mitigates the risk of code injection attacks. Additionally, this change significantly improves execution speed, making the system more secure and efficient.
+  - [github.com/danny-avila/LibreChat/pull/3328](https://github.com/danny-avila/LibreChat/pull/3328)
+
+## 2.2 Closed Pull Requests
+
+**Closed Pull Requests This Week:** 18
+
+**Summarized Pull Requests:**
+

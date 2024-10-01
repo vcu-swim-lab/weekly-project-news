@@ -10,7 +10,7 @@ from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
 from tables.user import User
 from datetime import datetime, timedelta, timezone
-from parse_github_data import *
+from build_database.parse_github_data import *
 
 Base = declarative_base()
 engine = create_engine('sqlite:///test.db')

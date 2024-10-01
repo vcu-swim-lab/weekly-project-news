@@ -165,3 +165,5 @@ public.env
 # output of download_new_subscribers
 # holds all subscriber data (email, GitHub link)
 subscribers.json
+github.db
+newsletter_preparation.log

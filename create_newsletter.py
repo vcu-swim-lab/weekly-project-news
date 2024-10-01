@@ -17,7 +17,7 @@ API_KEY = os.environ.get("OPENAI_KEY")
 
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
-llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
 # param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
@@ -234,6 +234,7 @@ def closed_issues(repo):
 
 
 # 5 - Issue Discussion Insights
+# TODO: Change this to look at open and closed issues, rather than active issues.
 def issue_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
   if repo['active_issues'] == []:
@@ -337,6 +338,7 @@ def closed_pull_requests(repo):
 
 
 # 8 - Pull Request Discussion Insights
+# TODO: Change this to look at open and closed pull requests
 def pull_request_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
   if repo['active_pull_requests'] == []:
@@ -452,7 +454,7 @@ Provide your comprehensive analysis of all of the commits, generated as a bullet
 
 # 10 - Active Contributors
 def active_contributors(repo):
-  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past month. \n\n"
+  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, created at least 1 pull request, or made more than 2 comments in the last month. \n\n"
   if repo['active_contributors'][-1]['number_of_active_contributors'] == 0:
     overall_summary += "As of our latest update, there are no active contributors for the project this week.\n\n"
     return overall_summary
@@ -466,12 +468,16 @@ def active_contributors(repo):
   contributors = []
   for contributor in repo['active_contributors']:
     if 'author' in contributor:  # Skip entries without 'author'
-      total_activity = contributor['commits'] + contributor['pull_requests'] + contributor['issues']
+      total_activity = contributor['commits'] + contributor['pull_requests'] + contributor['issues'] + contributor['comments']
       contributor['total_activity'] = total_activity
       contributors.append(contributor)
 
   # Step 2: sort contributors by total_activity in descending order
   sorted_contributors = sorted(contributors, key=lambda x: x['total_activity'], reverse=True)
+
+  # Truncate if list of contributors is > 10 members.
+  if (len(sorted_contributors) > 10):
+        sorted_contributors = sorted_contributors[:10]
 
   # Step 3: generate markdown output for all active contributors
   for contributor in sorted_contributors:
@@ -531,7 +537,7 @@ if __name__ == '__main__':
     repo_name = repository
 
     # 2.1: call all sort_data.py functions on the repo
-    repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name)
+    repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repository)
 
     output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
 
@@ -589,8 +595,8 @@ if __name__ == '__main__':
         # 1.4.1 Closed Issues This Week
         outfile.write(f"**Closed Issues This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
 
-        # 1.4.2 Average Time to Close Issues This Week
-        outfile.write(f"**Average Issue Close Time (This Week):** {repo_data.get('average_issue_close_time_weekly', None)}\n\n")
+        # 1.4.2 Average Time to Close Issues This Week (REMOVED)
+
 
         # 1.4.3 Issues
         outfile.write("**Summarized Issues:**\n\n")

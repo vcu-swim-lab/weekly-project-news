@@ -296,6 +296,3 @@ if __name__ == '__main__':
         print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
     else:
         print("This entire program took {:.2f} seconds to run".format(elapsed_time))
-    
-    
-        

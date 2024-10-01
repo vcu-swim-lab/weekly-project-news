@@ -24,5 +24,3 @@ class Commit(Base):
 
     def __repr__(self):
         return f"<Commit(sha={self.sha}, url={self.url})>"
-
-    

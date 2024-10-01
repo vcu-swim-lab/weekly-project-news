@@ -467,7 +467,7 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     for commit in commits:
         # if '[bot]' in commit.committer_name or 'bot' in commit.committer_name:
         #     continue
-        
+
         author = commit.commit_author_name
         found = False
         
@@ -632,6 +632,7 @@ if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
     database_path = 'github.db'
+
     engine = create_engine(f'sqlite:///{database_path}')
 
     # DATABASE SESSION
@@ -674,5 +675,3 @@ if __name__ == '__main__':
         print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
     else:
         print("This entire program took {:.2f} seconds to run".format(elapsed_time))
-    
-    

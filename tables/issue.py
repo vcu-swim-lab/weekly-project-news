@@ -35,4 +35,3 @@ class IssueComment(Base):
     repository_full_name = Column(String)
 
     issue_id = Column(Integer)
-

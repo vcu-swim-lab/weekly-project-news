@@ -38,5 +38,3 @@ class PullRequestComment(Base):
     pull_request_id = Column(Integer)
     
     repository_full_name = Column(String)
-    
-

@@ -54,7 +54,7 @@ def switch_api_key():
     print(API_KEYS[current_key_index])
     del g
     g = Github(API_KEYS[current_key_index])
-    print(f"Switched to API key {current_key_index + 1}")
+    print(f"Switched to API key {current_key_index + 1}: ", API_KEYS[current_key_index])
     logging.info(f"Switched to API key {current_key_index + 1}")
     return g
 
@@ -94,24 +94,28 @@ def get_repo_name(url):
 
 
 def insert_repository(data): 
-    # Extract only the fields that exist in the Repository model
-    repository_fields = {column.name for column in Repository.__table__.columns}
-    filtered_data = {key: value for key, value in data.items() if key in repository_fields}
+    try:
+        # Extract only the fields that exist in the Repository model
+        repository_fields = {column.name for column in Repository.__table__.columns}
+        filtered_data = {key: value for key, value in data.items() if key in repository_fields}
 
-    # Convert datetime fields
-    datetime_fields = ['created_at', 'updated_at']
-    for field in datetime_fields:
-        if field in filtered_data:
-            filtered_data[field] = datetime.strptime(filtered_data[field], "%Y-%m-%dT%H:%M:%SZ")
-    
-    if session.query(Repository).filter_by(id=filtered_data['id']).first() is not None:
-        print("Repository already exists!")
-        return
+        # Convert datetime fields
+        datetime_fields = ['created_at', 'updated_at']
+        for field in datetime_fields:
+            if field in filtered_data:
+                filtered_data[field] = datetime.strptime(filtered_data[field], "%Y-%m-%dT%H:%M:%SZ")
+        
+        if session.query(Repository).filter_by(id=filtered_data['id']).first() is not None:
+            print("Repository already exists!")
+            return
 
-    # Create and add the repository to the session
-    new_repo = Repository(**filtered_data)
-    session.add(new_repo)
-    session.commit()
+        # Create and add the repository to the session
+        new_repo = Repository(**filtered_data)
+        session.add(new_repo)
+        session.commit()
+    except Exception as e:
+        logging.error(f"Error inserting repository: {e}")
+        session.rollback()
 
 
 # RETRIEVE ISSUES
@@ -231,39 +235,42 @@ def get_commits(repo, date):
 
 # ISSUES 1: INSERT ISSUE
 def insert_issue(issue, repo_name):
-    # Extract only the fields that exist in the Issue model
-    issue_fields = {column.name for column in Issue.__table__.columns}
-    filtered_data = {key: value for key, value in issue.items() if key in issue_fields}
-
-    if session.query(Issue).filter_by(id=issue['id']).first() is not None:
-        print("Issue already exists!")
-        return
-
-    # If the user login exists, set it. If not, set it equal to None
     try:
-        filtered_data['user_login'] = issue['user']['login']
-    except Exception as e:
-        filtered_data['user_login'] = None
-        print(f"User data does not exist for issue {issue['id']}: {e}")
-    filtered_data['repository_full_name'] = repo_name
-    
-    # Convert datetime fields
-    datetime_fields = ['created_at', 'updated_at', 'closed_at']
-    for field in datetime_fields:
-        if field in filtered_data:
-            if filtered_data[field] is None:
-                filtered_data[field] = None
-            else:
-                filtered_data[field] = datetime.fromisoformat(filtered_data[field])
+        # Extract only the fields that exist in the Issue model
+        issue_fields = {column.name for column in Issue.__table__.columns}
+        filtered_data = {key: value for key, value in issue.items() if key in issue_fields}
 
-    # Create and add the issue to the session
-    try:
+        if session.query(Issue).filter_by(id=issue['id']).first() is not None:
+            print("Issue already exists!")
+            return
+
+        # If the user login exists, set it. If not, set it equal to None
+        try:
+            filtered_data['user_login'] = issue['user']['login']
+        except Exception as e:
+            filtered_data['user_login'] = None
+            print(f"User data does not exist for issue {issue['id']}: {e}")
+        filtered_data['repository_full_name'] = repo_name
+        
+        # Convert datetime fields
+        datetime_fields = ['created_at', 'updated_at', 'closed_at']
+        for field in datetime_fields:
+            if field in filtered_data:
+                if filtered_data[field] is None:
+                    filtered_data[field] = None
+                else:
+                    filtered_data[field] = datetime.fromisoformat(filtered_data[field])
+
+        # Create and add the issue to the session
         new_issue = Issue(**filtered_data)
         session.add(new_issue)
         session.commit()
     except IntegrityError as e:
+        logging.error(f"IntegrityError inserting issue: {e}")
         session.rollback()
-        print(f"IntegrityError: {e}")
+    except Exception as e:
+        logging.error(f"Error inserting issue: {e}")
+        session.rollback()
     
 # ISSUES 2: INSERT ISSUE COMMENT
 def insert_issue_comment(comment_data, issue_id, repo_name):
@@ -299,8 +306,11 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         session.add(new_comment)
         session.commit()
     except IntegrityError as e:
+        logging.error(f"IntegrityError inserting issue: {e}")
         session.rollback()
-        print(f"IntegrityError: {e}")
+    except Exception as e:
+        logging.error(f"Error inserting issue: {e}")
+        session.rollback()
 
 
 
@@ -337,12 +347,45 @@ def insert_pull_request(pull_request, repo_name):
     
     # Try/except for inserting pull request
     try:
+        pull_fields = {column.name for column in PullRequest.__table__.columns}
+        filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
+        
+        # Check if the pull request already exists
+        if session.query(PullRequest).filter_by(id=pull_request['id']).first() is not None:
+            print("Pull Request already exists!")
+            return
+        
+        # Try/except for user login
+        try:
+            filtered_data['user_login'] = pull_request['user']['login']
+        except Exception as e:
+            filtered_data['user_login'] = None
+            print(f"User data does not exist for pull request {pull_request['id']}: {e}")
+        filtered_data['repository_full_name'] = repo_name
+        
+
+        # Set repo name
+        filtered_data['repository_full_name'] = repo_name
+        
+        # Convert datetime fields
+        datetime_fields = ['created_at', 'updated_at', 'closed_at']
+        for field in datetime_fields:
+            if field in filtered_data:
+                if filtered_data[field] is None:
+                    filtered_data[field] = None
+                else:
+                    filtered_data[field] = datetime.fromisoformat(filtered_data[field])
+        
+        # Try/except for inserting pull request
         new_pr = PullRequest(**filtered_data)
         session.add(new_pr)
         session.commit()
     except IntegrityError as e:
+        logging.error(f"IntegrityError inserting issue: {e}")
         session.rollback()
-        print(f"IntegrityError: {e}")
+    except Exception as e:
+        logging.error(f"Error inserting issue: {e}")
+        session.rollback()
 
     
 # PRS 2: INSERT PR COMMENT
@@ -367,55 +410,66 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
     filtered_comment_data['pull_request_id'] = pr_id
     filtered_comment_data['repository_full_name'] = repo_name
 
-    # Convert datetime fields if necessary
-    datetime_fields = ['created_at', 'updated_at']
-    for field in datetime_fields:
-        if field in filtered_comment_data and isinstance(filtered_comment_data[field], str):
-            filtered_comment_data[field] = datetime.strptime(filtered_comment_data[field], "%Y-%m-%dT%H:%M:%SZ")
+        # Convert datetime fields if necessary
+        datetime_fields = ['created_at', 'updated_at']
+        for field in datetime_fields:
+            if field in filtered_comment_data and isinstance(filtered_comment_data[field], str):
+                filtered_comment_data[field] = datetime.strptime(filtered_comment_data[field], "%Y-%m-%dT%H:%M:%SZ")
 
-    try:
         new_comment = PullRequestComment(**filtered_comment_data)
         session.add(new_comment)
         session.commit()
     except IntegrityError as e:
+        logging.error(f"IntegrityError inserting issue: {e}")
         session.rollback()
-        print(f"IntegrityError: {e}")
+    except Exception as e:
+        logging.error(f"Error inserting issue: {e}")
+        session.rollback()
     
 
 # COMMITS 1: INSERT COMMIT
 def insert_commit(commit, repo_name):
-    commit_fields = {column.name for column in Commit.__table__.columns}
-    filtered_data = {key: value for key, value in commit.items() if key in commit_fields}
-    
-    # Check if the commit already exists
-    if session.query(Commit).filter_by(sha=commit['sha']).first() is not None:
-        print("Commit already exists!")
-        return
-    
-    # Try/except for committer and commit author data
     try:
-        filtered_data['commit_author_login'] = commit['author']['login'] if not None else ''
-        filtered_data['commit_author_name'] = commit['commit']['author']['name'] if not None else ''
+        commit_fields = {column.name for column in Commit.__table__.columns}
+        filtered_data = {key: value for key, value in commit.items() if key in commit_fields}
         
-        filtered_data['committer_login'] = commit['committer']['login'] if not None else ''
-        filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else ''
-    except Exception as e:
-        print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
+        # Check if the commit already exists
+        if session.query(Commit).filter_by(sha=commit['sha']).first() is not None:
+            print("Commit already exists!")
+            return
+        
+        # Try/except for committer and commit author data
+        try:
+            # filtered_data['commit_author_login'] = commit['author']['login'] if not None else None
+            # filtered_data['commit_author_name'] = commit['commit']['author']['name'] if not None else None
+            filtered_data['commit_author_login'] = commit['author']['login'] if not None else ''
+            filtered_data['commit_author_name'] = commit['commit']['author']['name'] if not None else ''
+            
+            # filtered_data['committer_login'] = commit['committer']['login'] if not None else None
+            # filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else None
+            filtered_data['committer_login'] = commit['committer']['login'] if not None else ''
+            filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else ''
+        except Exception as e:
+            print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
+        
+        
     
-    
-   
-    # Set repo name, committer date, and commit message
-    filtered_data['repository_full_name'] = repo_name
-    filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date']) if not None else ''
-    filtered_data['commit_message'] = commit['commit']['message'] if not None else ''
-    
-    try:
+        # Set repo name, committer date, and commit message
+        filtered_data['repository_full_name'] = repo_name
+        # filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date'])
+        # filtered_data['commit_message'] = commit['commit']['message'] if not None else None
+        filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date']) if not None else ''
+        filtered_data['commit_message'] = commit['commit']['message'] if not None else ''
+        
         new_commit = Commit(**filtered_data)
         session.add(new_commit)
         session.commit()
     except IntegrityError as e:
+        logging.error(f"IntegrityError inserting issue: {e}")
         session.rollback()
-        print(f"IntegrityError: {e}")
+    except Exception as e:
+        logging.error(f"Error inserting issue: {e}")
+        session.rollback()
 
 # Insert all repository data relative to a specific date (e.g. one week, one year, etc.)
 def insert_all_data(repo_name, date):
@@ -558,8 +612,6 @@ if __name__ == '__main__':
     limit = 10000
     
     # Get owners and repos
-    file_name = 'subscribers.json'
-    with open(file_name, 'r') as f:
         subscriber_data = json.load(f)
     
     # Keep a list of the subscriber repos
@@ -573,6 +625,7 @@ if __name__ == '__main__':
                 # Check that the repository is public
                 if check_repo(repo_name):
                     print(f"Repository is either private or does not exist.")
+                    logging.warning(f"Repository {repo_name} is either private or does not exist.")
                     continue
                 # ex. https://github.com/cnovalski1/APIexample
                 parts = repo_name.split('/')
@@ -598,8 +651,11 @@ if __name__ == '__main__':
             
             # If repo already exists in database
             if repo in current_repo_list:
+                logging.info(f"Updating existing repository: {repo_name}")
+
                 insert_all_data(repo_name, one_week_ago)
             else: # Repo doesn't exist in database, so insert it
+                logging.info(f"Inserting new repository: {repo_name}")
                 repo_data = get_a_repository(repo, headers)
                 insert_repository(repo_data)
                 insert_all_data(repo_name, one_year_ago)
@@ -619,9 +675,5 @@ if __name__ == '__main__':
         logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
     
     except Exception as e:
-        # logging.error(f"An error occurred in the main process: {e}")
+        logging.error(f"An error occurred in the main process: {e}")
         print(f"An error occurred: {e}")
-        
-
-
-    

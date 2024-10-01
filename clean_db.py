@@ -8,15 +8,17 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
+# from tables.user import User
 from datetime import datetime  # Import datetime
 import sys
 from parse_github_data import *
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from sort_data import *
 
 # Deletes a repository from the database
 def delete_repository(session, repo_name):
     repo = session.query(Repository).filter(Repository.name == repo_name).first()
-    
+
     try:
         if not repo:
             print(f"Repository {repo_name} does not exist in the database")
@@ -201,8 +203,3 @@ if __name__ == '__main__':
         print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
     else:
         print("This entire program took {:.2f} seconds to run".format(elapsed_time))
-    
-    
-        
-
-        

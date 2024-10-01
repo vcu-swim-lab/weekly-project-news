@@ -19,4 +19,3 @@ class Repository(Base):
     def __repr__(self):
         return f"<Repository(id={self.id}, full_name={self.full_name})>"
 
-

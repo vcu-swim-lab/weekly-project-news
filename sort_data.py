@@ -415,7 +415,7 @@ def get_num_commits(commit_data):
 
 
 # CONTRIBUTORS 1: Gets ALL contributors who are considered "active" within one_week_ago
-# Active: > 0 commits this month, > 0 issues this month, AND > 0 PRs this month
+# Active: > 0 commits this month, > 0 issues this month, > 0 PRs this month, or > 2 comments this month
 
 # TODO: Change this to look at comment data as well. Query comments made by a specific user.
 # TODO: Filter out individuals such as TensorflowGardener (maybe), or look at PR and issue authors again.
@@ -587,7 +587,8 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
         contributor for contributor in active_contributors
         if contributor['comments'] > comment_threshold or contributor['commits'] > commit_threshold or contributor['pull_requests'] > pr_threshold or contributor['issues'] > issue_threshold
     ]
-
+    num_contributors = len(active_contributors)
+    active_contributors.append({"number_of_active_contributors": num_contributors})
     return active_contributors
 
 

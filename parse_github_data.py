@@ -11,7 +11,7 @@ import os
 from sqlalchemy import create_engine
 import logging
 from sqlalchemy.exc import IntegrityError
-from dotenv import load_doten
+from dotenv import load_dotenv
 from github import Github
 from datetime import datetime, timedelta, timezone
 import time
@@ -390,25 +390,26 @@ def insert_pull_request(pull_request, repo_name):
     
 # PRS 2: INSERT PR COMMENT
 def insert_pr_comment(comment_data, pr_id, repo_name):
-    comment_fields = {column.name for column in PullRequestComment.__table__.columns}
-    filtered_comment_data = {key: value for key, value in comment_data.items() if key in comment_fields}
-
-        
-    # Check if comment already exists in the database
-    if session.query(PullRequestComment).filter_by(id=comment_data['id']).first() is not None:
-        print("Pull Request Comment already exists!")
-        return
-    
-    # Try/except for user data
     try:
-        filtered_comment_data['user_login'] = comment_data['user']['login']
-    except Exception as e:
-        filtered_comment_data['user_login'] = None
-        print(f"User data does not exist for comment {comment_data['id']}: {e}")
+        comment_fields = {column.name for column in PullRequestComment.__table__.columns}
+        filtered_comment_data = {key: value for key, value in comment_data.items() if key in comment_fields}
+
+            
+        # Check if comment already exists in the database
+        if session.query(PullRequestComment).filter_by(id=comment_data['id']).first() is not None:
+            print("Pull Request Comment already exists!")
+            return
         
-    # Add pr ID to database and repo name
-    filtered_comment_data['pull_request_id'] = pr_id
-    filtered_comment_data['repository_full_name'] = repo_name
+        # Try/except for user data
+        try:
+            filtered_comment_data['user_login'] = comment_data['user']['login']
+        except Exception as e:
+            filtered_comment_data['user_login'] = None
+            print(f"User data does not exist for comment {comment_data['id']}: {e}")
+            
+        # Add pr ID to database and repo name
+        filtered_comment_data['pull_request_id'] = pr_id
+        filtered_comment_data['repository_full_name'] = repo_name
 
         # Convert datetime fields if necessary
         datetime_fields = ['created_at', 'updated_at']
@@ -612,8 +613,9 @@ if __name__ == '__main__':
     limit = 10000
     
     # Get owners and repos
+    with open("subscribers.json", 'r') as f:
         subscriber_data = json.load(f)
-    
+        
     # Keep a list of the subscriber repos
     subscriber_repo_list = []
 

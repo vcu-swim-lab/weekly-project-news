@@ -177,6 +177,7 @@ def quiet_issues(repo):
 
   # We are only summarizing the top 5 open issues (quiet)
   for i in range(size):
+
     data = issues[i]
     issue_title = data.get('title')
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
@@ -196,15 +197,17 @@ def quiet_issues(repo):
 
 # 4 - Closed Issues
 def closed_issues(repo):
-  if repo['closed_issues'] == []:
-    return "As of our latest update, there are no closed issues for the project this week.\n\n"
+  closed_issues_data = repo['closed_issues']
+  
+  if not closed_issues_data or closed_issues_data == []:
+        return "As of our latest update, there are no closed issues for the project this week.\n\n"
 
   all_closed_issues = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue", "only one detailed sentence")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
 
   # Step 1: get summaries for each closed issue first from the llm
-  for closed_issue in repo['closed_issues']:
+  for closed_issue in closed_issues_data:
     data = closed_issue
    
     if (data['body']):
@@ -237,11 +240,12 @@ def closed_issues(repo):
 # TODO: Change this to look at open and closed issues, rather than active issues.
 def issue_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
-  if repo['active_issues'] == []:
+  if repo['active_issues'] == [] or not repo['active_issues']:
     markdown += "As of our last update, there are no open issues with discussions going on within the past week. \n\n"
     return markdown
   
   issue_count = 0
+  count = 0
 
   for active_issue in repo['active_issues']:
     instructions = discussion_instructions()
@@ -249,6 +253,14 @@ def issue_discussion_insights(repo):
     generated_summary = generate_summary(active_issue, instructions, max_retries=5, base_wait=1)
 
     parts = generated_summary.rsplit('\n\n', 2)
+    count+=1
+    print(f"Processing issue {count} of {len(repo['active_issues'])}")
+    if len(parts) < 3:
+      # Handle the case where the expected parts are not present
+      print(f"Error processing discussion for [**{active_issue['title']}**]({active_issue['url']}): Unexpected summary format.\n\n")
+      continue
+
+
     summary = parts[0].strip()
     score = float(parts[1])
     reason = parts[2].strip()
@@ -461,8 +473,8 @@ def active_contributors(repo):
   
   print(len(repo['active_contributors']))
 
-  overall_summary += "Contributor | Commits | Pull Requests | Issues \n"
-  overall_summary += "---|---|---|---\n"
+  overall_summary += "Contributor | Commits | Pull Requests | Issues | Comments \n"
+  overall_summary += "---|---|---|---|---\n"
 
   # Step 1: filter out non-contributor entries and aggregate data
   contributors = []
@@ -484,7 +496,8 @@ def active_contributors(repo):
     overall_summary += contributor['author'] + " | "
     overall_summary += f"{contributor['commits']}" + " | "
     overall_summary += f"{contributor['pull_requests']}" + " | "
-    overall_summary += f"{contributor['issues']}" + " | \n"
+    overall_summary += f"{contributor['issues']}" + " | "
+    overall_summary +=f"{contributor['comments']}" + " | \n"
     
   return overall_summary + "\n\n"
 
@@ -524,7 +537,9 @@ if __name__ == '__main__':
     # "ggerganov/llama.cpp",
     # "nodejs/node",
     # "openxla/xla",
-    "stevenbui44/flashcode"
+    # "stevenbui44/flashcode"
+    "cnovalski1/APIexample",
+    "monicahq/monica"
   ]
 
 

@@ -17,7 +17,7 @@ API_KEY = os.environ.get("OPENAI_KEY")
 
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
-llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
 # param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
@@ -177,6 +177,7 @@ def quiet_issues(repo):
 
   # We are only summarizing the top 5 open issues (quiet)
   for i in range(size):
+
     data = issues[i]
     issue_title = data.get('title')
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
@@ -196,15 +197,17 @@ def quiet_issues(repo):
 
 # 4 - Closed Issues
 def closed_issues(repo):
-  if repo['closed_issues'] == []:
-    return "As of our latest update, there are no closed issues for the project this week.\n\n"
+  closed_issues_data = repo['closed_issues']
+  
+  if not closed_issues_data or closed_issues_data == []:
+        return "As of our latest update, there are no closed issues for the project this week.\n\n"
 
   all_closed_issues = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue", "only one detailed sentence")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 3)
 
   # Step 1: get summaries for each closed issue first from the llm
-  for closed_issue in repo['closed_issues']:
+  for closed_issue in closed_issues_data:
     data = closed_issue
    
     if (data['body']):
@@ -234,13 +237,15 @@ def closed_issues(repo):
 
 
 # 5 - Issue Discussion Insights
+# TODO: Change this to look at open and closed issues, rather than active issues.
 def issue_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
-  if repo['active_issues'] == []:
+  if repo['active_issues'] == [] or not repo['active_issues']:
     markdown += "As of our last update, there are no open issues with discussions going on within the past week. \n\n"
     return markdown
   
   issue_count = 0
+  count = 0
 
   for active_issue in repo['active_issues']:
     instructions = discussion_instructions()
@@ -248,6 +253,14 @@ def issue_discussion_insights(repo):
     generated_summary = generate_summary(active_issue, instructions, max_retries=5, base_wait=1)
 
     parts = generated_summary.rsplit('\n\n', 2)
+    count+=1
+    print(f"Processing issue {count} of {len(repo['active_issues'])}")
+    if len(parts) < 3:
+      # Handle the case where the expected parts are not present
+      print(f"Error processing discussion for [**{active_issue['title']}**]({active_issue['url']}): Unexpected summary format.\n\n")
+      continue
+
+
     summary = parts[0].strip()
     score = float(parts[1])
     reason = parts[2].strip()
@@ -337,6 +350,7 @@ def closed_pull_requests(repo):
 
 
 # 8 - Pull Request Discussion Insights
+# TODO: Change this to look at open and closed pull requests
 def pull_request_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
   if repo['active_pull_requests'] == []:
@@ -452,33 +466,38 @@ Provide your comprehensive analysis of all of the commits, generated as a bullet
 
 # 10 - Active Contributors
 def active_contributors(repo):
-  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, or created at least 1 pull request in the past month. \n\n"
+  overall_summary = "We consider an active contributor in this project to be any contributor who has made at least 1 commit, opened at least 1 issue, created at least 1 pull request, or made more than 2 comments in the last month. \n\n"
   if repo['active_contributors'][-1]['number_of_active_contributors'] == 0:
     overall_summary += "As of our latest update, there are no active contributors for the project this week.\n\n"
     return overall_summary
   
   print(len(repo['active_contributors']))
 
-  overall_summary += "Contributor | Commits | Pull Requests | Issues \n"
-  overall_summary += "---|---|---|---\n"
+  overall_summary += "Contributor | Commits | Pull Requests | Issues | Comments \n"
+  overall_summary += "---|---|---|---|---\n"
 
   # Step 1: filter out non-contributor entries and aggregate data
   contributors = []
   for contributor in repo['active_contributors']:
     if 'author' in contributor:  # Skip entries without 'author'
-      total_activity = contributor['commits'] + contributor['pull_requests'] + contributor['issues']
+      total_activity = contributor['commits'] + contributor['pull_requests'] + contributor['issues'] + contributor['comments']
       contributor['total_activity'] = total_activity
       contributors.append(contributor)
 
   # Step 2: sort contributors by total_activity in descending order
   sorted_contributors = sorted(contributors, key=lambda x: x['total_activity'], reverse=True)
 
+  # Truncate if list of contributors is > 10 members.
+  if (len(sorted_contributors) > 10):
+        sorted_contributors = sorted_contributors[:10]
+
   # Step 3: generate markdown output for all active contributors
   for contributor in sorted_contributors:
     overall_summary += contributor['author'] + " | "
     overall_summary += f"{contributor['commits']}" + " | "
     overall_summary += f"{contributor['pull_requests']}" + " | "
-    overall_summary += f"{contributor['issues']}" + " | \n"
+    overall_summary += f"{contributor['issues']}" + " | "
+    overall_summary +=f"{contributor['comments']}" + " | \n"
     
   return overall_summary + "\n\n"
 
@@ -518,7 +537,9 @@ if __name__ == '__main__':
     # "ggerganov/llama.cpp",
     # "nodejs/node",
     # "openxla/xla",
-    "stevenbui44/flashcode"
+    # "stevenbui44/flashcode"
+    "cnovalski1/APIexample",
+    "monicahq/monica"
   ]
 
 
@@ -531,7 +552,7 @@ if __name__ == '__main__':
     repo_name = repository
 
     # 2.1: call all sort_data.py functions on the repo
-    repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name)
+    repo_data = get_repo_data(session, one_week_ago, thirty_days_ago, limit, repository)
 
     output_filename = os.path.join(newsletter_directory, f"newsletter_{repository.replace('/', '_')}.txt")
 
@@ -603,8 +624,8 @@ if __name__ == '__main__':
         # 1.4.1 Closed Issues This Week
         outfile.write(f"**Closed Issues This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
 
-        # 1.4.2 Average Time to Close Issues This Week
-        outfile.write(f"**Average Issue Close Time (This Week):** {repo_data.get('average_issue_close_time_weekly', None)}\n\n")
+        # 1.4.2 Average Time to Close Issues This Week (REMOVED)
+
 
         # 1.4.3 Issues
         outfile.write("**Summarized Issues:**\n\n")

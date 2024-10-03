@@ -16,7 +16,6 @@ import sys
 from datetime import datetime  # Import datetime
 import json
 import requests 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build_database')))
 from parse_github_data import *
 from sqlalchemy import and_
 from sqlalchemy_json import NestedMutableJson
@@ -27,6 +26,7 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
+import operator
 
 
 load_dotenv()
@@ -105,6 +105,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
     return closed_issue_data
 
 # ISSUES 3: Get list of "active" issues, which are issues commented on/updated within the last week
+# TODO Make this COMMENTED ON within the last week
 def get_active_issues(session, one_week_ago, repository_full_name):
     # Retreive issues and set up variables
     issues = session.query(Issue).filter(
@@ -414,7 +415,10 @@ def get_num_commits(commit_data):
 
 
 # CONTRIBUTORS 1: Gets ALL contributors who are considered "active" within one_week_ago
-# Active: > 0 commits this month, > 0 issues this month, AND > 0 PRs this month
+# Active: > 0 commits this month, > 0 issues this month, > 0 PRs this month, or > 2 comments this month
+
+# TODO: Change this to look at comment data as well. Query comments made by a specific user.
+# TODO: Filter out individuals such as TensorflowGardener (maybe), or look at PR and issue authors again.
 def get_active_contributors(session, thirty_days_ago, repository_full_name):
     # Query the database to retreive commits
     commits = session.query(Commit).filter(
@@ -431,12 +435,28 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
             PullRequest.created_at >= thirty_days_ago,
         )
     ).all()
+
+    # Query for pull request comments
+    pr_comments = session.query(PullRequestComment).filter(
+        and_(
+            PullRequestComment.repository_full_name == repository_full_name,
+            PullRequestComment.created_at >= thirty_days_ago
+        )
+    )
     
     # Query the database for issues
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name,
             Issue.created_at >= thirty_days_ago,
+        )
+    ).all()
+
+    # Query for issue comments
+    issue_comments = session.query(IssueComment).filter(
+        and_(
+            IssueComment.repository_full_name == repository_full_name,
+            IssueComment.created_at >= thirty_days_ago,
         )
     ).all()
     
@@ -447,9 +467,8 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     for commit in commits:
         # if '[bot]' in commit.committer_name or 'bot' in commit.committer_name:
         #     continue
-        
-        # author = commit.commit_author_name
-        author = commit.committer_name
+
+        author = commit.commit_author_name
         found = False
         
         for contributor in active_contributors:    
@@ -462,7 +481,8 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
                 'author': author,
                 'commits': 1,
                 'pull_requests': 0,
-                'issues': 0
+                'issues': 0,
+                'comments': 0
             }
             active_contributors.append(contributor_data)
         
@@ -483,7 +503,8 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
                 'author': author,
                 'commits': 0,
                 'pull_requests': 1,
-                'issues': 0
+                'issues': 0,
+                'comments': 0
             }
             active_contributors.append(contributor_data)
     
@@ -504,25 +525,70 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
                 'author': author,
                 'commits': 0,
                 'pull_requests': 0,
-                'issues': 1
+                'issues': 1,
+                'comments': 0
             }
             active_contributors.append(contributor_data)
         
+    # By number of issue comments
+    for comment in issue_comments:
+        if '[bot]' in comment.user_login.lower() or 'bot' in comment.user_login.lower():
+            continue
+
+        author = comment.user_login
+        found = False
+
+        for contributor in active_contributors:
+            if contributor['author'] == author:
+                contributor['comments'] += 1
+                found = True
+                break
+        if not found:
+            contributor_data = {
+                'author': author,
+                'commits': 0,
+                'pull_requests': 0,
+                'issues': 0,
+                'comments': 1
+            }
+            active_contributors.append(contributor_data)
+
+    # Loop through pull request comments
+    for comment in pr_comments:
+        if '[bot]' in comment.user_login.lower() or 'bot' in comment.user_login.lower():
+            continue
+
+        author = comment.user_login
+        found = False
+
+        for contributor in active_contributors:
+            if contributor['author'] == author:
+                contributor['comments'] += 1
+                found = True
+                break
+        if not found:
+            contributor_data = {
+                'author': author,
+                'commits': 0,
+                'pull_requests': 0,
+                'issues': 0,
+                'comments': 1
+            }
+            active_contributors.append(contributor_data)
     
     commit_threshold = 0 # Commit threshold for being considered active
     pr_threshold = 0 # Pull requests in the last week
     issue_threshold = 0 # Issues created in the last month
+    comment_threshold = 2 # Comments in the last month
 
     # Filter contributors who meet the activity threshold
     # Change conditional statement depending on what is considered "active"
     active_contributors = [
         contributor for contributor in active_contributors
-        if contributor['commits'] > commit_threshold or contributor['pull_requests'] > pr_threshold or contributor['issues'] > issue_threshold
+        if contributor['comments'] > comment_threshold or contributor['commits'] > commit_threshold or contributor['pull_requests'] > pr_threshold or contributor['issues'] > issue_threshold
     ]
-    
-    num_active_contributors = len(active_contributors) # Gets number of active contributors
-    active_contributors.append({'number_of_active_contributors': num_active_contributors}) # Add to data set
-
+    num_contributors = len(active_contributors)
+    active_contributors.append({"number_of_active_contributors": num_contributors})
     return active_contributors
 
 
@@ -566,7 +632,8 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
-    database_path = '../build_database/github.db'
+    database_path = 'github.db'
+
     engine = create_engine(f'sqlite:///{database_path}')
 
     # DATABASE SESSION

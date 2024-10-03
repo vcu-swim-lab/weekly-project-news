@@ -73,6 +73,8 @@ def main():
 
     # Round 1: Process the data
     processed_data = process_repo_names(data)
+    
+    delete_problem_repos(processed_data)
 
     # Round 2: Remove private/fake/non-GitHub repos
     delete_problem_repos(processed_data)

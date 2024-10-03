@@ -253,6 +253,8 @@ def issue_discussion_insights(repo):
     generated_summary = generate_summary(active_issue, instructions, max_retries=5, base_wait=1)
 
     parts = generated_summary.rsplit('\n\n', 2)
+
+    # ERROR CATCHING CODE
     count+=1
     print(f"Processing issue {count} of {len(repo['active_issues'])}")
     if len(parts) < 3:
@@ -504,13 +506,6 @@ def active_contributors(repo):
 
 
 
-
-
-
-
-
-
-
 if __name__ == '__main__':
 
   # PART ONE: Setting everything up
@@ -575,8 +570,22 @@ if __name__ == '__main__':
 
         outfile.write("***\n\n")
 
-
-
+        # 0. Table of Contents
+        outfile.write("# Table of Contents\n")      
+        outfile.write("[I. Issues](#i-issues)\n")
+        outfile.write("[1.1. Open Issues](#i1-open-issues)\n")
+        outfile.write("[1.2. Top 5 Active Issues](#i2-top-5-active-issues)\n")
+        outfile.write("[1.3. Top 5 Quiet Issues](#i3-top-5-quiet-issues)\n")
+        outfile.write("[1.4. Closed Issues](#i4-closed-issues)\n\n")
+        outfile.write("[II. Pull Requests](#ii-pull-requests)\n")
+        outfile.write("[2.1. Open Pull Requests](#21-open-pull-requests)\n")
+        outfile.write("[2.2 Closed Pull Requests](#22-closed-pull-requests)\n")
+        outfile.write("[2.3 Pull Request Discussion Insights](#23-pull-request-discussion-insights)\n\n")
+        outfile.write("[III. Commits](#iii-commits)\n")
+        outfile.write("[3.1. Commits](#31-commits)\n\n")
+        outfile.write("[IV. Contributors](#iv-contributors)\n")
+        outfile.write("[4.1. Contributors](#41-contributors)\n")
+        
         # 1: Issues
         outfile.write("# I. Issues\n\n")
 

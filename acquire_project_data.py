@@ -1,13 +1,11 @@
 from github import Github
-from datetime import datetime, timedelta, timezone, date
+from datetime import datetime, timedelta, timezone
 import time
 import json
 import os
 import requests
 from dotenv import load_dotenv
 import concurrent.futures
-import multiprocessing
-
 
 load_dotenv()
 
@@ -19,46 +17,6 @@ def rate_limit_check(g):
         now = datetime.now(tz=timezone.utc)
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
-        
-
-# Starter code for defining our own API requests for issues
-def request_issues_open_date(repo_owner, repo_name, api_key):
-    # GitHub API URL for issues
-    url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/issues'
-
-    # Headers for the request, including the access token for authentication
-    headers = {
-        'Authorization': f'token {api_key}',
-        'Accept': 'application/vnd.github.v3+json'
-    }
-
-    # Parameters for the request, e.g., state can be 'open', 'closed', or 'all'
-    params = {
-        'state': 'open',  # Change this to 'open' or 'closed' if needed
-        'per_page': 100,  # Number of results per page (max 100)
-        'page': 1,  # Page number to fetch
-        'sort': 'created',
-        'direction': 'asc'
-    }
-
-    all_issues = []
-    page = 1
-    while True:
-        response = requests.get(url, headers=headers, params=params)
-        if response.status_code != 200:
-            raise Exception(f'Error fetching issues: {response.status_code}')
-        
-        issues = response.json()
-        
-        if not issues:
-            break
-
-        all_issues.extend(issues)
-        params['page'] += 1
-    
-    return all_issues
-
-
 
 
 # ISSUES 1: Gets all open issues within one_week_ago
@@ -68,63 +26,73 @@ def get_open_issues(g, repo, one_week_ago):
     issues = repo.get_issues(state='open', since=one_week_ago)
 
     for issue in issues:
-        # issue within one_week_ago
         # issue is not a pull request
         # issue is not a bot
-        if issue.created_at > one_week_ago and not issue.pull_request and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
-            issue_data = {
-                "title": issue.title,
-                "body": issue.body,
-                "user": issue.user.login,
-                "state": issue.state,
-                "comments": []
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
+            continue
+        
+        # Retreive necessary data for each issue including title, body, user, labels, and comments
+        issue_data = {
+            "title": issue.title,
+            "body": issue.body,
+            "user": issue.user.login,
+            "labels": [label.name for label in issue.get_labels()],
+            "url":  issue.html_url,
+            "comments": []
+        }
+
+        # Retreive comments from each issue 
+        comments = issue.get_comments()
+        
+        # Iterate through each comment
+        for comment in comments:
+            # Omits comments made by bots
+            if "[bot]" in comment.user.login.lower() or "bot" in comment.user.login.lower():
+                continue
+            
+            # Retreive user and body of each comment
+            comment_data = {
+                "user": comment.user.login,
+                "body": comment.body
             }
+            # Add to issue list
+            issue_data["comments"].append(comment_data)
 
-            comments = issue.get_comments()
-            for comment in comments:
-                if "[bot]" not in comment.user.login.lower() and "bot" not in comment.user.login.lower():
-                    comment_data = {
-                        "user": comment.user.login,
-                        "body": comment.body
-                    }
-                    issue_data["comments"].append(comment_data)
-
-            issue_data_open.append(issue_data)
+        # Add this issue to the issue data
+        issue_data_open.append(issue_data)
+        
         rate_limit_check(g)
     
+    # Return list of open issues
     return issue_data_open
 
 # ISSUES 2: Gets all closed issues within one_week_ago
 def get_closed_issues(g, repo, one_week_ago):
     # Array to store issue data
     issue_data_closed = []
+    
+    # API call to retreive closed issues within the last week
     issues = repo.get_issues(state='closed', since=one_week_ago)
 
+    # Iterate through each issue to retreive data
     for issue in issues:
-        # issue within one_week_ago
-        # issue is not a pull request
-        # issue is not a bot
-        if issue.created_at > one_week_ago and not issue.pull_request and "[bot]" not in issue.user.login.lower() and "bot" not in issue.user.login.lower():
-            issue_data = {
-                "title": issue.title,
-                "body": issue.body,
-                "user": issue.user.login,
-                "state": issue.state,
-                "comments": []
-            }
+        # Issue is not a pull request and issue is not a bot
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
+            continue
+        
+        # Retreive necessary data for each issue including title, body, user, and comments
+        issue_data = {
+            "title": issue.title,
+            "body": issue.body,
+            "user": issue.user.login,
+        }
 
-            comments = issue.get_comments()
-            for comment in comments:
-                if "[bot]" not in comment.user.login.lower() and "bot" not in comment.user.login.lower():
-                    comment_data = {
-                        "user": comment.user.login,
-                        "body": comment.body
-                    }
-                    issue_data["comments"].append(comment_data)
-
-            issue_data_closed.append(issue_data)
+        # Add data from entire issue to issue_data_closed
+        issue_data_closed.append(issue_data)
+        
         rate_limit_check(g)
 
+    # Return list of closed issue data
     return issue_data_closed
   
 # ISSUES 3: Gets all issues, sorted by longest open date first
@@ -137,7 +105,6 @@ def sort_issues_open_date(g, repo, limit):
     issues = repo.get_issues(state='open', sort='created', direction='asc')
     
     for issue in issues:
-        # Check for bots, and filter out issues that are actually pull requests
         # Omits issues that are pull requests and/or made by bots
         if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
             continue
@@ -148,9 +115,10 @@ def sort_issues_open_date(g, repo, limit):
         hours, remainder = divmod(time_open.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
 
-        # Store the issue title, time open in days, hours, and minutes, minutes open, and a link to the issue
+        # Store the issue title, time open in days, hours, and minutes, minutes open, labels, and a link to the issue
         issue_data = {
             "title": issue.title,
+            "labels": [label.name for label in issue.get_labels()],
             "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
             "url": issue.html_url
         }
@@ -189,6 +157,7 @@ def sort_issues_num_comments(g, repo, limit):
         # Otherwise, add the title and number of comments to the data array
         data = {
         "title": issue.title,
+        "labels": [label.name for label in issue.get_labels()],
         "number_of_comments": num_comments,
         "url": issue.html_url
         }
@@ -213,11 +182,6 @@ def get_num_open_issues_weekly(weekly_open_issues):
 def get_num_closed_issues_weekly(weekly_closed_issues):
     return len(weekly_closed_issues)
 
-# ISSUES 7: Get current total number of open issues
-def get_num_open_issues_all(all_open_issues):
-    return len(all_open_issues)
-    
-
 # ISSUES 7: Get average time to close issues all time
 def avg_issue_close_time(g, repo):
     # Retreive the issues and set up time variables
@@ -228,7 +192,8 @@ def avg_issue_close_time(g, repo):
     
     # Iterates through each issue and calculates the total close time in minutes for each issue
     for issue in issues:
-        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower(): # Omits issues that are pull requests and/or made by bots
+        # Omits issues that are pull requests and/or made by bots
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
             continue
         
         time_open = issue.closed_at - issue.created_at
@@ -240,7 +205,7 @@ def avg_issue_close_time(g, repo):
     if total_issues > 0:
         avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
    
-    return avg_close_time # Return the average time to close issues
+    return "{:.2f} days".format(avg_close_time) # Return the average time to close issues formatted to 2 decimal places
 
 
 # ISSUES 8: Get average time to close issues in the last week 
@@ -265,7 +230,52 @@ def avg_issue_close_time_weekly(g, repo, one_week_ago):
     if total_issues > 0:
         avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
  
-    return avg_close_time # Return the average time to close issues in the last week
+    # Return the average time to close issues in the last week formatted to 2 decimals
+    return "{:.2f} days".format(avg_close_time)
+
+# ISSUES 9: Get list of "active" issues, which are issues commented on/updated within the last week
+# Also consider changing the parameters for "active" issues being issues.updated_at or comments.updated_at
+def get_active_issues(g, repo, one_week_ago):
+    # Retreive issues and set up variables
+    issues = repo.get_issues(state='open')
+    active_issue_data = []
+    
+    # Iterate through each issue and select "active" issues
+    for issue in issues:
+        # Check for bots and filter out pull requests
+        if issue.pull_request or "[bot]" in issue.user.login.lower() or "bot" in issue.user.login.lower():
+            continue
+    
+        # Add necessary data to the issue data array
+        issue_data = {
+            "title": issue.title,
+            "body": issue.body,
+            "user": issue.user.login,
+            "labels": [label.name for label in issue.get_labels()],
+            "url": issue.html_url,
+            "comments": []
+        }
+
+        # Get the issue comments
+        comments = issue.get_comments()
+        # Iterate through each comment and list
+        for comment in comments:
+            # Check for bots and make sure the comment was made within one week ago
+            # Keep same filtering conventions consistent. Created_at <= one_week_ago means older than one week ago
+            if "[bot]" in comment.user.login.lower() or "bot" in comment.user.login.lower() or comment.created_at < one_week_ago:
+                continue
+            else:
+                comment_data = {
+                    "user": comment.user.login,
+                    "body": comment.body
+                }
+                issue_data["comments"].append(comment_data)
+
+            active_issue_data.append(issue_data)
+        
+        rate_limit_check(g)
+    
+    return active_issue_data
 
 
 # PRS 1: Gets open pull requests within one_week_ago
@@ -310,15 +320,11 @@ def get_closed_prs(g, repo, one_week_ago):
 
     return pr_data_closed
 
-# PRS 3: Gets NUMBER of ALL pull requests made within one_week_ago
-def get_num_prs(pr_data_open, pr_data_closed):
-    return len(pr_data_open) + len(pr_data_closed)
-
-# PRS 4: Get NUMBER of OPEN pull requests made within one_week_ago
+# PRS 3: Get NUMBER of OPEN pull requests made within one_week_ago
 def get_num_open_prs(pr_data_open):
     return len(pr_data_open)
 
-# PRS 5: Get NUMBER of CLOSED pull requests made within one_week_ago
+# PRS 4: Get NUMBER of CLOSED pull requests made within one_week_ago
 def get_num_closed_prs(pr_data_closed):
     return len(pr_data_closed)
 
@@ -345,7 +351,6 @@ def get_commit_messages(g, repo, one_week_ago):
 # COMMITS 2: Gets NUMBER of commits made within one_week_ago
 def get_num_commits(commit_data):
     return len(commit_data)
-
 
 
 # CONTRIBUTORS 1: Gets NUMBER of new contributors who made their first commit within one_week_ago
@@ -395,7 +400,6 @@ def get_new_contributors(g, repo, one_week_ago):
     new_contributor_data.append({"number_of_new_contributors": num_new_contributors})
     
     return new_contributor_data
-
 
 # CONTRIBUTORS 2: Gets NUMBER of contributors who made any commits within one_week_ago
 def get_weekly_contributors(g, repo, one_week_ago):
@@ -518,7 +522,7 @@ def get_active_contributors(g, repo, one_week_ago, thirty_days_ago):
     
 
 
-# Main 
+# # Main 
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
@@ -542,9 +546,6 @@ if __name__ == '__main__':
     
     # Limit the number of requests in certain pages (limits number of items in for loop)
     limit = 100
-
-    # Data array to be written to JSON
-    # data = []
     
     directory = 'github_data'
     if not os.path.exists(directory):
@@ -553,7 +554,7 @@ if __name__ == '__main__':
     # for-loop for every repo name (ex. tensorflow/tensorflow)
     for repo_url in repo_names:
         # Testing my own repo 
-        PROJECT_NAME = 'cnovalski1/APIexample'
+        PROJECT_NAME = 'monicahq/monica'
         # PROJECT_NAME = repo_url.split('https://github.com/')[-1]
         
         
@@ -565,43 +566,38 @@ if __name__ == '__main__':
         
         repo = g.get_repo(PROJECT_NAME)
         
-        # Multiprocessing code
-        # Maybe change issues_open and closed to open_issues and closed OR change open_pull_requests to pull_requests_open
+        
+        # This runs all the data gathering functions concurrently using multiprocessing
+        # If adding to this code, make sure data is accessed from top to bottom correctly, or else it will break
+        # This "with" statement does NOT create any local scope, so variables can be accessed outside of it
         with concurrent.futures.ProcessPoolExecutor() as executor:
-            # List sorting issues first for proper access
-            issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)
+            # List sorting issues first for proper result access
+            # ISSUES
+            issues_by_open_date = executor.submit(sort_issues_open_date, g, repo, limit)            
+            issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)            
+            open_issues = executor.submit(get_open_issues, g, repo, one_week_ago)           
+            closed_issues = executor.submit(get_closed_issues, g, repo, one_week_ago)            
+            active_issues = executor.submit(get_active_issues, g, repo, one_week_ago)            
+            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, open_issues.result())            
+            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, closed_issues.result())            
+            average_issue_close_time = executor.submit(avg_issue_close_time, g, repo)        
+            average_issue_close_time_weekly = executor.submit(avg_issue_close_time_weekly, g, repo, one_week_ago)
             
-            issues_by_number_of_comments = executor.submit(sort_issues_num_comments, g, repo, limit)
-            
-            issues_open = executor.submit(get_open_issues, g, repo, one_week_ago)
-            
-            issues_closed = executor.submit(get_closed_issues, g, repo, one_week_ago)
-            
-            num_all_open_issues = executor.submit(get_num_open_issues_all, issues_by_open_date.result())
-            
-            num_weekly_open_issues = executor.submit(get_num_open_issues_weekly, issues_open.result())
-            
-            num_weekly_closed_issues = executor.submit(get_num_closed_issues_weekly, issues_closed.result())
-            
-            open_pull_requests = executor.submit(get_open_prs, g, repo, one_week_ago)
-            
-            closed_pull_requests = executor.submit(get_closed_prs, g, repo, one_week_ago)
-            
-            num_all_prs = executor.submit(get_num_prs, open_pull_requests.result(), closed_pull_requests.result())
-            
-            num_open_prs = executor.submit(get_num_open_prs, open_pull_requests.result())
-            
+            # PRS
+            open_pull_requests = executor.submit(get_open_prs, g, repo, one_week_ago)            
+            closed_pull_requests = executor.submit(get_closed_prs, g, repo, one_week_ago)            
+            num_open_prs = executor.submit(get_num_open_prs, open_pull_requests.result())            
             num_closed_prs = executor.submit(get_num_closed_prs, closed_pull_requests.result())
             
-            commits = executor.submit(get_commit_messages, g, repo, one_week_ago)
-            
+            # COMMITS
+            commits = executor.submit(get_commit_messages, g, repo, one_week_ago)            
             num_commits = executor.submit(get_num_commits, commits.result())
-            
-            new_contributors = executor.submit(get_new_contributors, g, repo, one_week_ago)
-            
-            contributed_this_week = executor.submit(get_weekly_contributors, g, repo, one_week_ago)
-            
+
+            # CONTRIBUTORS
+            new_contributors = executor.submit(get_new_contributors, g, repo, one_week_ago)            
+            contributed_this_week = executor.submit(get_weekly_contributors, g, repo, one_week_ago)           
             active_contributors = executor.submit(get_active_contributors, g, repo, one_week_ago, thirty_days_ago)
+            
             
         
         # TODO: all of the contributors (3 functions) have not been checked yet
@@ -609,16 +605,17 @@ if __name__ == '__main__':
         # Format and store data to write to JSON file
         repo_data = {
             "repo_name": PROJECT_NAME,
-            "issues_open": issues_open.result(),
-            "issues_closed": issues_closed.result(),
-            "num_all_open_issues": num_all_open_issues.result(),
+            "open_issues": open_issues.result(),
+            "closed_issues": closed_issues.result(),
+            "active_issues": active_issues.result(),
             "num_weekly_open_issues": num_weekly_open_issues.result(),
             "num_weekly_closed_issues": num_weekly_closed_issues.result(),
             "issues_by_open_date": issues_by_open_date.result(),
             "issues_by_number_of_comments": issues_by_number_of_comments.result(),
+            "average_issue_close_time": average_issue_close_time.result(),
+            "average_issue_close_time_weekly": average_issue_close_time_weekly.result(),
             "open_pull_requests": open_pull_requests.result(),
             "closed_pull_requests": closed_pull_requests.result(),
-            "num_all_prs": num_all_prs.result(),
             "num_open_prs": num_open_prs.result(),
             "num_closed_prs": num_closed_prs.result(),
             "commits": commits.result(),
@@ -627,8 +624,6 @@ if __name__ == '__main__':
             "contributed_this_week": contributed_this_week.result(),
             "active_contributors": active_contributors.result()
         }
-            
-        # data.append(repo_data)
 
         try:
             with open(filename, "w") as outfile:

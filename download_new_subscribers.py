@@ -2,9 +2,8 @@ import requests
 import os
 import json
 from dotenv import load_dotenv
-import json
 
-load_dotenv('public.env')  
+load_dotenv()  
 
 headers = {
     "Authorization": f"Token {os.environ['BUTTONDOWN_API_KEY']}",
@@ -18,7 +17,6 @@ response = requests.request(METHOD, f"{BASE_URL}/v1{ENDPOINT}", headers=headers)
 
 if response.status_code == 200:
   subscribers_data = response.json()
-
   # save it to subscribers.json
   with open('subscribers.json', 'w') as file:
     json.dump(subscribers_data, file, indent=2)

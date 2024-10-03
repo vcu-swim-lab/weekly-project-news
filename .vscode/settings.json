@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./build_database",
+        "./analyze_data"
+    ]
+}

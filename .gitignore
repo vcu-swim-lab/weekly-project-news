@@ -167,3 +167,5 @@ public.env
 subscribers.json
 github.db
 newsletter_preparation.log
+
+newsletter_data/

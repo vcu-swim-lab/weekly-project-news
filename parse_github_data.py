@@ -232,6 +232,32 @@ def get_commits(repo, date):
     return commits_array
 
 
+# RETRIEVE VERSIONS
+def get_versions(repo):
+    versions_array = []
+    page = 1
+
+    while True:
+        # Repo must be in form "owner/repo" for request to work
+        url = f"https://api.github.com/repos/{repo}/tags"
+        params = {
+            'page': page,
+            'per_page': 100,
+        }
+
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code != 200:
+            raise Exception(f"Failed to fetch issues: {response.status_code}")
+
+        page_issues = response.json()
+        if not page_issues:
+            break
+        
+        versions_array.extend(page_issues)
+        
+		page += 1
+
+    return versions_array
 
 # ISSUES 1: INSERT ISSUE
 def insert_issue(issue, repo_name):
@@ -585,7 +611,7 @@ def insert_all_data(repo_name, date):
             rate_limit_check()
     
     print(f"Successfully inserted {commits_inserted} commits for {repo_name} into the database for {repo_name}")
-        
+     
  
 # TODO Use get_readme to retreive and parse the readme file and check release data
 

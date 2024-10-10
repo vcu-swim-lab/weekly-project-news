@@ -124,7 +124,7 @@ for subscriber in subscribers_data['results']:
         continue
 
     # STEP 2: get the content for the email
-    with open(newsletter_filepath, 'r') as newsletter_file:
+    with open(newsletter_filepath, 'r', encoding='utf-8') as newsletter_file:
         content = newsletter_file.read()
 
     # STEP 3: get the subject for the email

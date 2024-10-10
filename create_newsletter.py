@@ -85,7 +85,7 @@ def generate_summary(data, instructions, max_retries=5, base_wait=1):
 
 # 1 - Open Issues
 def open_issues(repo):
-  if repo['open_issues'] == [] :
+  if repo['open_issues'] == [] or not repo.get('open_issues'):
     return "As of our latest update, there are no open issues for the project this week.\n\n"
 
   all_open_issues = ""
@@ -135,7 +135,7 @@ def open_issues(repo):
 # 2 - Open Issues (Active)
 def active_issues(repo):
   markdown = "We consider active issues to be issues that have generated much discussion in the issue's comments. \n\n"
-  if repo['issues_by_number_of_comments'] == []:
+  if repo['issues_by_number_of_comments'] == [] or not repo.get('issues_by_number_of_comments'):
     markdown += "As of our latest update, there are no active issues with ongoing comments this week. \n\n"
     return markdown
 
@@ -166,7 +166,7 @@ def active_issues(repo):
 # 3 - Open Issues (Quiet)
 def quiet_issues(repo):
   markdown = "We consider quiet issues to be issues that have been opened in this project for the longest time. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
-  if repo['issues_by_open_date'] == []:
+  if repo['issues_by_open_date'] == [] or not repo.get('issues_by_open_date'):
     markdown += "As of our latest update, there are no open issues for the project this week. \n\n"
     return markdown
 
@@ -199,7 +199,7 @@ def quiet_issues(repo):
 def closed_issues(repo):
   closed_issues_data = repo['closed_issues']
   
-  if not closed_issues_data or closed_issues_data == []:
+  if not repo.get('closed_issues') or closed_issues_data == []:
         return "As of our latest update, there are no closed issues for the project this week.\n\n"
 
   all_closed_issues = ""
@@ -240,7 +240,7 @@ def closed_issues(repo):
 # TODO: Change this to look at open and closed issues, rather than active issues.
 def issue_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
-  if repo['active_issues'] == [] or not repo['active_issues']:
+  if repo['active_issues'] == [] or not repo.get('active_issues'):
     markdown += "As of our last update, there are no open issues with discussions going on within the past week. \n\n"
     return markdown
   
@@ -355,26 +355,31 @@ def closed_pull_requests(repo):
 # TODO: Change this to look at open and closed pull requests
 def pull_request_discussion_insights(repo):
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
-  if repo['active_pull_requests'] == []:
+  if repo['active_pull_requests'] == [] or not repo.get('active_pull_requests'):
     markdown += "As of our last update, there are no open pull requests with discussions going on within the past week. \n\n"
     return markdown
   
   pull_request_count = 0
+  count = 0
 
   for active_pull_request in repo['active_pull_requests']:
     instructions = discussion_instructions()
   
     generated_summary = generate_summary(active_pull_request, instructions, max_retries=5, base_wait=1)
-
     parts = generated_summary.rsplit('\n\n', 2)
+
+    # ERROR CATCHING CODE
+    count+=1
+    print(f"Processing PR {count} of {len(repo['active_pull_requests'])}")
+    if len(parts) < 3:
+      # Handle the case where the expected parts are not present
+      print(f"Error processing discussion for [**{active_pull_request['title']}**]({active_pull_request['url']}): Unexpected summary format.\n\n")
+      continue
+
+
     summary = parts[0].strip()
-    print("Summary: ", summary)
-
     score = float(parts[1])
-    print("Score: ", score)
-
     reason = parts[2].strip()
-    print("Reason: ", reason)
 
     if score > 0.5:
       # print('a')
@@ -555,7 +560,7 @@ if __name__ == '__main__':
     capitalized_name = name[0].upper() + name[1:]
 
     try:
-      with open(output_filename, "w") as outfile:
+      with open(output_filename, "w", encoding='utf-8') as outfile:
         
         # 0: Title
         title = f"# Weekly GitHub Report for {capitalized_name}\n\n"

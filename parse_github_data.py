@@ -254,9 +254,8 @@ def get_versions(repo):
             break
         
         versions_array.extend(page_issues)
-        
-		page += 1
-
+        page += 1
+    
     return versions_array
 
 # ISSUES 1: INSERT ISSUE

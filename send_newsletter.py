@@ -130,9 +130,9 @@ for subscriber in subscribers_data['results']:
     # STEP 3: get the subject for the email
     name = github_repo.split('/')[-1]
     capitalized_name = name[0].upper() + name[1:]
-    timestamp_from = (datetime.now() - timedelta(days=7)).strftime('%d %B, %Y')
-    timestamp_to = datetime.now().strftime('%d %B, %Y')
-    subject = f"Weekly GitHub Report for {capitalized_name}: {timestamp_from} to {timestamp_to}"
+    timestamp_from = (datetime.now() - timedelta(days=7)).strftime('%B %d, %Y')
+    timestamp_to = datetime.now().strftime('%B %d, %Y')
+    subject = f"Weekly GitHub Report for {capitalized_name}: {timestamp_from} - {timestamp_to}"
 
     # STEP 4: DRAFT the email using the content and subject to get an email ID (NOT sending it yet)
     response = draft_email(subject, content)

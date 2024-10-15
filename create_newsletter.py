@@ -239,38 +239,49 @@ def closed_issues(repo):
 # 5 - Issue Discussion Insights
 # TODO: Change this to look at open and closed issues, rather than active issues.
 def issue_discussion_insights(repo):
-  markdown = "This section will analyze the tone and sentiment of discussions within this project's open issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
-  if repo['active_issues'] == [] or not repo.get('active_issues'):
-    markdown += "As of our last update, there are no open issues with discussions going on within the past week. \n\n"
+  # Make list of all issues wanting to analyze.
+  issue_list = repo['open_issues'] + repo['closed_issues']
+  print("Printing issue_list")
+  print(issue_list)
+
+  markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
+  if issue_list == [] or not issue_list:
+    markdown += "As of our last update, there are no open or closed issues with discussions going on within the past week. \n\n"
     return markdown
   
   issue_count = 0
   count = 0
 
-  for active_issue in repo['active_issues']:
+
+  for issue in issue_list:
     instructions = discussion_instructions()
   
-    generated_summary = generate_summary(active_issue, instructions, max_retries=5, base_wait=1)
+    generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
 
     parts = generated_summary.rsplit('\n\n', 2)
+    print("Printing issue parts")
+    print(parts)
 
     # ERROR CATCHING CODE
     count+=1
-    print(f"Processing issue {count} of {len(repo['active_issues'])}")
+    print(f"Processing issue {count} of {len(issue_list)}")
     if len(parts) < 3:
       # Handle the case where the expected parts are not present
-      print(f"Error processing discussion for [**{active_issue['title']}**]({active_issue['url']}): Unexpected summary format.\n\n")
+      print(f"Error processing discussion for [**{issue['title']}**]({issue['url']}): Unexpected summary format.\n\n")
       continue
 
 
     summary = parts[0].strip()
+    print(summary)
     score = float(parts[1])
+    print(score)
     reason = parts[2].strip()
+    print(reason)
 
     if score > 0.5:
       issue_count += 1
       
-      markdown += f"{issue_count}. [**{active_issue['title']}**]({active_issue['url']})\n"
+      markdown += f"{issue_count}. [**{issue['title']}**]({issue['url']})\n"
       markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
       markdown += f"   - {summary}\n\n"
     
@@ -354,26 +365,33 @@ def closed_pull_requests(repo):
 # 8 - Pull Request Discussion Insights
 # TODO: Change this to look at open and closed pull requests
 def pull_request_discussion_insights(repo):
-  markdown = "This section will analyze the tone and sentiment of discussions within this project's open pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
-  if repo['active_pull_requests'] == [] or not repo.get('active_pull_requests'):
-    markdown += "As of our last update, there are no open pull requests with discussions going on within the past week. \n\n"
+  pr_list = repo['open_pull_requests'] + repo['closed_pull_requests']
+  print("Printing pr_list")
+  print(pr_list)
+
+  markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
+  if pr_list == [] or not pr_list:
+    markdown += "As of our last update, there are no open or closed pull requests with discussions going on within the past week. \n\n"
     return markdown
   
   pull_request_count = 0
   count = 0
 
-  for active_pull_request in repo['active_pull_requests']:
+  for pr in pr_list:
     instructions = discussion_instructions()
   
-    generated_summary = generate_summary(active_pull_request, instructions, max_retries=5, base_wait=1)
+    generated_summary = generate_summary(pr, instructions, max_retries=5, base_wait=1)
     parts = generated_summary.rsplit('\n\n', 2)
+
+    print("Printing pull request parts")
+    print(parts)
 
     # ERROR CATCHING CODE
     count+=1
-    print(f"Processing PR {count} of {len(repo['active_pull_requests'])}")
+    print(f"Processing PR {count} of {len(pr_list)}")
     if len(parts) < 3:
       # Handle the case where the expected parts are not present
-      print(f"Error processing discussion for [**{active_pull_request['title']}**]({active_pull_request['url']}): Unexpected summary format.\n\n")
+      print(f"Error processing discussion for [**{pr['title']}**]({pr['url']}): Unexpected summary format.\n\n")
       continue
 
 
@@ -383,12 +401,12 @@ def pull_request_discussion_insights(repo):
 
     if score > 0.5:
       # print('a')
-      # print(active_pull_request)
+      # print(pr)
       # print('b')
 
       pull_request_count += 1
       
-      markdown += f"{pull_request_count}. [**{active_pull_request['title']}**]({active_pull_request['url']})\n"
+      markdown += f"{pull_request_count}. [**{pr['title']}**]({pr['url']})\n"
       markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
       markdown += f"   - {summary}\n\n"
     

@@ -124,7 +124,6 @@ def open_issues(repo):
     end = overall_summary.rindex("```")
     overall_summary = overall_summary[start:end].strip() + "\n"
 
-
   print('c')
   print(overall_summary)
   print('d')
@@ -134,7 +133,7 @@ def open_issues(repo):
 
 # 2 - Open Issues (Active)
 def active_issues(repo):
-  markdown = "We consider active issues to be issues that have generated much discussion in the issue's comments. \n\n"
+  markdown = "We consider active issues to be issues that that have been commented on most frequently within the last week. \n\n"
   if repo['issues_by_number_of_comments'] == [] or not repo.get('issues_by_number_of_comments'):
     markdown += "As of our latest update, there are no active issues with ongoing comments this week. \n\n"
     return markdown
@@ -153,7 +152,7 @@ def active_issues(repo):
 
     # Make the issue title a clickable link
     markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
-    markdown += f"   - Number of comments: {data.get('number_of_comments')}\n\n"
+    markdown += f"   - Number of comments this week: {data.get('number_of_comments')}\n\n"
 
   if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
@@ -163,11 +162,11 @@ def active_issues(repo):
 
 
 
-# 3 - Open Issues (Quiet)
-def quiet_issues(repo):
-  markdown = "We consider quiet issues to be issues that have been opened in this project for the longest time. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
+# 3 - Open Issues (Stale)
+def stale_issues(repo):
+  markdown = "We consider stale issues to be issues that have been opened in this project for the longest time within the last year. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
   if repo['issues_by_open_date'] == [] or not repo.get('issues_by_open_date'):
-    markdown += "As of our latest update, there are no open issues for the project this week. \n\n"
+    markdown += "As of our latest update, there are no stale issues for the project this week. \n\n"
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
@@ -175,7 +174,7 @@ def quiet_issues(repo):
   issues = repo['issues_by_open_date']
   size = min(len(issues), 5)
 
-  # We are only summarizing the top 5 open issues (quiet)
+  # We are only summarizing the top 5 open issues (stale)
   for i in range(size):
 
     data = issues[i]
@@ -200,7 +199,7 @@ def closed_issues(repo):
   closed_issues_data = repo['closed_issues']
   
   if not repo.get('closed_issues') or closed_issues_data == []:
-        return "As of our latest update, there are no closed issues for the project this week.\n\n"
+        return "As of our latest update, there were no issues closed in the project this week.\n\n"
 
   all_closed_issues = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue", "only one detailed sentence")
@@ -232,6 +231,7 @@ def closed_issues(repo):
     start = overall_summary.index("```markdown") + len("```markdown")
     end = overall_summary.rindex("```")
     overall_summary = overall_summary[start:end].strip() + "\n"
+
   return overall_summary + "\n\n"
 
 
@@ -244,7 +244,7 @@ def issue_discussion_insights(repo):
   print("Printing issue_list")
   print(issue_list)
 
-  markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed issues within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
+  markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed issues that occurred within the past week. It aims to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
   if issue_list == [] or not issue_list:
     markdown += "As of our last update, there are no open or closed issues with discussions going on within the past week. \n\n"
     return markdown
@@ -322,6 +322,7 @@ def open_pull_requests(repo):
     start = overall_summary.index("```markdown") + len("```markdown")
     end = overall_summary.rindex("```")
     overall_summary = overall_summary[start:end].strip() + "\n"
+
   return overall_summary + "\n"
 
 
@@ -358,6 +359,7 @@ def closed_pull_requests(repo):
     start = overall_summary.index("```markdown") + len("```markdown")
     end = overall_summary.rindex("```")
     overall_summary = overall_summary[start:end].strip() + "\n"
+
   return overall_summary + "\n\n"
 
 
@@ -369,7 +371,7 @@ def pull_request_discussion_insights(repo):
   print("Printing pr_list")
   print(pr_list)
 
-  markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed pull requests within the past week to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
+  markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed pull requests that occurred within the past week. It aims to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
   if pr_list == [] or not pr_list:
     markdown += "As of our last update, there are no open or closed pull requests with discussions going on within the past week. \n\n"
     return markdown
@@ -485,6 +487,7 @@ Provide your comprehensive analysis of all of the commits, generated as a bullet
     start = overall_summary.index("```markdown") + len("```markdown")
     end = overall_summary.rindex("```")
     overall_summary = overall_summary[start:end].strip() + "\n"
+    
   return overall_summary + "\n\n"
 
 
@@ -596,9 +599,9 @@ if __name__ == '__main__':
         # 0. Table of Contents
         outfile.write("# Table of Contents\n\n")      
         outfile.write("- [I. Issues](#i-issues)\n")
-        outfile.write("  - [1.1. Open Issues](#11-open-issues)\n")
-        outfile.write("  - [1.2. Top 5 Active Issues](#12-top-5-active-issues)\n")
-        outfile.write("  - [1.3. Top 5 Quiet Issues](#13-top-5-quiet-issues)\n")
+        outfile.write("  - [1.1. Top 5 Active Issues](#11-top-5-active-issues)\n")
+        outfile.write("  - [1.2. Top 5 Stale Issues](#12-top-5-stale-issues)\n")
+        outfile.write("  - [1.3. Open Issues](#13-open-issues)\n")
         outfile.write("  - [1.4. Closed Issues](#14-closed-issues)\n\n")
         outfile.write("- [II. Pull Requests](#ii-pull-requests)\n")
         outfile.write("  - [2.1. Open Pull Requests](#21-open-pull-requests)\n")
@@ -612,35 +615,36 @@ if __name__ == '__main__':
         # 1: Issues
         outfile.write("# I. Issues\n\n")
 
+        # 1.2 Top 5 Active Issues
+        outfile.write("## 1.1 Top 5 Active Issues:\n\n")
+        result = active_issues(repo_data)
+        outfile.write(result)
+
+
+        # 1.3 Top 5 Stale Issues
+        outfile.write("## 1.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
+        result = stale_issues(repo_data)
+        outfile.write(result)
+
         # 1.1: Open Issues
-        outfile.write("## 1.1 Open Issues\n\n")
+        outfile.write("## 1.3 Open Issues\n\n")
+        outfile.write("This section lists, groups, and then summarizes issues that were created within the last week in the repository. \n\n")
 
-        # 1.1.1 Open Issues This Week
-        outfile.write(f"**Open Issues This Week:** {repo_data.get('num_weekly_open_issues', None)}\n\n")
+        # 1.3.1 Open Issues This Week
+        outfile.write(f"**Issues Opened This Week:** {repo_data.get('num_weekly_open_issues', None)}\n\n")
 
-        # 1.1.2 Issues
+        # 1.3.2 Issues
         outfile.write("**Summarized Issues:**\n\n")
         result = open_issues(repo_data)
         outfile.write(result)
 
 
-        # 1.2 Top 5 Active Issues
-        outfile.write("## 1.2 Top 5 Active Issues:\n\n")
-        result = active_issues(repo_data)
-        outfile.write(result)
-
-
-        # 1.3 Top 5 Quiet Issues
-        outfile.write("## 1.3 Top 5 Quiet Issues:\n\n")
-        result = quiet_issues(repo_data)
-        outfile.write(result)
-
-
         # 1.4: Closed Issues
         outfile.write("## 1.4 Closed Issues\n\n")
+        outfile.write("This section lists, groups, and then summarizes issues that were closed within the last week in the repository. This section also links the associated pull requests if applicable. \n\n")
 
         # 1.4.1 Closed Issues This Week
-        outfile.write(f"**Closed Issues This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
+        outfile.write(f"**Issues Closed This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
 
         # 1.4.2 Average Time to Close Issues This Week (REMOVED)
 
@@ -665,9 +669,10 @@ if __name__ == '__main__':
 
         # 2.1: Open Pull Requests
         outfile.write("## 2.1 Open Pull Requests\n\n")
+        outfile.write("This section lists and summarizes pull requests that were created within the last week in the repository. \n\n")
 
         # 2.1.1 Open Pull Requests This Week
-        outfile.write(f"**Open Pull Requests This Week:** {repo_data.get('num_open_prs', None)}\n\n")
+        outfile.write(f"**Pull Requests Opened This Week:** {repo_data.get('num_open_prs', None)}\n\n")
 
         # 2.1.2 Pull Requests
         outfile.write("**Pull Requests:**\n\n")
@@ -677,9 +682,10 @@ if __name__ == '__main__':
 
         # 2.2: Closed Pull Requests
         outfile.write("## 2.2 Closed Pull Requests\n\n")
+        outfile.write("This section lists and summarizes pull requests that were closed within the last week in the repository. Similar pull requests are grouped, and associated commits are linked if applicable. \n\n")
 
         # 2.2.1 Closed Pull Requests This Week
-        outfile.write(f"**Closed Pull Requests This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
+        outfile.write(f"**Pull Requests Closed This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
 
         # 2.2.2 Pull Requests
         outfile.write("**Summarized Pull Requests:**\n\n")
@@ -701,9 +707,10 @@ if __name__ == '__main__':
 
         # 3.1: Open Commits
         outfile.write("## 3.1 Commits\n\n")
+        outfile.write("This section lists and summarizes commits made within the last week and groups them based on topic. \n\n")
 
         # 3.1.1 Open Commits This Week
-        outfile.write(f"**Commits This Week:** {repo_data.get('num_commits', None)}\n\n")
+        outfile.write(f"**Commits Made This Week:** {repo_data.get('num_commits', None)}\n\n")
 
         # 3.1.2 Commits
         outfile.write("**Summarized Commits:**\n\n")

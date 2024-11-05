@@ -92,7 +92,7 @@ def get_repo_name(url):
         return f"{parts[3]}/{parts[4]}" 
     return None
 
-
+# TODO Add version of each repository
 def insert_repository(data): 
     try:
         # Extract only the fields that exist in the Repository model

@@ -119,10 +119,13 @@ def open_issues(repo):
   #   overall_summary = overall_summary[3:-3]
   # if overall_summary.startswith("markdown"):
   #   overall_summary = overall_summary[len("markdown"):].lstrip()
-  if "```markdown" in overall_summary:
-    start = overall_summary.index("```markdown") + len("```markdown")
-    end = overall_summary.rindex("```")
-    overall_summary = overall_summary[start:end].strip() + "\n"
+  # if "```markdown" in overall_summary:
+  #   start = overall_summary.index("```markdown") + len("```markdown")
+  #   end = overall_summary.rindex("```")
+  #   overall_summary = overall_summary[start:end].strip() + "\n"
+
+  if "```" in overall_summary:
+    overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
 
   print('c')
   print(overall_summary)
@@ -227,10 +230,14 @@ def closed_issues(repo):
   #   overall_summary = overall_summary[3:-3]
   # if overall_summary.startswith("markdown"):
   #   overall_summary = overall_summary[len("markdown"):].lstrip()
-  if "```markdown" in overall_summary:
-    start = overall_summary.index("```markdown") + len("```markdown")
-    end = overall_summary.rindex("```")
-    overall_summary = overall_summary[start:end].strip() + "\n"
+  # if "```markdown" in overall_summary:
+  #   start = overall_summary.index("```markdown") + len("```markdown")
+  #   end = overall_summary.rindex("```")
+  #   overall_summary = overall_summary[start:end].strip() + "\n"
+
+  if "```" in overall_summary:
+    overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
+  
 
   return overall_summary + "\n\n"
 
@@ -257,26 +264,31 @@ def issue_discussion_insights(repo):
     instructions = discussion_instructions()
   
     generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
+    
+    parts = generated_summary.rsplit('\n', 2)
 
-    parts = generated_summary.rsplit('\n\n', 2)
-    print("Printing issue parts")
-    print(parts)
+    if len(parts) == 2:
+        summary = parts[0].strip()  # First part is the main summary
 
-    # ERROR CATCHING CODE
-    count+=1
-    print(f"Processing issue {count} of {len(issue_list)}")
-    if len(parts) < 3:
-      # Handle the case where the expected parts are not present
-      print(f"Error processing discussion for [**{issue['title']}**]({issue['url']}): Unexpected summary format.\n\n")
-      continue
+        # Step 2: Split the second part on the first newline to separate score and reason
+        score_reason_parts = parts[1].split('\n', 1)
+        
+        # Ensure score and reason are separated correctly
+        if len(score_reason_parts) == 2:
+            score = float(score_reason_parts[0].strip())  # Convert score to float
+            reason = score_reason_parts[1].strip()  # Remaining part is reason
 
+            print("Summary:", summary)
+            print("Score:", score)
+            print("Reason:", reason)
+        else:
+            print("Unexpected format: missing reason.")
+    else:
+        # If it's split properly, then split normally afterwards.
+        summary = parts[0].strip()
+        score = float(parts[1])
+        reason = parts[2].strip()
 
-    summary = parts[0].strip()
-    print(summary)
-    score = float(parts[1])
-    print(score)
-    reason = parts[2].strip()
-    print(reason)
 
     if score > 0.5:
       issue_count += 1
@@ -318,10 +330,13 @@ def open_pull_requests(repo):
 
   # Step 2: get markdown output for all open pull requests 
   overall_summary = generate_summary(all_pull_requests, overall_instructions, max_retries=5, base_wait=1)
-  if "```markdown" in overall_summary:
-    start = overall_summary.index("```markdown") + len("```markdown")
-    end = overall_summary.rindex("```")
-    overall_summary = overall_summary[start:end].strip() + "\n"
+  # if "```markdown" in overall_summary:
+  #   start = overall_summary.index("```markdown") + len("```markdown")
+  #   end = overall_summary.rindex("```")
+  #   overall_summary = overall_summary[start:end].strip() + "\n"
+
+  if "```" in overall_summary:
+    overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
 
   return overall_summary + "\n"
 
@@ -355,10 +370,13 @@ def closed_pull_requests(repo):
   #   overall_summary = overall_summary[3:-3]
   # if overall_summary.startswith("markdown"):
   #   overall_summary = overall_summary[len("markdown"):].lstrip()
-  if "```markdown" in overall_summary:
-    start = overall_summary.index("```markdown") + len("```markdown")
-    end = overall_summary.rindex("```")
-    overall_summary = overall_summary[start:end].strip() + "\n"
+  # if "```markdown" in overall_summary:
+  #   start = overall_summary.index("```markdown") + len("```markdown")
+  #   end = overall_summary.rindex("```")
+  #   overall_summary = overall_summary[start:end].strip() + "\n"
+
+  if "```" in overall_summary:
+    overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
 
   return overall_summary + "\n\n"
 
@@ -383,23 +401,39 @@ def pull_request_discussion_insights(repo):
     instructions = discussion_instructions()
   
     generated_summary = generate_summary(pr, instructions, max_retries=5, base_wait=1)
-    parts = generated_summary.rsplit('\n\n', 2)
+    
+    parts = generated_summary.rsplit('\n', 2)
 
     print("Printing pull request parts")
     print(parts)
 
-    # ERROR CATCHING CODE
-    count+=1
+    count += 1
     print(f"Processing PR {count} of {len(pr_list)}")
-    if len(parts) < 3:
-      # Handle the case where the expected parts are not present
-      print(f"Error processing discussion for [**{pr['title']}**]({pr['url']}): Unexpected summary format.\n\n")
-      continue
 
+    if len(parts) == 2:
+        # First part is the main summary
+        summary = parts[0].strip()
 
-    summary = parts[0].strip()
-    score = float(parts[1])
-    reason = parts[2].strip()
+        # Split the second part on the first newline to separate score and reason
+        score_reason_parts = parts[1].split('\n', 1)
+        
+        # Make sure that score and reason are separated correctly
+        if len(score_reason_parts) == 2:
+          # Convert score to float, the last part is the reason
+          score = float(score_reason_parts[0].strip())
+          reason = score_reason_parts[1].strip() 
+
+          # Printing each part for proper error catching in generation
+          print("Summary:", summary)
+          print("Score:", score)
+          print("Reason:", reason)
+        else:
+          print("Unexpected format: missing reason.")
+    else:
+      summary = parts[0].strip()
+      score = float(parts[1])
+      reason = parts[2].strip()
+
 
     if score > 0.5:
       # print('a')

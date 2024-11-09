@@ -109,7 +109,7 @@ def get_repo_name(url):
         return f"{parts[3]}/{parts[4]}" 
     return None
 
-
+# TODO Add version of each repository
 def insert_repository(data): 
     try:
         # Extract only the fields that exist in the Repository model
@@ -248,6 +248,23 @@ def get_commits(repo, date):
 
     return commits_array
 
+
+# RETRIEVE LATEST RELEASE
+def get_latest_release(repo):
+    # Repo must be in the form "owner/repo"
+    url = f"https://api.github.com/repos/{repo}/releases/latest"
+
+    try:
+        response = requests.get(url, headers=headers)
+
+        if response.status_code != 200:
+            print(f"Could not find release data for repository: {repo}")
+            return None
+        else:
+            return response.json()
+    except Exception as e:
+        print(f"An error has occurred: {e}")
+        return None
 
 
 # ISSUES 1: INSERT ISSUE
@@ -602,7 +619,7 @@ def insert_all_data(repo_name, date):
             rate_limit_check()
     
     print(f"Successfully inserted {commits_inserted} commits for {repo_name} into the database for {repo_name}")
-        
+     
  
 # TODO Use get_readme to retreive and parse the readme file and check release data
 
@@ -636,10 +653,11 @@ if __name__ == '__main__':
     # Keep a list of the subscriber repos
     subscriber_repo_list = []
 
+
     try:
-        
         for subscriber in subscriber_data['results']:
             repo_name = subscriber['metadata'].get('repo_name', '')
+            
             if repo_name and 'github.com' in repo_name:
                 # Check that the repository is public
                 if check_repo(repo_name):
@@ -651,7 +669,7 @@ if __name__ == '__main__':
                 if len(parts) >= 5:
                     full_repo_name = f"{parts[3]}/{parts[4]}"
                     subscriber_repo_list.append(full_repo_name)
-                    
+         
                     
         # List of the current repositories in the database
         current_repo_list = session.query(Repository.full_name).all()
@@ -671,11 +689,20 @@ if __name__ == '__main__':
             # If repo already exists in database
             if repo in current_repo_list:
                 logging.info(f"Updating existing repository: {repo_name}")
-
                 insert_all_data(repo_name, one_week_ago)
             else: # Repo doesn't exist in database, so insert it
                 logging.info(f"Inserting new repository: {repo_name}")
                 repo_data = get_a_repository(repo, headers)
+
+                # CHECK FOR LATEST RELEASE
+                repo_latest_release = get_latest_release(repo)
+                print(repo_latest_release)
+                if (repo_latest_release is None):
+                    print("Release data does not exist")
+                else:
+                    repo_data['latest_release'] = repo_latest_release['tag_name']
+
+                print(repo_data)
                 insert_repository(repo_data)
                 insert_all_data(repo_name, one_year_ago)
 

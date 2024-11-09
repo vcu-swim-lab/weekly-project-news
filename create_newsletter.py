@@ -585,18 +585,18 @@ if __name__ == '__main__':
   limit = 100;
 
   # 1.4: getting all of the repositories
-  # query = text("SELECT full_name FROM repositories")
-  # result = session.execute(query)
-  # repositories = [row[0] for row in result]
-  repositories = [
-    # "ggerganov/llama.cpp",
-    # "nodejs/node",
-    # "openxla/xla",
-    # "stevenbui44/flashcode",
-    # "cnovalski1/APIexample",
-    "tensorflow/tensorflow",
-    "monicahq/monica"
-  ]
+  query = text("SELECT full_name FROM repositories")
+  result = session.execute(query)
+  repositories = [row[0] for row in result]
+  # repositories = [
+  #   "ggerganov/llama.cpp",
+  #   "nodejs/node",
+  #   "openxla/xla",
+  #   "stevenbui44/flashcode",
+  #   "cnovalski1/APIexample",
+  #   "tensorflow/tensorflow",
+  #   "monicahq/monica"
+  # ]
 
 
   # PART TWO: create the markdown for a newsletter

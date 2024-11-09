@@ -10,6 +10,8 @@ from sort_data import *
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+import re
+
 
 load_dotenv()  
 
@@ -504,6 +506,20 @@ def active_contributors(repo):
   return overall_summary + "\n\n"
 
 
+def lastWeekLink(currLink,repo_name):
+  # Split link using the "/"
+  arraySplitBySlash = currLink.split("/")
+  # the last section of the link should be something like "weekly-github-report-for-tensorflow-2024-09-30/" we want the text right before the "/"
+  lastSectionOfLink = arraySplitBySlash[-2]
+  #print(arraySplitBySlash)
+  # now that we have the weekly-github-report-for-tensorflow-2024-09-30
+  splitByDash = lastSectionOfLink.split("-")
+  currentDate = splitByDash[-3] + "-" + splitByDash[-2] + '-' + splitByDash[-1]
+  date_object = datetime.strptime(currentDate, "%Y-%m-%d")
+  one_week_ago_object = date_object - timedelta(days=7)
+  one_week_ago_string = one_week_ago_object.strftime("%Y-%m-%d")
+  link = f"https://buttondown.com/weekly-project-news/archive/weekly-github-report-for-{repo_name}-{one_week_ago_string}/"
+  return link
 
 
 if __name__ == '__main__':
@@ -703,6 +719,12 @@ if __name__ == '__main__':
         outfile.write(result)
 
         outfile.write("\n\n")
+        # 4.1.4 Last weeks link
+        if check_link_works(lastWeekLink("https://buttondown.com/weekly-project-news/archive/weekly-github-report-for-tensorflow-2024-09-30/", repo_name)): 
+          outfile.write("Access last week's newsletter: " + lastWeekLink("https://buttondown.com/weekly-project-news/archive/weekly-github-report-for-tensorflow-2024-09-30/", repo_name))
+        
+
+
       
       print(f"Successfully added {repository} to {output_filename}")
 

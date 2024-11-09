@@ -73,6 +73,23 @@ def check_repo(url):
     except requests.RequestException as e:
         print(f"Error accessing {url}: {e}")
         return True
+    
+
+# Check if the link works, if it does return true otherwise return false
+def check_link_works(url):
+    # Check if the URL seems valid by containing ".com"
+    if ".com" not in url:
+        return False
+
+    try:
+        # Send a request to check if the URL is accessible
+        response = requests.head(url, allow_redirects=True)
+        # Return True if the status code indicates success (status code 200)
+        return response.status_code == 200
+    except requests.RequestException:
+        # Return False if there's any issue with the request
+        return False
+
 
 # Retreives a repository
 def get_a_repository(repository, headers):

@@ -35,7 +35,7 @@ def rate_limit_check():
     try:
         rate_limit = g.get_rate_limit().core
         print(rate_limit)
-        print(f"Current key number: {current_key_index + 1} of 5")
+        print(f"Current key number: {current_key_index + 1} of {len(API_KEYS)}")
         
         if rate_limit.remaining < 50:  
             print("Approaching rate limit, switching API key...")

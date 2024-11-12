@@ -662,25 +662,25 @@ if __name__ == '__main__':
         # 1: Issues
         outfile.write("# I. Issues\n\n")
 
-        # 1.2 Top 5 Active Issues
+        # 1.1 Top 5 Active Issues
         outfile.write("## 1.1 Top 5 Active Issues:\n\n")
         result = active_issues(repo_data)
         outfile.write(result)
 
 
-        # 1.3 Top 5 Stale Issues
+        # 1.2 Top 5 Stale Issues
         outfile.write("## 1.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
         result = stale_issues(repo_data)
         outfile.write(result)
 
-        # 1.1: Open Issues
+        # 1.3: Open Issues
         outfile.write("## 1.3 Open Issues\n\n")
         outfile.write("This section lists, groups, and then summarizes issues that were created within the last week in the repository. \n\n")
 
         # 1.3.1 Open Issues This Week
         outfile.write(f"**Issues Opened This Week:** {repo_data.get('num_weekly_open_issues', None)}\n\n")
 
-        # 1.3.2 Issues
+        # 1.3.2 Summarized Issues (Open)
         outfile.write("**Summarized Issues:**\n\n")
         result = open_issues(repo_data)
         outfile.write(result)
@@ -693,10 +693,8 @@ if __name__ == '__main__':
         # 1.4.1 Closed Issues This Week
         outfile.write(f"**Issues Closed This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
 
-        # 1.4.2 Average Time to Close Issues This Week (REMOVED)
 
-
-        # 1.4.3 Issues
+        # 1.4.3 Summarized Issues (Closed)
         outfile.write("**Summarized Issues:**\n\n")
         result = closed_issues(repo_data)
         outfile.write(result)
@@ -721,7 +719,7 @@ if __name__ == '__main__':
         # 2.1.1 Open Pull Requests This Week
         outfile.write(f"**Pull Requests Opened This Week:** {repo_data.get('num_open_prs', None)}\n\n")
 
-        # 2.1.2 Pull Requests
+        # 2.1.2 List of Pull Requests (Open)
         outfile.write("**Pull Requests:**\n\n")
         result = open_pull_requests(repo_data)
         outfile.write(result)
@@ -734,7 +732,7 @@ if __name__ == '__main__':
         # 2.2.1 Closed Pull Requests This Week
         outfile.write(f"**Pull Requests Closed This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
 
-        # 2.2.2 Pull Requests
+        # 2.2.2 List of Pull Requests (Closed)
         outfile.write("**Summarized Pull Requests:**\n\n")
         result = closed_pull_requests(repo_data)
         outfile.write(result)
@@ -759,7 +757,7 @@ if __name__ == '__main__':
         # 3.1.1 Open Commits This Week
         outfile.write(f"**Commits Made This Week:** {repo_data.get('num_commits', None)}\n\n")
 
-        # 3.1.2 Commits
+        # 3.1.2 List of Commits
         outfile.write("**Summarized Commits:**\n\n")
         result = commits(repo_data)
         outfile.write(result)
@@ -780,16 +778,14 @@ if __name__ == '__main__':
         outfile.write(result)
 
         outfile.write("\n\n")
-        # 4.1.4 Last weeks link
+
+        # 4.1.4 Last Week's Link (if exists)
         if check_link_works(lastWeekLink( repo_name)): 
           outfile.write("Access last week's newsletter: " + lastWeekLink( repo_name))
-        else:
-          outfile.write("Could not access link")
-          print("Link that didnt work (Could not get last weeks link): " + lastWeekLink(repo_name) )
+
+        outfile.write("\n\n")
 
         
-
-
       
       print(f"Successfully added {repository} to {output_filename}")
 

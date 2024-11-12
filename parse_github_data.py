@@ -87,6 +87,8 @@ def check_link_works(url):
         # Return True if the status code indicates success (status code 200)
         return response.status_code == 200
     except requests.RequestException:
+        print("Link not working")
+        print("Provided Link " + url)
         # Return False if there's any issue with the request
         return False
 

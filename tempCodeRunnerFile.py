@@ -1,0 +1,1 @@
+check_link_works

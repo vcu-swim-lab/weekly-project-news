@@ -645,36 +645,49 @@ if __name__ == '__main__':
 
         # 0. Table of Contents
         outfile.write("# Table of Contents\n\n")      
-        outfile.write("- [I. Issues](#i-issues)\n")
-        outfile.write("  - [1.1. Top 5 Active Issues](#11-top-5-active-issues)\n")
-        outfile.write("  - [1.2. Top 5 Stale Issues](#12-top-5-stale-issues)\n")
-        outfile.write("  - [1.3. Open Issues](#13-open-issues)\n")
-        outfile.write("  - [1.4. Closed Issues](#14-closed-issues)\n\n")
-        outfile.write("- [II. Pull Requests](#ii-pull-requests)\n")
-        outfile.write("  - [2.1. Open Pull Requests](#21-open-pull-requests)\n")
-        outfile.write("  - [2.2. Closed Pull Requests](#22-closed-pull-requests)\n")
-        outfile.write("  - [2.3. Pull Request Discussion Insights](#23-pull-request-discussion-insights)\n\n")
-        outfile.write("- [III. Commits](#iii-commits)\n")
-        outfile.write("  - [3.1. Commits](#31-commits)\n\n")
-        outfile.write("- [IV. Contributors](#iv-contributors)\n")
-        outfile.write("  - [4.1. Contributors](#41-contributors)\n\n")
+        outfile.write("- [I. News]\n")
+        outfile.write("  - [1.1. Recent Version Releases]\n")
+        outfile.write("  - [1.2. Other Noteworthy Updates]\n\n")
+        outfile.write("- [II. Issues]\n")
+        outfile.write("  - [2.1. Top 5 Active Issues])\n")
+        outfile.write("  - [2.2. Top 5 Stale Issues]\n")
+        outfile.write("  - [2.3. Open Issues]\n")
+        outfile.write("  - [2.4. Closed Issues]\n\n")
+        outfile.write("- [III. Pull Requests]\n")
+        outfile.write("  - [3.1. Open Pull Requests]\n")
+        outfile.write("  - [3.2. Closed Pull Requests]\n")
+        outfile.write("  - [3.3. Pull Request Discussion Insights]\n\n")
+        outfile.write("- [IV. Commits]\n")
+        outfile.write("  - [4.1. Commits]\n\n")
+        outfile.write("- [V. Contributors]\n")
+        outfile.write("  - [5.1. Contributors])\n\n")
         
+        # 1: News
+        outfile.write("# I. News\n\n")
+
+        # 1.1 Recent Version Releases
+        outfile.write("## 1.1 Recent Version Releases")
+
+        # 1.2 Other Noteworthy Updates
+        outfile.write("## 1.2 Other Noteworthy Updates")
+
+
         # 1: Issues
-        outfile.write("# I. Issues\n\n")
+        outfile.write("# II. Issues\n\n")
 
         # 1.1 Top 5 Active Issues
-        outfile.write("## 1.1 Top 5 Active Issues:\n\n")
+        outfile.write("## 2.1 Top 5 Active Issues:\n\n")
         result = active_issues(repo_data)
         outfile.write(result)
 
 
         # 1.2 Top 5 Stale Issues
-        outfile.write("## 1.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
+        outfile.write("## 2.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
         result = stale_issues(repo_data)
         outfile.write(result)
 
         # 1.3: Open Issues
-        outfile.write("## 1.3 Open Issues\n\n")
+        outfile.write("## 2.3 Open Issues\n\n")
         outfile.write("This section lists, groups, and then summarizes issues that were created within the last week in the repository. \n\n")
 
         # 1.3.1 Open Issues This Week
@@ -687,7 +700,7 @@ if __name__ == '__main__':
 
 
         # 1.4: Closed Issues
-        outfile.write("## 1.4 Closed Issues\n\n")
+        outfile.write("## 2.4 Closed Issues\n\n")
         outfile.write("This section lists, groups, and then summarizes issues that were closed within the last week in the repository. This section also links the associated pull requests if applicable. \n\n")
 
         # 1.4.1 Closed Issues This Week
@@ -701,7 +714,7 @@ if __name__ == '__main__':
 
 
         # 1.5 Issue Discussion Insights
-        outfile.write("## 1.5 Issue Discussion Insights\n\n")
+        outfile.write("## 2.5 Issue Discussion Insights\n\n")
         result = issue_discussion_insights(repo_data)
         outfile.write(result)
 
@@ -710,10 +723,10 @@ if __name__ == '__main__':
 
 
         # 2: Pull Requests
-        outfile.write("# II. Pull Requests\n\n")
+        outfile.write("# III. Pull Requests\n\n")
 
         # 2.1: Open Pull Requests
-        outfile.write("## 2.1 Open Pull Requests\n\n")
+        outfile.write("## 3.1 Open Pull Requests\n\n")
         outfile.write("This section lists and summarizes pull requests that were created within the last week in the repository. \n\n")
 
         # 2.1.1 Open Pull Requests This Week
@@ -726,7 +739,7 @@ if __name__ == '__main__':
 
 
         # 2.2: Closed Pull Requests
-        outfile.write("## 2.2 Closed Pull Requests\n\n")
+        outfile.write("## 3.2 Closed Pull Requests\n\n")
         outfile.write("This section lists and summarizes pull requests that were closed within the last week in the repository. Similar pull requests are grouped, and associated commits are linked if applicable. \n\n")
 
         # 2.2.1 Closed Pull Requests This Week
@@ -739,7 +752,7 @@ if __name__ == '__main__':
 
 
         # 2.3 Pull Request Discussion Insights
-        outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
+        outfile.write("## 3.3 Pull Request Discussion Insights\n\n")
         result = pull_request_discussion_insights(repo_data)
         outfile.write(result)
 
@@ -748,10 +761,10 @@ if __name__ == '__main__':
 
 
         # 3: Commits
-        outfile.write("# III. Commits\n\n")
+        outfile.write("# IV. Commits\n\n")
 
         # 3.1: Open Commits
-        outfile.write("## 3.1 Commits\n\n")
+        outfile.write("## 4.1 Commits\n\n")
         outfile.write("This section lists and summarizes commits made within the last week and groups them based on topic. \n\n")
 
         # 3.1.1 Open Commits This Week
@@ -767,10 +780,10 @@ if __name__ == '__main__':
 
 
         # 4: Contributors
-        outfile.write("# IV. Contributors\n\n")
+        outfile.write("# V. Contributors\n\n")
 
         # 4.1: Contributors
-        outfile.write("## 4.1 Contributors\n\n")
+        outfile.write("## 5.1 Contributors\n\n")
 
         # 4.1.3 Active Contributors
         outfile.write("**Active Contributors:**\n\n")

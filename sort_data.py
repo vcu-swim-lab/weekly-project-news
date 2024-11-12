@@ -40,6 +40,17 @@ def rate_limit_check(g):
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
 
+# RELEASES 1: Get latest version
+def get_latest_release(session, repository_full_name):
+    # Get the specific repo
+    latest_version = session.query(Repository.latest_release).filter(
+        and_(
+            Repository.full_name == repository_full_name
+        )
+    ).scalar()
+
+    return latest_version if not None else None
+
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(session, one_week_ago, repository_full_name):
     issues = session.query(Issue).filter(
@@ -623,7 +634,8 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "num_closed_prs": get_num_closed_prs(closed_pull_requests),
             "commits": commits,
             "num_commits": get_num_commits(commits),
-            "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name)
+            "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
+            "latest_release": get_latest_release(session, repo_name)
         }
         
         return repo_data

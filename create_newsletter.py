@@ -19,7 +19,7 @@ API_KEY = os.environ.get("OPENAI_KEY")
 
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
-llm=ChatOpenAI(model_name="gpt-4o-mini", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
 # param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
@@ -259,7 +259,6 @@ def issue_discussion_insights(repo):
     return markdown
   
   issue_count = 0
-  count = 0
 
 
   for issue in issue_list:
@@ -385,7 +384,7 @@ def closed_pull_requests(repo):
 
 
 # 8 - Pull Request Discussion Insights
-# TODO: Change this to look at open and closed pull requests
+# TODO: Change this to look at PR comments 
 def pull_request_discussion_insights(repo):
   pr_list = repo['open_pull_requests'] + repo['closed_pull_requests']
   print("Printing pr_list")
@@ -649,7 +648,7 @@ if __name__ == '__main__':
         outfile.write("  - [1.1. Recent Version Releases]\n")
         outfile.write("  - [1.2. Other Noteworthy Updates]\n\n")
         outfile.write("- [II. Issues]\n")
-        outfile.write("  - [2.1. Top 5 Active Issues])\n")
+        outfile.write("  - [2.1. Top 5 Active Issues]\n")
         outfile.write("  - [2.2. Top 5 Stale Issues]\n")
         outfile.write("  - [2.3. Open Issues]\n")
         outfile.write("  - [2.4. Closed Issues]\n\n")
@@ -660,16 +659,21 @@ if __name__ == '__main__':
         outfile.write("- [IV. Commits]\n")
         outfile.write("  - [4.1. Commits]\n\n")
         outfile.write("- [V. Contributors]\n")
-        outfile.write("  - [5.1. Contributors])\n\n")
+        outfile.write("  - [5.1. Contributors]\n\n")
         
         # 1: News
         outfile.write("# I. News\n\n")
 
         # 1.1 Recent Version Releases
-        outfile.write("## 1.1 Recent Version Releases")
+        outfile.write("## 1.1 Recent Version Releases:\n\n")
+        latest_release = repo_data.get('latest_release')
+        print(f"Printing latest release: {latest_release}")
+        if latest_release is not {}:
+          outfile.write(f"The current version of this repository is {latest_release}\n\n")
 
         # 1.2 Other Noteworthy Updates
-        outfile.write("## 1.2 Other Noteworthy Updates")
+        outfile.write("## 1.2 Other Noteworthy Updates:\n\n")
+        # TODO Add code for analyzing the README file.
 
 
         # 1: Issues

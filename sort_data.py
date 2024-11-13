@@ -115,15 +115,15 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
     
     return closed_issue_data
 
-# ISSUES 3: Get list of "active" issues, which are issues commented on/updated within the last week
-# TODO Make this COMMENTED ON within the last week
+# ISSUES 3: Get list of "active" issues, which are issues updated within the last week
+# TODO Make this COMMENTED ON within the last week. 
+# Query the database for Issues as well as the associated issue comments, and keep track of the number of comments within the last week for each issue. Eliminate duplicates, and 
 def get_active_issues(session, one_week_ago, repository_full_name):
     # Retreive issues and set up variables
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'open', 
-            Issue.updated_at >= one_week_ago
+            Issue.state == 'open'
         )
     ).all()
     
@@ -141,18 +141,26 @@ def get_active_issues(session, one_week_ago, repository_full_name):
             "body": issue.body,
             "user": issue.user_login,
             "url": issue.html_url,
-            "comments": []
+            "comments": [],
+            "num_comments_this_week": 5 # TODO PLACEHOLDER
         }
         
         # Query comments
         comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
+        num_comments_this_week = 0
         for comment in comments:
+            create_date = datetime.fromisoformat(comment.created_at)
+            if comment.created_at >= one_week_ago:
+                num_comments_this_week += 1
             issue_data["comments"].append({"body": comment.body})
         
+        issue_data["num_comments_this_week"] = num_comments_this_week
         active_issue_data.append(issue_data)
 
-    
-    return active_issue_data
+        # Sort the issues in order of number of comments this week
+        sorted_active_issues = sorted(active_issue_data, key=lambda x: x["num_comments_this_week"], reverse=True)
+        
+    return sorted_active_issues
 
   
 # ISSUES 4: Gets all issues, sorted by longest open date first
@@ -243,44 +251,11 @@ def sort_issues_num_comments(session, repository_full_name, limit):
  
     return issue_data # Return in JSON format
 
-# ISSUES 6: Get average time to close issues in the last week 
-def avg_issue_close_time_weekly(session, one_week_ago, repository_full_name):
-    # Retreive the issues and set up time variables
-    issues = session.query(Issue).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'closed',
-            Issue.closed_at >= one_week_ago
-        )
-    ).all()
-    
-    total_issues = len(issues)
-    total_close_time = 0
-    avg_close_time = 0
-    
-    # Iterates through each issue and calculates the total close time in minutes for each issue
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
-        
-        time_open = issue.closed_at - issue.created_at
-        total_minutes = time_open.total_seconds() // 60
-        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
-    
-    # Prevents dividing by zero
-    if total_issues > 0:
-        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
-    
-    
-    # Return the average time to close issues in the last week formatted to 2 decimals
-    return  "{:.2f} days".format(avg_close_time)
-
-# ISSUES 7: Get number of open issues in the last week
+# ISSUES 6: Get number of open issues in the last week
 def get_num_open_issues_weekly(weekly_open_issues):
     return len(weekly_open_issues)
 
-# ISSUES 8: Get number of closed issues in the last week
+# ISSUES 7: Get number of closed issues in the last week
 def get_num_closed_issues_weekly(weekly_closed_issues):
     return len(weekly_closed_issues)
 
@@ -346,48 +321,11 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
 
     return closed_pr_data
 
-# PRS 3: Get "active" pull requests (updated within the last week)
-def get_active_prs(session, one_week_ago, repository_full_name):
-    # Query the database for pull requests
-    pulls = session.query(PullRequest).filter(
-        and_(
-            PullRequest.repository_full_name == repository_full_name, 
-            PullRequest.state == 'open', 
-            PullRequest.updated_at >= one_week_ago 
-        )
-    ).all()
-    
-    active_pr_data = []
-    
-    
-    # Loop through each PR
-    for pr in pulls:
-        # Omit bots
-        if "bot" in pr.user_login.lower() or "[bot]" in pr.user_login.lower():
-            continue
-        
-        pr_data = {
-                "title": pr.title,
-                "user": pr.user_login,
-                "body": pr.body,
-                "url": pr.html_url,
-                "comments": []
-            }
-        
-        # Query PR comments and loop through them
-        comments = session.query(PullRequestComment).filter(PullRequestComment.pull_request_id == pr.id).all()
-        for comment in comments:
-            pr_data["comments"].append({"body": comment.body})
-
-        active_pr_data.append(pr_data)
-
-    return active_pr_data
-
-# PRS 4: Get NUMBER of OPEN pull requests made within one_week_ago
+# PRS 3: Get NUMBER of OPEN pull requests made within one_week_ago
 def get_num_open_prs(pr_data_open):
     return len(pr_data_open)
 
-# PRS 5: Get NUMBER of CLOSED pull requests made within one_week_ago
+# PRS 4: Get NUMBER of CLOSED pull requests made within one_week_ago
 def get_num_closed_prs(pr_data_closed):
     return len(pr_data_closed)
 
@@ -427,8 +365,6 @@ def get_num_commits(commit_data):
 
 # CONTRIBUTORS 1: Gets ALL contributors who are considered "active" within one_week_ago
 # Active: > 0 commits this month, > 0 issues this month, > 0 PRs this month, or > 2 comments this month
-
-# TODO: Change this to look at comment data as well. Query comments made by a specific user.
 # TODO: Filter out individuals such as TensorflowGardener (maybe), or look at PR and issue authors again.
 def get_active_contributors(session, thirty_days_ago, repository_full_name):
     # Query the database to retreive commits
@@ -626,10 +562,8 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "num_weekly_closed_issues": get_num_closed_issues_weekly(closed_issues),
             "issues_by_open_date": sort_issues_open_date(session, repo_name, limit),
             "issues_by_number_of_comments": sort_issues_num_comments(session, repo_name, limit),
-            "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repo_name),
             "open_pull_requests": open_pull_requests,
             "closed_pull_requests": closed_pull_requests,
-            "active_pull_requests": get_active_prs(session, one_week_ago, repo_name),
             "num_open_prs": get_num_open_prs(open_pull_requests),
             "num_closed_prs": get_num_closed_prs(closed_pull_requests),
             "commits": commits,

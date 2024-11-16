@@ -148,9 +148,10 @@ def get_active_issues(session, one_week_ago, repository_full_name):
         # Query comments
         comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         num_comments_this_week = 0
+        one_week_ago = one_week_ago.replace(tzinfo=None)
         for comment in comments:
-            create_date = datetime.fromisoformat(comment.created_at)
-            if comment.created_at >= one_week_ago:
+            create_date = comment.created_at.replace(tzinfo=None)
+            if create_date >= one_week_ago:
                 num_comments_this_week += 1
             issue_data["comments"].append({"body": comment.body})
         

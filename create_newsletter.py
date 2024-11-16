@@ -139,13 +139,13 @@ def open_issues(repo):
 # 2 - Open Issues (Active)
 def active_issues(repo):
   markdown = "We consider active issues to be issues that that have been commented on most frequently within the last week. \n\n"
-  if repo['issues_by_number_of_comments'] == [] or not repo.get('issues_by_number_of_comments'):
+  if repo['active_issues'] == [] or not repo.get('active_issues'):
     markdown += "As of our latest update, there are no active issues with ongoing comments this week. \n\n"
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
   issue_instructions += "Do not mention the URL in the summary. After that bullet point, you MUST give only one indented bullet point in markdown (which must start with three spaces, then '-') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
-  issues = repo['issues_by_number_of_comments']
+  issues = repo['active_issues']
   size = min(len(issues), 5)
 
   # We are only summarizing the top 5 open issues (active)
@@ -169,7 +169,7 @@ def active_issues(repo):
 
 # 3 - Open Issues (Stale)
 def stale_issues(repo):
-  markdown = "We consider stale issues to be issues that have been opened in this project for the longest time within the last year. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
+  markdown = "We consider stale issues to be issues that has had no activity within the last 30 days. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
   if repo['issues_by_open_date'] == [] or not repo.get('issues_by_open_date'):
     markdown += "As of our latest update, there are no stale issues for the project this week. \n\n"
     return markdown

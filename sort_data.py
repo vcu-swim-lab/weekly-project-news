@@ -116,8 +116,6 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
     return closed_issue_data
 
 # ISSUES 3: Get list of "active" issues, which are issues updated within the last week
-# TODO Make this COMMENTED ON within the last week. 
-# Query the database for Issues as well as the associated issue comments, and keep track of the number of comments within the last week for each issue. Eliminate duplicates, and 
 def get_active_issues(session, one_week_ago, repository_full_name):
     # Retreive issues and set up variables
     issues = session.query(Issue).filter(
@@ -164,12 +162,13 @@ def get_active_issues(session, one_week_ago, repository_full_name):
     return sorted_active_issues
 
   
-# ISSUES 4: Gets all issues, sorted by longest open date first
-def sort_issues_open_date(session, repository_full_name, limit): 
+# ISSUES 4: Gets stale issues (not updated within 30 days)
+def get_stale_issues(session, repository_full_name, limit, thirty_days_ago): 
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
             Issue.state == 'open', 
+            Issue.updated_at <= thirty_days_ago
         )
     ).order_by(
         Issue.created_at.asc()
@@ -207,56 +206,11 @@ def sort_issues_open_date(session, repository_full_name, limit):
     
     return issue_data_sorted
 
-# ISSUES 5: Gets all issues within one_week_ago, sorted by most comments first
-def sort_issues_num_comments(session, repository_full_name, limit):
-    issues = session.query(Issue).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'open', 
-        )
-    ).order_by(
-        Issue.comments.desc()
-    ).all()
-    
-    issue_data = []
-    
-    
-    # Iterates through each issue
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
-        
-        # If the number of comments on an issue is 0, skip it
-        if issue.comments == 0:
-            continue
-        
-        # Otherwise, add the title and number of comments to the data array
-        data = {
-        "title": issue.title,
-        "number_of_comments": issue.comments,
-        "body": issue.body,
-        "url": issue.html_url,
-        "id": issue.id,
-        "comments": []
-        }
-        comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
-        for comment in comments:
-            data["comments"].append({"body": comment.body})
-        
-        issue_data.append(data)
-        
-        # Break the for loop if the amount of data is large enough
-        if len(issue_data) >= limit:
-            break
- 
-    return issue_data # Return in JSON format
-
-# ISSUES 6: Get number of open issues in the last week
+# ISSUES 5: Get number of open issues in the last week
 def get_num_open_issues_weekly(weekly_open_issues):
     return len(weekly_open_issues)
 
-# ISSUES 7: Get number of closed issues in the last week
+# ISSUES 6: Get number of closed issues in the last week
 def get_num_closed_issues_weekly(weekly_closed_issues):
     return len(weekly_closed_issues)
 
@@ -559,10 +513,9 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "open_issues": open_issues,
             "closed_issues": closed_issues,
             "active_issues": get_active_issues(session, one_week_ago, repo_name),
+            "stale_issues": get_stale_issues(session, one_week_ago, repo_name, thirty_days_ago),
             "num_weekly_open_issues": get_num_open_issues_weekly(open_issues),
             "num_weekly_closed_issues": get_num_closed_issues_weekly(closed_issues),
-            "issues_by_open_date": sort_issues_open_date(session, repo_name, limit),
-            "issues_by_number_of_comments": sort_issues_num_comments(session, repo_name, limit),
             "open_pull_requests": open_pull_requests,
             "closed_pull_requests": closed_pull_requests,
             "num_open_prs": get_num_open_prs(open_pull_requests),
@@ -570,7 +523,7 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "commits": commits,
             "num_commits": get_num_commits(commits),
             "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
-            "latest_release": get_latest_release(session, repo_name)
+            "latest_release": {}# get_latest_release(session, repo_name) 
         }
         
         return repo_data

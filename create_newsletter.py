@@ -10,6 +10,8 @@ from sort_data import *
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+import re
+
 
 load_dotenv()  
 
@@ -28,7 +30,7 @@ def individual_instructions(param1, param2, param3, param4):
 def general_instructions(param1, param2, param3, param4, param5, param6):
   instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
   if param5:
-        instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [/topic_type/path_of_link](https://github.com/topic_type/path_of_link)). In the clickable portion of the hyperlink, only include the topic type (issues for issue, pull for pull request) and the path of the link. "
+    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [/topic_type/path_of_link](https://github.com/topic_type/path_of_link)). In the clickable portion of the hyperlink, only include the topic type (issues for issue, pull for pull request) and the path of the link. "
   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
   return instructions
 
@@ -564,6 +566,16 @@ def active_contributors(repo):
   return overall_summary + "\n\n"
 
 
+def lastWeekLink(repo_name):
+    # Get today's date
+    today_date = datetime.today()
+    # Calculate the date one week ago
+    one_week_ago_object = today_date - timedelta(days=7)
+    # Format the date as a string in "YYYY-MM-DD" format
+    one_week_ago_string = one_week_ago_object.strftime("%Y-%m-%d")
+    # Create the new link
+    link = f"https://buttondown.com/weekly-project-news/archive/weekly-github-report-for-{repo_name}-{one_week_ago_string}/"
+    return link
 
 
 if __name__ == '__main__':
@@ -585,16 +597,17 @@ if __name__ == '__main__':
   limit = 100;
 
   # 1.4: getting all of the repositories
-  # query = text("SELECT full_name FROM repositories")
-  # result = session.execute(query)
-  # repositories = [row[0] for row in result]
+  query = text("SELECT full_name FROM repositories")
+  result = session.execute(query)
+  #repositories = [row[0] for row in result]
   repositories = [
-    # "ggerganov/llama.cpp",
-    # "nodejs/node",
-    # "openxla/xla",
-    # "stevenbui44/flashcode"
-    "cnovalski1/APIexample",
-    "monicahq/monica"
+  #   "ggerganov/llama.cpp",
+  #   "nodejs/node",
+  #   "openxla/xla",
+  #   "stevenbui44/flashcode",
+  #   "cnovalski1/APIexample",
+  #   "tensorflow/tensorflow"
+     "monicahq/monica"
   ]
 
 
@@ -632,36 +645,36 @@ if __name__ == '__main__':
 
         # 0. Table of Contents
         outfile.write("# Table of Contents\n\n")      
-        outfile.write("- [I. Issues](#i-issues)\n")
-        outfile.write("  - [1.1. Top 5 Active Issues](#11-top-5-active-issues)\n")
-        outfile.write("  - [1.2. Top 5 Stale Issues](#12-top-5-stale-issues)\n")
-        outfile.write("  - [1.3. Open Issues](#13-open-issues)\n")
-        outfile.write("  - [1.4. Closed Issues](#14-closed-issues)\n\n")
-        outfile.write("- [II. Pull Requests](#ii-pull-requests)\n")
-        outfile.write("  - [2.1. Open Pull Requests](#21-open-pull-requests)\n")
-        outfile.write("  - [2.2. Closed Pull Requests](#22-closed-pull-requests)\n")
-        outfile.write("  - [2.3. Pull Request Discussion Insights](#23-pull-request-discussion-insights)\n\n")
-        outfile.write("- [III. Commits](#iii-commits)\n")
-        outfile.write("  - [3.1. Commits](#31-commits)\n\n")
-        outfile.write("- [IV. Contributors](#iv-contributors)\n")
-        outfile.write("  - [4.1. Contributors](#41-contributors)\n\n")
+        outfile.write("- [I. Issues](#i)\n")
+        outfile.write("  - [1.1. Top 5 Active Issues](#11)\n")
+        outfile.write("  - [1.2. Top 5 Stale Issues](#12)\n")
+        outfile.write("  - [1.3. Open Issues](#13)\n")
+        outfile.write("  - [1.4. Closed Issues](#14)\n\n")
+        outfile.write("- [II. Pull Requests](#ii)\n")
+        outfile.write("  - [2.1. Open Pull Requests](#21)\n")
+        outfile.write("  - [2.2. Closed Pull Requests](#22)\n")
+        outfile.write("  - [2.3. Pull Request Discussion Insights](#23)\n\n")
+        outfile.write("- [III. Commits](#iii)\n")
+        outfile.write("  - [3.1. Commits](#31)\n\n")
+        outfile.write("- [IV. Contributors](#iv)\n")
+        outfile.write("  - [4.1. Contributors](#41)\n\n")
         
         # 1: Issues
-        outfile.write("# I. Issues\n\n")
+        outfile.write("# <a name='i'></a>I. Issues\n\n")
 
         # 1.2 Top 5 Active Issues
-        outfile.write("## 1.1 Top 5 Active Issues:\n\n")
+        outfile.write("## <a name='11'></a>1.1 Top 5 Active Issues:\n\n")
         result = active_issues(repo_data)
         outfile.write(result)
 
 
         # 1.3 Top 5 Stale Issues
-        outfile.write("## 1.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
+        outfile.write("## <a name='12'></a>1.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
         result = stale_issues(repo_data)
         outfile.write(result)
 
         # 1.1: Open Issues
-        outfile.write("## 1.3 Open Issues\n\n")
+        outfile.write("## <a name='13'></a>1.3 Open Issues\n\n")
         outfile.write("This section lists, groups, and then summarizes issues that were created within the last week in the repository. \n\n")
 
         # 1.3.1 Open Issues This Week
@@ -674,7 +687,7 @@ if __name__ == '__main__':
 
 
         # 1.4: Closed Issues
-        outfile.write("## 1.4 Closed Issues\n\n")
+        outfile.write("## <a name='14'></a>1.4 Closed Issues\n\n")
         outfile.write("This section lists, groups, and then summarizes issues that were closed within the last week in the repository. This section also links the associated pull requests if applicable. \n\n")
 
         # 1.4.1 Closed Issues This Week
@@ -690,7 +703,7 @@ if __name__ == '__main__':
 
 
         # 1.5 Issue Discussion Insights
-        outfile.write("## 1.5 Issue Discussion Insights\n\n")
+        outfile.write("## <a name='15'></a>1.5 Issue Discussion Insights\n\n")
         result = issue_discussion_insights(repo_data)
         outfile.write(result)
 
@@ -699,10 +712,10 @@ if __name__ == '__main__':
 
 
         # 2: Pull Requests
-        outfile.write("# II. Pull Requests\n\n")
+        outfile.write("# <a name='ii'></a>II. Pull Requests\n\n")
 
         # 2.1: Open Pull Requests
-        outfile.write("## 2.1 Open Pull Requests\n\n")
+        outfile.write("## <a name='21'></a>2.1 Open Pull Requests\n\n")
         outfile.write("This section lists and summarizes pull requests that were created within the last week in the repository. \n\n")
 
         # 2.1.1 Open Pull Requests This Week
@@ -715,7 +728,7 @@ if __name__ == '__main__':
 
 
         # 2.2: Closed Pull Requests
-        outfile.write("## 2.2 Closed Pull Requests\n\n")
+        outfile.write("## <a name='22'></a>2.2 Closed Pull Requests\n\n")
         outfile.write("This section lists and summarizes pull requests that were closed within the last week in the repository. Similar pull requests are grouped, and associated commits are linked if applicable. \n\n")
 
         # 2.2.1 Closed Pull Requests This Week
@@ -728,7 +741,7 @@ if __name__ == '__main__':
 
 
         # 2.3 Pull Request Discussion Insights
-        outfile.write("## 2.3 Pull Request Discussion Insights\n\n")
+        outfile.write("## <a name='23'></a>2.3 Pull Request Discussion Insights\n\n")
         result = pull_request_discussion_insights(repo_data)
         outfile.write(result)
 
@@ -737,10 +750,10 @@ if __name__ == '__main__':
 
 
         # 3: Commits
-        outfile.write("# III. Commits\n\n")
+        outfile.write("# <a name='iii'></a>III. Commits\n\n")
 
         # 3.1: Open Commits
-        outfile.write("## 3.1 Commits\n\n")
+        outfile.write("## <a name='31'></a>3.1 Commits\n\n")
         outfile.write("This section lists and summarizes commits made within the last week and groups them based on topic. \n\n")
 
         # 3.1.1 Open Commits This Week
@@ -756,10 +769,10 @@ if __name__ == '__main__':
 
 
         # 4: Contributors
-        outfile.write("# IV. Contributors\n\n")
+        outfile.write("# <a name='iv'></a>IV. Contributors\n\n")
 
         # 4.1: Contributors
-        outfile.write("## 4.1 Contributors\n\n")
+        outfile.write("## <a name='41'></a>4.1 Contributors\n\n")
 
         # 4.1.3 Active Contributors
         outfile.write("**Active Contributors:**\n\n")
@@ -767,6 +780,16 @@ if __name__ == '__main__':
         outfile.write(result)
 
         outfile.write("\n\n")
+        # 4.1.4 Last weeks link
+        if check_link_works(lastWeekLink( repo_name)): 
+          outfile.write("Access last week's newsletter: " + lastWeekLink( repo_name))
+        else:
+          outfile.write("Could not access link")
+          print("Link that didnt work (Could not get last weeks link): " + lastWeekLink(repo_name) )
+
+        
+
+
       
       print(f"Successfully added {repository} to {output_filename}")
 

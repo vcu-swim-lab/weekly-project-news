@@ -598,7 +598,10 @@ if __name__ == '__main__':
   # 1.4: getting all of the repositories
   query = text("SELECT full_name FROM repositories")
   result = session.execute(query)
-  repositories = [row[0] for row in result]
+  # repositories = [row[0] for row in result]
+
+  #repositories = [row[0] for row in result]
+  repositories = [
   # repositories = [
   #   "ggerganov/llama.cpp",
   #   "nodejs/node",
@@ -606,8 +609,8 @@ if __name__ == '__main__':
   #   "stevenbui44/flashcode",
   #   "cnovalski1/APIexample",
   #   "tensorflow/tensorflow",
-  #   "monicahq/monica"
-  # ]
+      "monicahq/monica"
+  ]
 
 
   # PART TWO: create the markdown for a newsletter
@@ -644,81 +647,84 @@ if __name__ == '__main__':
 
         # 0. Table of Contents
         outfile.write("# Table of Contents\n\n")      
-        outfile.write("- [I. News]\n")
-        outfile.write("  - [1.1. Recent Version Releases]\n")
-        outfile.write("  - [1.2. Other Noteworthy Updates]\n\n")
-        outfile.write("- [II. Issues]\n")
-        outfile.write("  - [2.1. Top 5 Active Issues]\n")
-        outfile.write("  - [2.2. Top 5 Stale Issues]\n")
-        outfile.write("  - [2.3. Open Issues]\n")
-        outfile.write("  - [2.4. Closed Issues]\n\n")
-        outfile.write("- [III. Pull Requests]\n")
-        outfile.write("  - [3.1. Open Pull Requests]\n")
-        outfile.write("  - [3.2. Closed Pull Requests]\n")
-        outfile.write("  - [3.3. Pull Request Discussion Insights]\n\n")
-        outfile.write("- [IV. Commits]\n")
-        outfile.write("  - [4.1. Commits]\n\n")
-        outfile.write("- [V. Contributors]\n")
-        outfile.write("  - [5.1. Contributors]\n\n")
+        outfile.write("- [I. News](#news)\n")
+        outfile.write("  - [1.1. Recent Version Releases](#releases)\n")
+        outfile.write("  - [1.2. Other Noteworthy Updates](#updates)\n\n")
+        outfile.write("- [II. Issues](#issues)\n")
+        outfile.write("  - [2.1. Top 5 Active Issues](#active)\n")
+        outfile.write("  - [2.2. Top 5 Stale Issues](#stale)\n")
+        outfile.write("  - [2.3. Open Issues](#open)\n")
+        outfile.write("  - [2.4. Closed Issues](#closed)\n\n")
+        outfile.write("  - [2.5. Issue Discussion Insights](#discussion)\n\n")
+        outfile.write("- [III. Pull Requests](#prs)\n")
+        outfile.write("  - [3.1. Open Pull Requests](#open-prs)\n")
+        outfile.write("  - [3.2. Closed Pull Requests](#closed-prs)\n")
+        outfile.write("  - [3.3. Pull Request Discussion Insights](#discussion-prs)\n\n")
+        outfile.write("- [IV. Commits](#commits)\n")
+        outfile.write("  - [4.1. Commits](#recent-commits)\n\n")
+        outfile.write("- [V. Contributors](#contributors)\n")
+        outfile.write("  - [5.1. Contributors](#active-contributors)\n\n")
         
         # 1: News
-        outfile.write("# I. News\n\n")
+        outfile.write("# <a name='news'></a>I. News\n\n")
 
         # 1.1 Recent Version Releases
-        outfile.write("## 1.1 Recent Version Releases:\n\n")
+        outfile.write("## <a name='releases'></a>1.1 Recent Version Releases:\n\n")
+        
         latest_release = repo_data.get('latest_release')
         print(f"Printing latest release: {latest_release}")
         if latest_release is not {}:
           outfile.write(f"The current version of this repository is {latest_release}\n\n")
 
         # 1.2 Other Noteworthy Updates
-        outfile.write("## 1.2 Other Noteworthy Updates:\n\n")
+        outfile.write("## <a name='updates'></a>1.2 Other Noteworthy Updates:\n\n")
         # TODO Add code for analyzing the README file.
 
 
-        # 1: Issues
-        outfile.write("# II. Issues\n\n")
+        # 2: Issues
+        outfile.write("# <a name='issues'></a>II. Issues\n\n")
 
-        # 1.1 Top 5 Active Issues
-        outfile.write("## 2.1 Top 5 Active Issues:\n\n")
+        # 2.1 Top 5 Active Issues
+        outfile.write("## <a name='active'></a>2.1 Top 5 Active Issues:\n\n")
         result = active_issues(repo_data)
         outfile.write(result)
 
 
-        # 1.2 Top 5 Stale Issues
-        outfile.write("## 2.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
+        # 2.2 Top 5 Stale Issues
+        outfile.write("## <a name='stale'></a>2.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
         result = stale_issues(repo_data)
+
         outfile.write(result)
 
-        # 1.3: Open Issues
-        outfile.write("## 2.3 Open Issues\n\n")
+        # 2.3: Open Issues
+        outfile.write("## <a name='open'></a>2.3 Open Issues\n\n")
         outfile.write("This section lists, groups, and then summarizes issues that were created within the last week in the repository. \n\n")
 
-        # 1.3.1 Open Issues This Week
+        # 2.3.1 Open Issues This Week
         outfile.write(f"**Issues Opened This Week:** {repo_data.get('num_weekly_open_issues', None)}\n\n")
 
-        # 1.3.2 Summarized Issues (Open)
+        # 2.3.2 Summarized Issues (Open)
         outfile.write("**Summarized Issues:**\n\n")
         result = open_issues(repo_data)
         outfile.write(result)
 
 
-        # 1.4: Closed Issues
-        outfile.write("## 2.4 Closed Issues\n\n")
+        # 2.4: Closed Issues
+        outfile.write("## <a name='closed'></a>2.4 Closed Issues\n\n")
         outfile.write("This section lists, groups, and then summarizes issues that were closed within the last week in the repository. This section also links the associated pull requests if applicable. \n\n")
 
-        # 1.4.1 Closed Issues This Week
+        # 2.4.1 Closed Issues This Week
         outfile.write(f"**Issues Closed This Week:** {repo_data.get('num_weekly_closed_issues', None)}\n\n")
 
 
-        # 1.4.3 Summarized Issues (Closed)
+        # 2.4.3 Summarized Issues (Closed)
         outfile.write("**Summarized Issues:**\n\n")
         result = closed_issues(repo_data)
         outfile.write(result)
 
 
-        # 1.5 Issue Discussion Insights
-        outfile.write("## 2.5 Issue Discussion Insights\n\n")
+        # 2.5 Issue Discussion Insights
+        outfile.write("## <a name='discussion'></a>2.5 Issue Discussion Insights\n\n")
         result = issue_discussion_insights(repo_data)
         outfile.write(result)
 
@@ -726,37 +732,38 @@ if __name__ == '__main__':
 
 
 
-        # 2: Pull Requests
-        outfile.write("# III. Pull Requests\n\n")
+        # 3: Pull Requests
+        outfile.write("# <a name='prs'></a>III. Pull Requests\n\n")
 
-        # 2.1: Open Pull Requests
-        outfile.write("## 3.1 Open Pull Requests\n\n")
+        # 3.1: Open Pull Requests
+        outfile.write("## <a name='open-prs'></a>3.1 Open Pull Requests\n\n")
         outfile.write("This section lists and summarizes pull requests that were created within the last week in the repository. \n\n")
 
-        # 2.1.1 Open Pull Requests This Week
+        # 3.1.1 Open Pull Requests This Week
         outfile.write(f"**Pull Requests Opened This Week:** {repo_data.get('num_open_prs', None)}\n\n")
 
-        # 2.1.2 List of Pull Requests (Open)
+        # 3.1.2 List of Pull Requests (Open)
         outfile.write("**Pull Requests:**\n\n")
         result = open_pull_requests(repo_data)
         outfile.write(result)
 
 
-        # 2.2: Closed Pull Requests
-        outfile.write("## 3.2 Closed Pull Requests\n\n")
+        # 3.2: Closed Pull Requests
+        outfile.write("## <a name='closed-prs'></a>3.2 Closed Pull Requests\n\n")
         outfile.write("This section lists and summarizes pull requests that were closed within the last week in the repository. Similar pull requests are grouped, and associated commits are linked if applicable. \n\n")
 
-        # 2.2.1 Closed Pull Requests This Week
+        # 3.2.1 Closed Pull Requests This Week
         outfile.write(f"**Pull Requests Closed This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
 
-        # 2.2.2 List of Pull Requests (Closed)
+        # 3.2.2 List of Pull Requests (Closed)
         outfile.write("**Summarized Pull Requests:**\n\n")
         result = closed_pull_requests(repo_data)
         outfile.write(result)
 
 
-        # 2.3 Pull Request Discussion Insights
-        outfile.write("## 3.3 Pull Request Discussion Insights\n\n")
+
+        # 3.3 Pull Request Discussion Insights
+        outfile.write("## <a name='discussion-prs'></a>3.3 Pull Request Discussion Insights\n\n")
         result = pull_request_discussion_insights(repo_data)
         outfile.write(result)
 
@@ -764,39 +771,37 @@ if __name__ == '__main__':
 
 
 
-        # 3: Commits
-        outfile.write("# IV. Commits\n\n")
+        # 4: Commits
+        outfile.write("# <a name='commits'></a>IV. Commits\n\n")
 
-        # 3.1: Open Commits
-        outfile.write("## 4.1 Commits\n\n")
+        # 4.1: Open Commits
+        outfile.write("## <a name='recent-commits'></a>4.1 Commits\n\n")
         outfile.write("This section lists and summarizes commits made within the last week and groups them based on topic. \n\n")
 
-        # 3.1.1 Open Commits This Week
+        # 4.1.1 Open Commits This Week
         outfile.write(f"**Commits Made This Week:** {repo_data.get('num_commits', None)}\n\n")
 
-        # 3.1.2 List of Commits
+        # 4.1.2 List of Commits
         outfile.write("**Summarized Commits:**\n\n")
         result = commits(repo_data)
         outfile.write(result)
 
         outfile.write("***\n\n")
 
+        # 5: Contributors
+        outfile.write("# <a name='contributors'></a>V. Contributors\n\n")
 
+        # 5.1: Contributors
+        outfile.write("## <a name='active-contributors'></a>5.1 Contributors\n\n")
 
-        # 4: Contributors
-        outfile.write("# V. Contributors\n\n")
-
-        # 4.1: Contributors
-        outfile.write("## 5.1 Contributors\n\n")
-
-        # 4.1.3 Active Contributors
+        # 5.1.3 Active Contributors
         outfile.write("**Active Contributors:**\n\n")
         result = active_contributors(repo_data)
         outfile.write(result)
 
         outfile.write("\n\n")
 
-        # 4.1.4 Last Week's Link (if exists)
+        # 5.1.4 Last Week's Link (if exists)
         if check_link_works(lastWeekLink( repo_name)): 
           outfile.write("Access last week's newsletter: " + lastWeekLink( repo_name))
 

@@ -523,7 +523,7 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "commits": commits,
             "num_commits": get_num_commits(commits),
             "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
-            "latest_release": {}# get_latest_release(session, repo_name) 
+            "latest_release": get_latest_release(session, repo_name) 
         }
         
         return repo_data

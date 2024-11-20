@@ -170,13 +170,13 @@ def active_issues(repo):
 # 3 - Open Issues (Stale)
 def stale_issues(repo):
   markdown = "We consider stale issues to be issues that has had no activity within the last 30 days. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
-  if repo['issues_by_open_date'] == [] or not repo.get('issues_by_open_date'):
+  if repo['stale_issues'] == [] or not repo.get('stale_issues'):
     markdown += "As of our latest update, there are no stale issues for the project this week. \n\n"
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
   issue_instructions += "Do not mention the URL in the summary."
-  issues = repo['issues_by_open_date']
+  issues = repo['stale_issues']
   size = min(len(issues), 5)
 
   # We are only summarizing the top 5 open issues (stale)

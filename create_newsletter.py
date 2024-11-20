@@ -598,8 +598,11 @@ if __name__ == '__main__':
   # 1.4: getting all of the repositories
   query = text("SELECT full_name FROM repositories")
   result = session.execute(query)
+  # repositories = [row[0] for row in result]
+
   #repositories = [row[0] for row in result]
   repositories = [
+  # repositories = [
   #   "ggerganov/llama.cpp",
   #   "nodejs/node",
   #   "openxla/xla",
@@ -667,6 +670,7 @@ if __name__ == '__main__':
 
         # 1.1 Recent Version Releases
         outfile.write("## <a name='releases'></a>1.1 Recent Version Releases:\n\n")
+        
         latest_release = repo_data.get('latest_release')
         print(f"Printing latest release: {latest_release}")
         if latest_release is not {}:
@@ -689,6 +693,7 @@ if __name__ == '__main__':
         # 2.2 Top 5 Stale Issues
         outfile.write("## <a name='stale'></a>2.2 Top 5 Stale Issues:\n\n") # Changed to STALE instead of quiet
         result = stale_issues(repo_data)
+
         outfile.write(result)
 
         # 2.3: Open Issues
@@ -756,6 +761,7 @@ if __name__ == '__main__':
         outfile.write(result)
 
 
+
         # 3.3 Pull Request Discussion Insights
         outfile.write("## <a name='discussion-prs'></a>3.3 Pull Request Discussion Insights\n\n")
         result = pull_request_discussion_insights(repo_data)
@@ -781,8 +787,6 @@ if __name__ == '__main__':
         outfile.write(result)
 
         outfile.write("***\n\n")
-
-
 
         # 5: Contributors
         outfile.write("# <a name='contributors'></a>V. Contributors\n\n")

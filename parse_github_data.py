@@ -35,7 +35,7 @@ def rate_limit_check():
     try:
         rate_limit = g.get_rate_limit().core
         print(rate_limit)
-        print(f"Current key number: {current_key_index + 1} of 5")
+        print(f"Current key number: {current_key_index + 1} of {len(API_KEYS)}")
         
         if rate_limit.remaining < 50:  
             print("Approaching rate limit, switching API key...")
@@ -73,6 +73,25 @@ def check_repo(url):
     except requests.RequestException as e:
         print(f"Error accessing {url}: {e}")
         return True
+    
+
+# Check if the link works, if it does return true otherwise return false
+def check_link_works(url):
+    # Check if the URL seems valid by containing ".com"
+    if ".com" not in url:
+        return False
+
+    try:
+        # Send a request to check if the URL is accessible
+        response = requests.head(url, allow_redirects=True)
+        # Return True if the status code indicates success (status code 200)
+        return response.status_code == 200
+    except requests.RequestException:
+        print("Link not working")
+        print("Provided Link " + url)
+        # Return False if there's any issue with the request
+        return False
+
 
 # Retreives a repository
 def get_a_repository(repository, headers):
@@ -92,7 +111,7 @@ def get_repo_name(url):
         return f"{parts[3]}/{parts[4]}" 
     return None
 
-
+# TODO Add version of each repository
 def insert_repository(data): 
     try:
         # Extract only the fields that exist in the Repository model
@@ -232,6 +251,23 @@ def get_commits(repo, date):
     return commits_array
 
 
+# RETRIEVE LATEST RELEASE
+def get_latest_release(repo):
+    # Repo must be in the form "owner/repo"
+    url = f"https://api.github.com/repos/{repo}/releases/latest"
+
+    try:
+        response = requests.get(url, headers=headers)
+
+        if response.status_code != 200:
+            print(f"Could not find release data for repository: {repo}")
+            return None
+        else:
+            return response.json()
+    except Exception as e:
+        print(f"An error has occurred: {e}")
+        return None
+
 
 # ISSUES 1: INSERT ISSUE
 def insert_issue(issue, repo_name):
@@ -274,34 +310,34 @@ def insert_issue(issue, repo_name):
     
 # ISSUES 2: INSERT ISSUE COMMENT
 def insert_issue_comment(comment_data, issue_id, repo_name):
+    # Extract only the fields that exist in the IssueComment model
+    comment_fields = {column.name for column in IssueComment.__table__.columns}
+    filtered_comment_data = {key: value for key, value in comment_data.items() if key in comment_fields}
+
+    # Check if comment already exists in the database
+    if session.query(IssueComment).filter_by(id=comment_data['id']).first() is not None:
+        print("Issue comment already exists!")
+        return
+        
+    # Add issue ID to database and repo name
+    filtered_comment_data['issue_id'] = issue_id
+    filtered_comment_data['repository_full_name'] = repo_name
+    
+    # Try/except for user data
     try:
-        # Extract only the fields that exist in the IssueComment model
-        comment_fields = {column.name for column in IssueComment.__table__.columns}
-        filtered_comment_data = {key: value for key, value in comment_data.items() if key in comment_fields}
+        filtered_comment_data['user_login'] = comment_data['user']['login']
+    except Exception as e:
+        filtered_comment_data['user_login'] = None
+        print(f"User data does not exist for comment {comment_data['id']}: {e}")
 
-        # Check if comment already exists in the database
-        if session.query(IssueComment).filter_by(id=comment_data['id']).first() is not None:
-            print("Issue comment already exists!")
-            return
-            
-        # Add issue ID to database and repo name
-        filtered_comment_data['issue_id'] = issue_id
-        filtered_comment_data['repository_full_name'] = repo_name
-        
-        # Try/except for user data
-        try:
-            filtered_comment_data['user_login'] = comment_data['user']['login']
-        except Exception as e:
-            filtered_comment_data['user_login'] = None
-            print(f"User data does not exist for comment {comment_data['id']}: {e}")
-
-        # Convert datetime fields if they are not None
-        comment_datetime_fields = ['created_at', 'updated_at']
-        for field in comment_datetime_fields:
-            if field in filtered_comment_data and filtered_comment_data[field] is not None and isinstance(filtered_comment_data[field], str):
-                filtered_comment_data[field] = datetime.strptime(filtered_comment_data[field], "%Y-%m-%dT%H:%M:%SZ")
-        
-        # Try except for inserting comment
+    # Convert datetime fields if they are not None
+    comment_datetime_fields = ['created_at', 'updated_at']
+    for field in comment_datetime_fields:
+        if field in filtered_comment_data and filtered_comment_data[field] is not None and isinstance(filtered_comment_data[field], str):
+            filtered_comment_data[field] = datetime.strptime(filtered_comment_data[field], "%Y-%m-%dT%H:%M:%SZ")
+    
+    # Try except for inserting comment
+    try:
         new_comment = IssueComment(**filtered_comment_data)
         session.add(new_comment)
         session.commit()
@@ -316,6 +352,36 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
 
 # PRS 1: INSERT PULL REQUEST
 def insert_pull_request(pull_request, repo_name):
+    pull_fields = {column.name for column in PullRequest.__table__.columns}
+    filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
+    
+    # Check if the pull request already exists
+    if session.query(PullRequest).filter_by(id=pull_request['id']).first() is not None:
+        print("Pull Request already exists!")
+        return
+    
+    # Try/except for user login
+    try:
+        filtered_data['user_login'] = pull_request['user']['login']
+    except Exception as e:
+        filtered_data['user_login'] = None
+        print(f"User data does not exist for pull request {pull_request['id']}: {e}")
+    filtered_data['repository_full_name'] = repo_name
+    
+
+    # Set repo name
+    filtered_data['repository_full_name'] = repo_name
+    
+    # Convert datetime fields
+    datetime_fields = ['created_at', 'updated_at', 'closed_at']
+    for field in datetime_fields:
+        if field in filtered_data:
+            if filtered_data[field] is None:
+                filtered_data[field] = None
+            else:
+                filtered_data[field] = datetime.fromisoformat(filtered_data[field])
+    
+    # Try/except for inserting pull request
     try:
         pull_fields = {column.name for column in PullRequest.__table__.columns}
         filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
@@ -526,10 +592,6 @@ def insert_all_data(repo_name, date):
             print("Skipping commit out of date")
             continue
         
-        # commit_author_login = commit['author']['login'] if not None else None
-        # commit_author_name = commit['commit']['author']['name'] if not None else None
-        # committer_name = commit['commit']['committer']['name'] if not None else None
-        # committer_login = commit['committer']['login'] if not None else None
         try:
             commit_author_login = commit['author']['login'] if not None else ''
             commit_author_name = commit['commit']['author']['name'] if not None else ''
@@ -538,13 +600,12 @@ def insert_all_data(repo_name, date):
         except Exception as e:
             print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
             continue
-        
+            
         # Skip bot author, NOT bot committer
-        # if 'bot' in commit_author_login or '[bot]' in commit_author_login or 'bot' in commit_author_name or '[bot]' in commit_author_name:
         if commit_author_login and ('bot' in commit_author_login or '[bot]' in commit_author_login):
             print("Skipping bot commit")
             continue
-
+        
         if commit_author_name and ('bot' in commit_author_name or '[bot]' in commit_author_name):
             print("Skipping bot commit")
             continue
@@ -560,7 +621,7 @@ def insert_all_data(repo_name, date):
             rate_limit_check()
     
     print(f"Successfully inserted {commits_inserted} commits for {repo_name} into the database for {repo_name}")
-        
+     
  
 # TODO Use get_readme to retreive and parse the readme file and check release data
 
@@ -588,20 +649,17 @@ if __name__ == '__main__':
     limit = 10000
     
     # Get owners and repos
-    # current_directory = os.path.dirname(__file__)
-    # file_path = os.path.join(current_directory, '..', 'subscribers', 'subscribers.json')
-    # with open(file_path, 'r') as f:
-    #     subscriber_data = json.load(f)
     with open("subscribers.json", 'r') as f:
         subscriber_data = json.load(f)
-    
+        
     # Keep a list of the subscriber repos
     subscriber_repo_list = []
 
+
     try:
-        
         for subscriber in subscriber_data['results']:
             repo_name = subscriber['metadata'].get('repo_name', '')
+            
             if repo_name and 'github.com' in repo_name:
                 # Check that the repository is public
                 if check_repo(repo_name):
@@ -613,7 +671,7 @@ if __name__ == '__main__':
                 if len(parts) >= 5:
                     full_repo_name = f"{parts[3]}/{parts[4]}"
                     subscriber_repo_list.append(full_repo_name)
-                    
+         
                     
         # List of the current repositories in the database
         current_repo_list = session.query(Repository.full_name).all()
@@ -637,6 +695,16 @@ if __name__ == '__main__':
             else: # Repo doesn't exist in database, so insert it
                 logging.info(f"Inserting new repository: {repo_name}")
                 repo_data = get_a_repository(repo, headers)
+
+                # CHECK FOR LATEST RELEASE
+                repo_latest_release = get_latest_release(repo)
+                print(repo_latest_release)
+                if (repo_latest_release is None):
+                    print("Release data does not exist")
+                else:
+                    repo_data['latest_release'] = repo_latest_release['tag_name']
+
+                print(repo_data)
                 insert_repository(repo_data)
                 insert_all_data(repo_name, one_year_ago)
 

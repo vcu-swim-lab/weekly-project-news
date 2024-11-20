@@ -16,7 +16,6 @@ import sys
 from datetime import datetime  # Import datetime
 import json
 import requests 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'build_database')))
 from parse_github_data import *
 from sqlalchemy import and_
 from sqlalchemy_json import NestedMutableJson
@@ -27,6 +26,7 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
+import operator
 
 
 load_dotenv()
@@ -39,6 +39,17 @@ def rate_limit_check(g):
         now = datetime.now(tz=timezone.utc)
         sleep_duration = max(0, (rate_limit.reset - now).total_seconds() + 10)  # adding 10 seconds buffer
         time.sleep(sleep_duration)
+
+# RELEASES 1: Get latest version
+def get_latest_release(session, repository_full_name):
+    # Get the specific repo
+    latest_version = session.query(Repository.latest_release).filter(
+        and_(
+            Repository.full_name == repository_full_name
+        )
+    ).scalar()
+
+    return latest_version if not None else None
 
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(session, one_week_ago, repository_full_name):
@@ -104,14 +115,13 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
     
     return closed_issue_data
 
-# ISSUES 3: Get list of "active" issues, which are issues commented on/updated within the last week
+# ISSUES 3: Get list of "active" issues, which are issues updated within the last week
 def get_active_issues(session, one_week_ago, repository_full_name):
     # Retreive issues and set up variables
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'open', 
-            Issue.updated_at >= one_week_ago
+            Issue.state == 'open'
         )
     ).all()
     
@@ -129,26 +139,36 @@ def get_active_issues(session, one_week_ago, repository_full_name):
             "body": issue.body,
             "user": issue.user_login,
             "url": issue.html_url,
-            "comments": []
+            "comments": [],
+            "num_comments_this_week": 5 # TODO PLACEHOLDER
         }
         
         # Query comments
         comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
+        num_comments_this_week = 0
+        one_week_ago = one_week_ago.replace(tzinfo=None)
         for comment in comments:
+            create_date = comment.created_at.replace(tzinfo=None)
+            if create_date >= one_week_ago:
+                num_comments_this_week += 1
             issue_data["comments"].append({"body": comment.body})
         
+        issue_data["num_comments_this_week"] = num_comments_this_week
         active_issue_data.append(issue_data)
 
-    
-    return active_issue_data
+        # Sort the issues in order of number of comments this week
+        sorted_active_issues = sorted(active_issue_data, key=lambda x: x["num_comments_this_week"], reverse=True)
+        
+    return sorted_active_issues
 
   
-# ISSUES 4: Gets all issues, sorted by longest open date first
-def sort_issues_open_date(session, repository_full_name, limit): 
+# ISSUES 4: Gets stale issues (not updated within 30 days)
+def get_stale_issues(session, repository_full_name, limit, thirty_days_ago): 
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
             Issue.state == 'open', 
+            Issue.updated_at <= thirty_days_ago
         )
     ).order_by(
         Issue.created_at.asc()
@@ -186,89 +206,11 @@ def sort_issues_open_date(session, repository_full_name, limit):
     
     return issue_data_sorted
 
-# ISSUES 5: Gets all issues within one_week_ago, sorted by most comments first
-def sort_issues_num_comments(session, repository_full_name, limit):
-    issues = session.query(Issue).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'open', 
-        )
-    ).order_by(
-        Issue.comments.desc()
-    ).all()
-    
-    issue_data = []
-    
-    
-    # Iterates through each issue
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
-        
-        # If the number of comments on an issue is 0, skip it
-        if issue.comments == 0:
-            continue
-        
-        # Otherwise, add the title and number of comments to the data array
-        data = {
-        "title": issue.title,
-        "number_of_comments": issue.comments,
-        "body": issue.body,
-        "url": issue.html_url,
-        "id": issue.id,
-        "comments": []
-        }
-        comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
-        for comment in comments:
-            data["comments"].append({"body": comment.body})
-        
-        issue_data.append(data)
-        
-        # Break the for loop if the amount of data is large enough
-        if len(issue_data) >= limit:
-            break
- 
-    return issue_data # Return in JSON format
-
-# ISSUES 6: Get average time to close issues in the last week 
-def avg_issue_close_time_weekly(session, one_week_ago, repository_full_name):
-    # Retreive the issues and set up time variables
-    issues = session.query(Issue).filter(
-        and_(
-            Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'closed',
-            Issue.closed_at >= one_week_ago
-        )
-    ).all()
-    
-    total_issues = len(issues)
-    total_close_time = 0
-    avg_close_time = 0
-    
-    # Iterates through each issue and calculates the total close time in minutes for each issue
-    for issue in issues:
-        # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
-        
-        time_open = issue.closed_at - issue.created_at
-        total_minutes = time_open.total_seconds() // 60
-        total_close_time += total_minutes # Adds total minutes to the total number of minutes to close issues
-    
-    # Prevents dividing by zero
-    if total_issues > 0:
-        avg_close_time = ((total_close_time / total_issues) / 60) / 24 # Calculates the average time to close in days
-    
-    
-    # Return the average time to close issues in the last week formatted to 2 decimals
-    return  "{:.2f} days".format(avg_close_time)
-
-# ISSUES 7: Get number of open issues in the last week
+# ISSUES 5: Get number of open issues in the last week
 def get_num_open_issues_weekly(weekly_open_issues):
     return len(weekly_open_issues)
 
-# ISSUES 8: Get number of closed issues in the last week
+# ISSUES 6: Get number of closed issues in the last week
 def get_num_closed_issues_weekly(weekly_closed_issues):
     return len(weekly_closed_issues)
 
@@ -334,48 +276,11 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
 
     return closed_pr_data
 
-# PRS 3: Get "active" pull requests (updated within the last week)
-def get_active_prs(session, one_week_ago, repository_full_name):
-    # Query the database for pull requests
-    pulls = session.query(PullRequest).filter(
-        and_(
-            PullRequest.repository_full_name == repository_full_name, 
-            PullRequest.state == 'open', 
-            PullRequest.updated_at >= one_week_ago 
-        )
-    ).all()
-    
-    active_pr_data = []
-    
-    
-    # Loop through each PR
-    for pr in pulls:
-        # Omit bots
-        if "bot" in pr.user_login.lower() or "[bot]" in pr.user_login.lower():
-            continue
-        
-        pr_data = {
-                "title": pr.title,
-                "user": pr.user_login,
-                "body": pr.body,
-                "url": pr.html_url,
-                "comments": []
-            }
-        
-        # Query PR comments and loop through them
-        comments = session.query(PullRequestComment).filter(PullRequestComment.pull_request_id == pr.id).all()
-        for comment in comments:
-            pr_data["comments"].append({"body": comment.body})
-
-        active_pr_data.append(pr_data)
-
-    return active_pr_data
-
-# PRS 4: Get NUMBER of OPEN pull requests made within one_week_ago
+# PRS 3: Get NUMBER of OPEN pull requests made within one_week_ago
 def get_num_open_prs(pr_data_open):
     return len(pr_data_open)
 
-# PRS 5: Get NUMBER of CLOSED pull requests made within one_week_ago
+# PRS 4: Get NUMBER of CLOSED pull requests made within one_week_ago
 def get_num_closed_prs(pr_data_closed):
     return len(pr_data_closed)
 
@@ -414,7 +319,8 @@ def get_num_commits(commit_data):
 
 
 # CONTRIBUTORS 1: Gets ALL contributors who are considered "active" within one_week_ago
-# Active: > 0 commits this month, > 0 issues this month, AND > 0 PRs this month
+# Active: > 0 commits this month, > 0 issues this month, > 0 PRs this month, or > 2 comments this month
+# TODO: Filter out individuals such as TensorflowGardener (maybe), or look at PR and issue authors again.
 def get_active_contributors(session, thirty_days_ago, repository_full_name):
     # Query the database to retreive commits
     commits = session.query(Commit).filter(
@@ -431,12 +337,28 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
             PullRequest.created_at >= thirty_days_ago,
         )
     ).all()
+
+    # Query for pull request comments
+    pr_comments = session.query(PullRequestComment).filter(
+        and_(
+            PullRequestComment.repository_full_name == repository_full_name,
+            PullRequestComment.created_at >= thirty_days_ago
+        )
+    )
     
     # Query the database for issues
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name,
             Issue.created_at >= thirty_days_ago,
+        )
+    ).all()
+
+    # Query for issue comments
+    issue_comments = session.query(IssueComment).filter(
+        and_(
+            IssueComment.repository_full_name == repository_full_name,
+            IssueComment.created_at >= thirty_days_ago,
         )
     ).all()
     
@@ -447,9 +369,8 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     for commit in commits:
         # if '[bot]' in commit.committer_name or 'bot' in commit.committer_name:
         #     continue
-        
-        # author = commit.commit_author_name
-        author = commit.committer_name
+
+        author = commit.commit_author_name
         found = False
         
         for contributor in active_contributors:    
@@ -462,7 +383,8 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
                 'author': author,
                 'commits': 1,
                 'pull_requests': 0,
-                'issues': 0
+                'issues': 0,
+                'comments': 0
             }
             active_contributors.append(contributor_data)
         
@@ -483,7 +405,8 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
                 'author': author,
                 'commits': 0,
                 'pull_requests': 1,
-                'issues': 0
+                'issues': 0,
+                'comments': 0
             }
             active_contributors.append(contributor_data)
     
@@ -504,25 +427,70 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
                 'author': author,
                 'commits': 0,
                 'pull_requests': 0,
-                'issues': 1
+                'issues': 1,
+                'comments': 0
             }
             active_contributors.append(contributor_data)
         
+    # By number of issue comments
+    for comment in issue_comments:
+        if '[bot]' in comment.user_login.lower() or 'bot' in comment.user_login.lower():
+            continue
+
+        author = comment.user_login
+        found = False
+
+        for contributor in active_contributors:
+            if contributor['author'] == author:
+                contributor['comments'] += 1
+                found = True
+                break
+        if not found:
+            contributor_data = {
+                'author': author,
+                'commits': 0,
+                'pull_requests': 0,
+                'issues': 0,
+                'comments': 1
+            }
+            active_contributors.append(contributor_data)
+
+    # Loop through pull request comments
+    for comment in pr_comments:
+        if '[bot]' in comment.user_login.lower() or 'bot' in comment.user_login.lower():
+            continue
+
+        author = comment.user_login
+        found = False
+
+        for contributor in active_contributors:
+            if contributor['author'] == author:
+                contributor['comments'] += 1
+                found = True
+                break
+        if not found:
+            contributor_data = {
+                'author': author,
+                'commits': 0,
+                'pull_requests': 0,
+                'issues': 0,
+                'comments': 1
+            }
+            active_contributors.append(contributor_data)
     
     commit_threshold = 0 # Commit threshold for being considered active
     pr_threshold = 0 # Pull requests in the last week
     issue_threshold = 0 # Issues created in the last month
+    comment_threshold = 2 # Comments in the last month
 
     # Filter contributors who meet the activity threshold
     # Change conditional statement depending on what is considered "active"
     active_contributors = [
         contributor for contributor in active_contributors
-        if contributor['commits'] > commit_threshold or contributor['pull_requests'] > pr_threshold or contributor['issues'] > issue_threshold
+        if contributor['comments'] > comment_threshold or contributor['commits'] > commit_threshold or contributor['pull_requests'] > pr_threshold or contributor['issues'] > issue_threshold
     ]
-    
-    num_active_contributors = len(active_contributors) # Gets number of active contributors
-    active_contributors.append({'number_of_active_contributors': num_active_contributors}) # Add to data set
-
+    num_contributors = len(active_contributors)
+    active_contributors.append({"number_of_active_contributors": num_contributors})
     return active_contributors
 
 
@@ -545,19 +513,17 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "open_issues": open_issues,
             "closed_issues": closed_issues,
             "active_issues": get_active_issues(session, one_week_ago, repo_name),
+            "stale_issues": get_stale_issues(session, one_week_ago, repo_name, thirty_days_ago),
             "num_weekly_open_issues": get_num_open_issues_weekly(open_issues),
             "num_weekly_closed_issues": get_num_closed_issues_weekly(closed_issues),
-            "issues_by_open_date": sort_issues_open_date(session, repo_name, limit),
-            "issues_by_number_of_comments": sort_issues_num_comments(session, repo_name, limit),
-            "average_issue_close_time_weekly": avg_issue_close_time_weekly(session, one_week_ago, repo_name),
             "open_pull_requests": open_pull_requests,
             "closed_pull_requests": closed_pull_requests,
-            "active_pull_requests": get_active_prs(session, one_week_ago, repo_name),
             "num_open_prs": get_num_open_prs(open_pull_requests),
             "num_closed_prs": get_num_closed_prs(closed_pull_requests),
             "commits": commits,
             "num_commits": get_num_commits(commits),
-            "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name)
+            "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
+            "latest_release": {}# get_latest_release(session, repo_name) 
         }
         
         return repo_data
@@ -566,7 +532,8 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
-    database_path = '../build_database/github.db'
+    database_path = 'github.db'
+
     engine = create_engine(f'sqlite:///{database_path}')
 
     # DATABASE SESSION

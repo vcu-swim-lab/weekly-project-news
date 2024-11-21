@@ -660,10 +660,8 @@ if __name__ == '__main__':
         outfile.write("  - [3.1. Open Pull Requests](#open-prs)\n")
         outfile.write("  - [3.2. Closed Pull Requests](#closed-prs)\n")
         outfile.write("  - [3.3. Pull Request Discussion Insights](#discussion-prs)\n\n")
-        outfile.write("- [IV. Commits](#commits)\n")
-        outfile.write("  - [4.1. Commits](#recent-commits)\n\n")
-        outfile.write("- [V. Contributors](#contributors)\n")
-        outfile.write("  - [5.1. Contributors](#active-contributors)\n\n")
+        outfile.write("- [IV. Contributors](#contributors)\n")
+        outfile.write("  - [4.1. Contributors](#active-contributors)\n\n")
         
         # 1: News
         outfile.write("# <a name='news'></a>I. News\n\n")
@@ -769,39 +767,20 @@ if __name__ == '__main__':
 
         outfile.write("***\n\n")
 
+        # 4: Contributors
+        outfile.write("# <a name='contributors'></a>IV. Contributors\n\n")
 
+        # 4.1: Contributors
+        outfile.write("## <a name='active-contributors'></a>4.1 Contributors\n\n")
 
-        # 4: Commits
-        outfile.write("# <a name='commits'></a>IV. Commits\n\n")
-
-        # 4.1: Open Commits
-        outfile.write("## <a name='recent-commits'></a>4.1 Commits\n\n")
-        outfile.write("This section lists and summarizes commits made within the last week and groups them based on topic. \n\n")
-
-        # 4.1.1 Open Commits This Week
-        outfile.write(f"**Commits Made This Week:** {repo_data.get('num_commits', None)}\n\n")
-
-        # 4.1.2 List of Commits
-        outfile.write("**Summarized Commits:**\n\n")
-        result = commits(repo_data)
-        outfile.write(result)
-
-        outfile.write("***\n\n")
-
-        # 5: Contributors
-        outfile.write("# <a name='contributors'></a>V. Contributors\n\n")
-
-        # 5.1: Contributors
-        outfile.write("## <a name='active-contributors'></a>5.1 Contributors\n\n")
-
-        # 5.1.3 Active Contributors
+        # 4.1.3 Active Contributors
         outfile.write("**Active Contributors:**\n\n")
         result = active_contributors(repo_data)
         outfile.write(result)
 
         outfile.write("\n\n")
 
-        # 5.1.4 Last Week's Link (if exists)
+        # 4.1.4 Last Week's Link (if exists)
         if check_link_works(lastWeekLink( repo_name)): 
           outfile.write("Access last week's newsletter: " + lastWeekLink( repo_name))
 

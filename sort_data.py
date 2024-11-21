@@ -115,7 +115,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
     
     return closed_issue_data
 
-# ISSUES 3: Get list of "active" issues, which are issues updated within the last week
+# ISSUES 3: Get list of "active" issues, which are issues commented on the most within the past week
 def get_active_issues(session, one_week_ago, repository_full_name):
     # Retreive issues and set up variables
     issues = session.query(Issue).filter(
@@ -140,7 +140,7 @@ def get_active_issues(session, one_week_ago, repository_full_name):
             "user": issue.user_login,
             "url": issue.html_url,
             "comments": [],
-            "num_comments_this_week": 5 # TODO PLACEHOLDER
+            "num_comments_this_week": 0 # Placeholder as 0
         }
         
         # Query comments
@@ -156,9 +156,10 @@ def get_active_issues(session, one_week_ago, repository_full_name):
         issue_data["num_comments_this_week"] = num_comments_this_week
         active_issue_data.append(issue_data)
 
-        # Sort the issues in order of number of comments this week
-        sorted_active_issues = sorted(active_issue_data, key=lambda x: x["num_comments_this_week"], reverse=True)
         
+    # Sort the issues in order of number of comments this week
+    sorted_active_issues = sorted(active_issue_data, key=lambda x: x["num_comments_this_week"], reverse=True)
+
     return sorted_active_issues
 
   

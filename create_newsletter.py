@@ -139,7 +139,7 @@ def open_issues(repo):
 # 2 - Open Issues (Active)
 def active_issues(repo):
   markdown = "We consider active issues to be issues that that have been commented on most frequently within the last week. \n\n"
-  if repo['active_issues'] == [] or not repo.get('active_issues'):
+  if repo['active_issues'] == [] or repo.get('active_issues') is None:
     markdown += "As of our latest update, there are no active issues with ongoing comments this week. \n\n"
     return markdown
 
@@ -598,10 +598,8 @@ if __name__ == '__main__':
   # 1.4: getting all of the repositories
   query = text("SELECT full_name FROM repositories")
   result = session.execute(query)
-  # repositories = [row[0] for row in result]
 
-  #repositories = [row[0] for row in result]
-  repositories = [
+  repositories = [row[0] for row in result]
   # repositories = [
   #   "ggerganov/llama.cpp",
   #   "nodejs/node",
@@ -609,8 +607,8 @@ if __name__ == '__main__':
   #   "stevenbui44/flashcode",
   #   "cnovalski1/APIexample",
   #   "tensorflow/tensorflow",
-      "monicahq/monica"
-  ]
+  #   "monicahq/monica"
+  # ]
 
 
   # PART TWO: create the markdown for a newsletter

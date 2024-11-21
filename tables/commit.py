@@ -9,7 +9,6 @@ class Commit(Base):
     sha = Column(String, primary_key=True)
     html_url = Column(String)
 
-    # TODO Add commit_author
     commit_author_login = Column(String)
     commit_author_name = Column(String)
     
@@ -20,6 +19,8 @@ class Commit(Base):
     commit_message = Column(Text)
     
     repository_full_name = Column(String)
+
+    pull_request_id = Column(Integer)
     
 
     def __repr__(self):

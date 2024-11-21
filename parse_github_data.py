@@ -223,17 +223,16 @@ def get_pr_comments(repo, pr):
     return comment_array
 
 # RETRIEVE COMMITS
-def get_commits(repo, date):
+def get_pr_commits(repo, pull_number):
     commits_array = []
     page = 1
 
     while True:
         # Repo must be in form "owner/repo" for request to work
-        url = f"https://api.github.com/repos/{repo}/commits"
+        url = f"https://api.github.com/repos/{repo}/pulls/{pull_number}/commits"
         params = {
             'page': page,
-            'per_page': 100,
-            'since': date
+            'per_page': 100
         }
 
         response = requests.get(url, headers=headers, params=params)
@@ -351,6 +350,8 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
 
 
 # PRS 1: INSERT PULL REQUEST
+# TODO Add "associated_issue" column in database table to link pull request and issues
+# TODO Add "associated_commits" column in database table to join commits with pull requests
 def insert_pull_request(pull_request, repo_name):
     pull_fields = {column.name for column in PullRequest.__table__.columns}
     filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
@@ -465,7 +466,7 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
     
 
 # COMMITS 1: INSERT COMMIT
-def insert_commit(commit, repo_name):
+def insert_commit(commit, repo_name, pr_id):
     try:
         commit_fields = {column.name for column in Commit.__table__.columns}
         filtered_data = {key: value for key, value in commit.items() if key in commit_fields}
@@ -498,6 +499,9 @@ def insert_commit(commit, repo_name):
         filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date']) if not None else ''
         filtered_data['commit_message'] = commit['commit']['message'] if not None else ''
         
+        # Add pr ID to database
+        filtered_data['pull_request_id'] = pr_id
+
         new_commit = Commit(**filtered_data)
         session.add(new_commit)
         session.commit()
@@ -533,10 +537,12 @@ def insert_all_data(repo_name, date):
         
         # Checks for pull request and inserts it
         if 'pull' in issue['html_url']:
+            print("Processing pull request")
             pull_request = issue
             insert_pull_request(pull_request, repo_name)
             pulls_inserted += 1
             
+            print("Processing pr comments")
             pr_comments = get_pr_comments(repo_name, pull_request)
             for comment in pr_comments:
                 # Check for bots in comments
@@ -549,6 +555,13 @@ def insert_all_data(repo_name, date):
                     continue
                 
                 insert_pr_comment(comment, pull_request['id'], repo_name)
+            
+            # Insert pull request commits
+            print("Processing pr commits")
+            pr_commits = get_pr_commits(repo_name, pull_request['number'])
+            for commit in pr_commits:
+                print("Inserting pull request commit")
+                insert_commit(commit, repo_name, pull_request['id'])
             
             if num_issues % 10 == 0:
                 rate_limit_check()
@@ -579,48 +592,6 @@ def insert_all_data(repo_name, date):
     print(f"Successfully inserted {issues_inserted} issues for {repo_name} into the database for {repo_name}")
     print(f"Successfully inserted {pulls_inserted} pull requests for {repo_name} into the database for {repo_name}")
   
-    # Get commits and insert them into the database
-    commits = get_commits(repo_name, date)
-    num_commits = 0
-    commits_inserted = 0
-    
-    for commit in commits:
-        num_commits += 1
-        
-        commit_date = datetime.fromisoformat(commit['commit']['committer']['date'])
-        if commit_date <= date:
-            print("Skipping commit out of date")
-            continue
-        
-        try:
-            commit_author_login = commit['author']['login'] if not None else ''
-            commit_author_name = commit['commit']['author']['name'] if not None else ''
-            committer_name = commit['commit']['committer']['name'] if not None else ''
-            committer_login = commit['committer']['login'] if not None else ''
-        except Exception as e:
-            print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
-            continue
-            
-        # Skip bot author, NOT bot committer
-        if commit_author_login and ('bot' in commit_author_login or '[bot]' in commit_author_login):
-            print("Skipping bot commit")
-            continue
-        
-        if commit_author_name and ('bot' in commit_author_name or '[bot]' in commit_author_name):
-            print("Skipping bot commit")
-            continue
-        
-        # TODO Check to make sure proper data is added for author, login, and committer data
-        
-        print(f"Inserting commit {num_commits} of {len(commits)} for {repo_name}")
-        
-        insert_commit(commit, repo_name)
-        commits_inserted += 1
-        
-        if num_commits % 10 == 0:
-            rate_limit_check()
-    
-    print(f"Successfully inserted {commits_inserted} commits for {repo_name} into the database for {repo_name}")
      
  
 # TODO Use get_readme to retreive and parse the readme file and check release data

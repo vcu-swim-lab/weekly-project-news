@@ -17,9 +17,10 @@ load_dotenv()
 
 API_KEY = os.environ.get("OPENAI_KEY")
 
+# "gpt-3.5-turbo"
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
-llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
 # param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
@@ -266,7 +267,8 @@ def issue_discussion_insights(repo):
   
     generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
     
-    parts = generated_summary.rsplit('\n', 2)
+    parts = generated_summary.rsplit('\n', 3)
+    print(f"Printing issue parts: {parts}")
 
     if len(parts) == 2:
         summary = parts[0].strip()  # First part is the main summary
@@ -384,7 +386,6 @@ def closed_pull_requests(repo):
 
 
 # 8 - Pull Request Discussion Insights
-# TODO: Change this to look at PR comments 
 def pull_request_discussion_insights(repo):
   pr_list = repo['open_pull_requests'] + repo['closed_pull_requests']
   print("Printing pr_list")
@@ -403,7 +404,7 @@ def pull_request_discussion_insights(repo):
   
     generated_summary = generate_summary(pr, instructions, max_retries=5, base_wait=1)
     
-    parts = generated_summary.rsplit('\n', 2)
+    parts = generated_summary.rsplit('\n', 3)
 
     print("Printing pull request parts")
     print(parts)
@@ -599,16 +600,16 @@ if __name__ == '__main__':
   query = text("SELECT full_name FROM repositories")
   result = session.execute(query)
 
-  repositories = [row[0] for row in result]
-  # repositories = [
-  #   "ggerganov/llama.cpp",
-  #   "nodejs/node",
-  #   "openxla/xla",
-  #   "stevenbui44/flashcode",
-  #   "cnovalski1/APIexample",
-  #   "tensorflow/tensorflow",
-  #   "monicahq/monica"
-  # ]
+  # repositories = [row[0] for row in result]
+  repositories = [
+    # "ggerganov/llama.cpp",
+    # "nodejs/node",
+    # "openxla/xla",
+    # "stevenbui44/flashcode",
+    "cnovalski1/APIexample",
+    "tensorflow/tensorflow",
+    # "monicahq/monica"
+  ]
 
 
   # PART TWO: create the markdown for a newsletter

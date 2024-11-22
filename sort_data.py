@@ -235,13 +235,25 @@ def get_open_prs(session, one_week_ago, repository_full_name):
         # Omit bots
         if "bot" in pr.user_login.lower() or "[bot]" in pr.user_login.lower():
             continue
-        
+
         pr_data = {
                 "title": pr.title,
                 "body": pr.body,
-                "url": pr.html_url
+                "url": pr.html_url,
+                "commits": []
             }
         
+        # Retreive commits for pull request
+        pr_commits = session.query(Commit).filter(Commit.pull_request_id == pr.id)
+        
+        # Loop through commits and add links to array
+        for commit in pr_commits:
+            commit_data = {
+                "commit_message": commit.commit_message,
+                "html_url": commit.html_url
+            }
+            pr_data["commits"].append(commit_data)
+
         open_pr_data.append(pr_data)
         
 
@@ -270,8 +282,21 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
         pr_data = {
                 "title": pr.title,
                 "body": pr.body,
-                "url": pr.html_url
+                "url": pr.html_url,
+                "commits": []
             }
+        
+        # Retreive commits for pull request
+        pr_commits = session.query(Commit).filter(Commit.pull_request_id == pr.id)
+        
+        # Loop through commits and add links to array
+        for commit in pr_commits:
+            commit_data = {
+                "commit_message": commit.commit_message,
+                "html_url": commit.html_url
+            }
+            pr_data["commits"].append(commit_data)
+            print(commit_data)
         
         closed_pr_data.append(pr_data)
 

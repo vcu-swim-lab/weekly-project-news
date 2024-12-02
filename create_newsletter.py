@@ -705,7 +705,7 @@ if __name__ == '__main__':
         outfile.write("## <a name='releases'></a>1.1 Recent Version Releases:\n\n")
         
         latest_release = repo_data.get('latest_release')
-        print(f"Printing latest release: {latest_release}")
+        
         if latest_release is not {}:
           outfile.write(f"The current version of this repository is {latest_release}\n\n")
 

@@ -45,8 +45,10 @@ Next, include a bulleted list titled 'Associated Commits' where each bullet poin
 followed by a hyperlink to the commit's URL in markdown format. 
 
 Use the following format for the list:
-- **Associated Commits**:
+**Associated Commits**:
+
     - [Shortened commit message...](https://github.com/commit/commit_hash)
+
     - [Another commit message...](https://github.com/commit/another_hash)
     
 Do not add extra content or make up data beyond what is provided.
@@ -335,28 +337,23 @@ def open_pull_requests(repo):
 
   all_pull_requests = ""
   pr_instructions = pull_request_instructions()
-  print(pr_instructions)
+  
 
   # Step 1: get summaries for each open pull request first from the llm
   for pull_request in repo['open_pull_requests']:
     data = pull_request
-    print(data)
 
-    print(f"Printing data body: {data['body']}")
-   
     if (data['body']):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
     # Process commits related to this PR
     associated_commits = data.get('commits')
-    print(f"Printing pull request commits: {associated_commits}")
+    
     commit_list = ""
     if associated_commits:
-      commit_list += "\n\n**Associated Commits:**\n"
+      commit_list += "\n\n**Associated Commits:**\n\n"
       for commit in associated_commits:
-        commit_list += f"- [{commit['commit_message'][:50]}...](https://github.com/{commit['html_url']})\n"
-    
-    data.append({'associated_commits': associated_commits})
+        commit_list += f"- [{commit['commit_message'][:50]}...]({commit['html_url']})\n\n"
 
     # pull_request_summary = data
     pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
@@ -365,6 +362,7 @@ def open_pull_requests(repo):
     # Add processed PR to summary
     all_pull_requests += f"{pull_request_summary}\n{pull_request_url}{commit_list}\n\n"
 
+  print("Printing all pull request information")
   print("\n", all_pull_requests, "\n\n\n")
 
   # Step 2: get markdown output for all open pull requests 
@@ -373,7 +371,7 @@ def open_pull_requests(repo):
   if "```" in overall_summary:
     overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
 
-  return overall_summary + "\n"
+  return overall_summary + "\n\n"
 
 
 # 7 - Closed Pull Requests
@@ -397,14 +395,12 @@ def closed_pull_requests(repo):
 
     # Process commits related to this PR
     associated_commits = data.get('commits')
-    print(f"Printing pull request commits: {associated_commits}")
+    
     commit_list = ""
     if associated_commits:
       commit_list += "\n\n**Associated Commits:**\n"
       for commit in associated_commits:
-        commit_list += f"- [{commit['commit_message'][:50]}...](https://github.com/{commit['html_url']})\n"
-    
-    data['associated_commits'] = associated_commits
+        commit_list += f"- [{commit['commit_message'][:50]}...]({commit['html_url']})\n\n"
 
     # pull_request_summary = data
     pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)

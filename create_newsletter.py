@@ -20,7 +20,7 @@ API_KEY = os.environ.get("OPENAI_KEY")
 # "gpt-3.5-turbo"
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
-llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
 # param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
@@ -34,6 +34,23 @@ def general_instructions(param1, param2, param3, param4, param5, param6):
     instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [/topic_type/path_of_link](https://github.com/topic_type/path_of_link)). In the clickable portion of the hyperlink, only include the topic type (issues for issue, pull for pull request) and the path of the link. "
   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
   return instructions
+
+# Instructions for pull requests
+def pull_request_instructions():
+    return """
+Generate a one-paragraph summary of the pull request describing its purpose, key changes, and context. 
+Do not include specific commit details in this paragraph.
+
+Next, include a bulleted list titled 'Associated Commits' where each bullet point contains the commit message (truncated to 50 characters if needed) 
+followed by a hyperlink to the commit's URL in markdown format. 
+
+Use the following format for the list:
+- **Associated Commits**:
+    - [Shortened commit message...](https://github.com/commit/commit_hash)
+    - [Another commit message...](https://github.com/commit/another_hash)
+    
+Do not add extra content or make up data beyond what is provided.
+"""
 
 
 def discussion_instructions():
@@ -88,7 +105,7 @@ def generate_summary(data, instructions, max_retries=5, base_wait=1):
 
 # 1 - Open Issues
 def open_issues(repo):
-  if repo['open_issues'] == [] or not repo.get('open_issues'):
+  if not repo.get('open_issues'):
     return "As of our latest update, there are no open issues for the project this week.\n\n"
 
   all_open_issues = ""
@@ -140,7 +157,7 @@ def open_issues(repo):
 # 2 - Open Issues (Active)
 def active_issues(repo):
   markdown = "We consider active issues to be issues that that have been commented on most frequently within the last week. \n\n"
-  if repo['active_issues'] == [] or repo.get('active_issues') is None:
+  if not repo.get('active_issues'):
     markdown += "As of our latest update, there are no active issues with ongoing comments this week. \n\n"
     return markdown
 
@@ -171,7 +188,7 @@ def active_issues(repo):
 # 3 - Open Issues (Stale)
 def stale_issues(repo):
   markdown = "We consider stale issues to be issues that has had no activity within the last 30 days. The team should work together to get these issues resolved and closed as soon as possible. \n\n"
-  if repo['stale_issues'] == [] or not repo.get('stale_issues'):
+  if not repo.get('stale_issues'):
     markdown += "As of our latest update, there are no stale issues for the project this week. \n\n"
     return markdown
 
@@ -190,7 +207,7 @@ def stale_issues(repo):
 
     # Make the issue title a clickable link
     markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
-    markdown += f"   - Open for {data.get('time_open')}\n\n"
+    # markdown += f"   - Open for {data.get('time_open')}\n\n"
 
   if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
@@ -251,22 +268,26 @@ def closed_issues(repo):
 def issue_discussion_insights(repo):
   # Make list of all issues wanting to analyze.
   issue_list = repo['open_issues'] + repo['closed_issues']
-  print("Printing issue_list")
-  print(issue_list)
+
 
   markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed issues that occurred within the past week. It aims to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
   if issue_list == [] or not issue_list:
+    print("Made it past if statement, not markdown issue")
     markdown += "As of our last update, there are no open or closed issues with discussions going on within the past week. \n\n"
+    print("Made it past markdown adding, might be return issue")
     return markdown
   
+  print("Made it past if statement")
   issue_count = 0
 
 
   for issue in issue_list:
     instructions = discussion_instructions()
+    print(f"Printing single issue: {issue}")
   
     generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
     
+    print(f"Printing generated summary: {generated_summary}")
     parts = generated_summary.rsplit('\n', 3)
     print(f"Printing issue parts: {parts}")
 
@@ -313,30 +334,41 @@ def open_pull_requests(repo):
     return "As of our latest update, there are no open pull requests for the project this week.\n\n"
 
   all_pull_requests = ""
-  pull_request_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
-  overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
+  pr_instructions = pull_request_instructions()
+  print(pr_instructions)
 
   # Step 1: get summaries for each open pull request first from the llm
   for pull_request in repo['open_pull_requests']:
     data = pull_request
     print(data)
+
+    print(f"Printing data body: {data['body']}")
    
     if (data['body']):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
+    # Process commits related to this PR
+    associated_commits = data.get('commits')
+    print(f"Printing pull request commits: {associated_commits}")
+    commit_list = ""
+    if associated_commits:
+      commit_list += "\n\n**Associated Commits:**\n"
+      for commit in associated_commits:
+        commit_list += f"- [{commit['commit_message'][:50]}...](https://github.com/{commit['html_url']})\n"
+    
+    data.append({'associated_commits': associated_commits})
+
     # pull_request_summary = data
-    pull_request_summary = generate_summary(data, pull_request_instructions, max_retries=5, base_wait=1)
+    pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
     pull_request_url = f"URL: {pull_request.get('url')}"
-    all_pull_requests += f"{pull_request_summary}\n{pull_request_url}\n\n"
+
+    # Add processed PR to summary
+    all_pull_requests += f"{pull_request_summary}\n{pull_request_url}{commit_list}\n\n"
 
   print("\n", all_pull_requests, "\n\n\n")
 
   # Step 2: get markdown output for all open pull requests 
-  overall_summary = generate_summary(all_pull_requests, overall_instructions, max_retries=5, base_wait=1)
-  # if "```markdown" in overall_summary:
-  #   start = overall_summary.index("```markdown") + len("```markdown")
-  #   end = overall_summary.rindex("```")
-  #   overall_summary = overall_summary[start:end].strip() + "\n"
+  overall_summary = generate_summary(all_pull_requests, pr_instructions, max_retries=5, base_wait=1)
 
   if "```" in overall_summary:
     overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
@@ -350,33 +382,41 @@ def closed_pull_requests(repo):
     return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
 
   all_pull_requests = ""
-  pull_request_instructions = individual_instructions("a closed pull request", "pull request", "pull request", "only one detailed sentence")
-  overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
+  pr_instructions = pull_request_instructions()
+  print(pr_instructions)
 
   # Step 1: get summaries for each closed pull request first from the llm
   for pull_request in repo['closed_pull_requests']:
     data = pull_request
+    print(data)
+
+    print(f"Printing data body: {data['body']}")
    
     if (data['body']):
       data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
+    # Process commits related to this PR
+    associated_commits = data.get('commits')
+    print(f"Printing pull request commits: {associated_commits}")
+    commit_list = ""
+    if associated_commits:
+      commit_list += "\n\n**Associated Commits:**\n"
+      for commit in associated_commits:
+        commit_list += f"- [{commit['commit_message'][:50]}...](https://github.com/{commit['html_url']})\n"
+    
+    data['associated_commits'] = associated_commits
+
     # pull_request_summary = data
-    pull_request_summary = generate_summary(data, pull_request_instructions, max_retries=5, base_wait=1)
+    pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
     pull_request_url = f"URL: {pull_request.get('url')}"
-    all_pull_requests += f"{pull_request_summary}\n{pull_request_url}\n\n"
+
+    # Add processed PR to summary
+    all_pull_requests += f"{pull_request_summary}\n{pull_request_url}{commit_list}\n\n"
 
   print("\n", all_pull_requests, "\n\n\n")
 
   # Step 2: get markdown output for all closed pull requests 
-  overall_summary = generate_summary(all_pull_requests, overall_instructions, max_retries=5, base_wait=1)
-  # if overall_summary.startswith("```") and overall_summary.endswith("```"):
-  #   overall_summary = overall_summary[3:-3]
-  # if overall_summary.startswith("markdown"):
-  #   overall_summary = overall_summary[len("markdown"):].lstrip()
-  # if "```markdown" in overall_summary:
-  #   start = overall_summary.index("```markdown") + len("```markdown")
-  #   end = overall_summary.rindex("```")
-  #   overall_summary = overall_summary[start:end].strip() + "\n"
+  overall_summary = generate_summary(all_pull_requests, pr_instructions, max_retries=5, base_wait=1)
 
   if "```" in overall_summary:
     overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
@@ -404,7 +444,7 @@ def pull_request_discussion_insights(repo):
   
     generated_summary = generate_summary(pr, instructions, max_retries=5, base_wait=1)
     
-    parts = generated_summary.rsplit('\n', 3)
+    parts = generated_summary.rsplit('\n', 2)
 
     print("Printing pull request parts")
     print(parts)
@@ -607,8 +647,8 @@ if __name__ == '__main__':
     # "openxla/xla",
     # "stevenbui44/flashcode",
     "cnovalski1/APIexample",
-    "tensorflow/tensorflow",
-    # "monicahq/monica"
+    # "tensorflow/tensorflow",
+    "monicahq/monica"
   ]
 
 

@@ -288,6 +288,7 @@ def issue_discussion_insights(repo):
     print(f"Printing single issue: {issue}")
   
     generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
+    print(f"Printing generated summary to analyze: \n{generated_summary}")
     
     print(f"Printing generated summary: {generated_summary}")
     parts = generated_summary.rsplit('\n', 3)
@@ -439,8 +440,9 @@ def pull_request_discussion_insights(repo):
     instructions = discussion_instructions()
   
     generated_summary = generate_summary(pr, instructions, max_retries=5, base_wait=1)
+    print(f"Printing generated summary to analyze: \n{generated_summary}")
     
-    parts = generated_summary.rsplit('\n', 2)
+    parts = generated_summary.rsplit('\n', 3)
 
     print("Printing pull request parts")
     print(parts)
@@ -458,7 +460,7 @@ def pull_request_discussion_insights(repo):
         # Make sure that score and reason are separated correctly
         if len(score_reason_parts) == 2:
           # Convert score to float, the last part is the reason
-          score = float(score_reason_parts[0].strip())
+          score = float(score_reason_parts[0])
           reason = score_reason_parts[1].strip() 
 
           # Printing each part for proper error catching in generation
@@ -468,6 +470,7 @@ def pull_request_discussion_insights(repo):
         else:
           print("Unexpected format: missing reason.")
     else:
+      print("Passing else statement")
       summary = parts[0].strip()
       score = float(parts[1])
       reason = parts[2].strip()

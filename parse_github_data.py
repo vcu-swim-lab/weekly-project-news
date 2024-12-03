@@ -111,7 +111,7 @@ def get_repo_name(url):
         return f"{parts[3]}/{parts[4]}" 
     return None
 
-# TODO Add version of each repository
+# Insert repository
 def insert_repository(data): 
     try:
         # Extract only the fields that exist in the Repository model
@@ -262,7 +262,22 @@ def get_latest_release(repo):
             print(f"Could not find release data for repository: {repo}")
             return None
         else:
-            return response.json()
+            print("Printing version API return:")
+            release_data = response.json()
+            for key, value in release_data.items():
+                if key == 'author' and isinstance(value, dict):
+                    print(f"{key}:")
+                    for sub_key, sub_value in value.items():
+                        print(f"  {sub_key}: {sub_value}")
+                elif key == 'assets' and isinstance(value, list):
+                    print(f"{key}:")
+                    for index, asset in enumerate(value):
+                        print(f"  Asset {index + 1}:")
+                        for asset_key, asset_value in asset.items():
+                            print(f"    {asset_key}: {asset_value}")
+                else:
+                    print(f"{key}: {value}")
+            return release_data
     except Exception as e:
         print(f"An error has occurred: {e}")
         return None
@@ -351,7 +366,6 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
 
 # PRS 1: INSERT PULL REQUEST
 # TODO Add "associated_issue" column in database table to link pull request and issues
-# TODO Add "associated_commits" column in database table to join commits with pull requests
 def insert_pull_request(pull_request, repo_name):
     pull_fields = {column.name for column in PullRequest.__table__.columns}
     filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
@@ -669,11 +683,14 @@ if __name__ == '__main__':
 
                 # CHECK FOR LATEST RELEASE
                 repo_latest_release = get_latest_release(repo)
+                print("Printing latest release: ")
                 print(repo_latest_release)
                 if (repo_latest_release is None):
                     print("Release data does not exist")
                 else:
-                    repo_data['latest_release'] = repo_latest_release['tag_name']
+                    repo_data['latest_release'] = repo_latest_release['tag_name'] if not None else None
+                    repo_data['release_description'] = repo_latest_release['body'] if not None else None
+                    repo_data['release_create_date'] = repo_latest_release['created_at'] if not None else None
 
                 print(repo_data)
                 insert_repository(repo_data)

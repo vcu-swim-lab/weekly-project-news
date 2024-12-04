@@ -119,7 +119,7 @@ def insert_repository(data):
         filtered_data = {key: value for key, value in data.items() if key in repository_fields}
 
         # Convert datetime fields
-        datetime_fields = ['created_at', 'updated_at']
+        datetime_fields = ['created_at', 'updated_at', 'release_create_date']
         for field in datetime_fields:
             if field in filtered_data:
                 filtered_data[field] = datetime.strptime(filtered_data[field], "%Y-%m-%dT%H:%M:%SZ")
@@ -132,6 +132,7 @@ def insert_repository(data):
         new_repo = Repository(**filtered_data)
         session.add(new_repo)
         session.commit()
+        print("Successfully inserted repository")
     except Exception as e:
         logging.error(f"Error inserting repository: {e}")
         session.rollback()
@@ -691,7 +692,7 @@ if __name__ == '__main__':
                     repo_data['latest_release'] = repo_latest_release['tag_name'] if not None else None
                     repo_data['release_description'] = repo_latest_release['body'] if not None else None
                     repo_data['release_create_date'] = repo_latest_release['created_at'] if not None else None
-
+                
                 print(repo_data)
                 insert_repository(repo_data)
                 insert_all_data(repo_name, one_year_ago)

@@ -20,7 +20,7 @@ API_KEY = os.environ.get("OPENAI_KEY")
 # "gpt-3.5-turbo"
 prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
-llm=ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, openai_api_key = API_KEY)
+llm=ChatOpenAI(model_name="gpt-4o", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
 
 # param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
@@ -56,9 +56,13 @@ Do not add extra content or make up data beyond what is provided.
 
 
 def discussion_instructions():
-  return """First, write a one paragraph summary capturing the trajectory of a GitHub conversation. Do not include specific topics, claims, or arguments from the conversation. Be concise and objective with the sentences describing the trajectory, including usernames, sentiments, tones, and triggers of tension. For example, 'username1 expresses frustration that username2's solution did not work'. Start your answer with 'This GitHub conversation'"
-After that paragraph, on a different line, give only a single number to 2 decimal places on a 0 to 1 scale describing the possibility of occurring toxicity in future comments, where 0 to 0.3 should be very little toxicity, 0.3 to 0.6 should be a bit higher, and 0.6 to 1 should be alarming. Do not output anything else on this line.
-Then, on a different line, give only a short comma-separated list of specific reasons in the summary for giving the number. For example, 'Rapid escalation, aggressive language'"""
+    return """First, write a one-paragraph summary capturing the trajectory of a GitHub conversation. Be concise and objective, describing usernames, sentiments, tones, and triggers of tension without including specific topics, claims, or arguments. For example, 'username1 expresses frustration that username2's solution did not work'. Start your answer with 'This GitHub conversation'. 
+After the summary, on the same line, provide a single number to 2 decimal places on a 0 to 1 scale, indicating the likelihood of toxicity in future comments. Use a scale where:
+- 0.0 to 0.3 means very little toxicity,
+- 0.3 to 0.6 means a moderate possibility,
+- 0.6 to 1.0 means a high likelihood of toxicity.
+Do not add any extra text or newlines in this part.
+Then, on the same line, provide a brief, comma-separated list of specific reasons for assigning the score. For example, 'Rapid escalation, aggressive language'. Do not include any other details or newlines."""
 
 
 total_tokens = 0
@@ -159,7 +163,7 @@ def open_issues(repo):
 # 2 - Open Issues (Active)
 def active_issues(repo):
   markdown = "We consider active issues to be issues that that have been commented on most frequently within the last week. \n\n"
-  if not repo.get('active_issues'):
+  if not repo.get('active_issues') or repo.get('active_issues') == []:
     markdown += "As of our latest update, there are no active issues with ongoing comments this week. \n\n"
     return markdown
 
@@ -178,6 +182,7 @@ def active_issues(repo):
     # Make the issue title a clickable link
     markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
     markdown += f"   - Number of comments this week: {data.get('number_of_comments')}\n\n"
+    
 
   if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
@@ -265,69 +270,52 @@ def closed_issues(repo):
 
 
 
-# 5 - Issue Discussion Insights
-# TODO: Change this to look at open and closed issues, rather than active issues.
+# Issue Discussion Insights
 def issue_discussion_insights(repo):
-  # Make list of all issues wanting to analyze.
-  issue_list = repo['open_issues'] + repo['closed_issues']
+    # Make list of all issues wanting to analyze.
+    issue_list = repo['open_issues'] + repo['closed_issues']
 
-
-  markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed issues that occurred within the past week. It aims to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
-  if issue_list == [] or not issue_list:
-    print("Made it past if statement, not markdown issue")
-    markdown += "As of our last update, there are no open or closed issues with discussions going on within the past week. \n\n"
-    print("Made it past markdown adding, might be return issue")
-    return markdown
-  
-  print("Made it past if statement")
-  issue_count = 0
-
-
-  for issue in issue_list:
-    instructions = discussion_instructions()
-    print(f"Printing single issue: {issue}")
-  
-    generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
-    print(f"Printing generated summary to analyze: \n{generated_summary}")
+    markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed issues that occurred within the past week. It aims to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
     
-    print(f"Printing generated summary: {generated_summary}")
-    parts = generated_summary.rsplit('\n', 3)
-    print(f"Printing issue parts: {parts}")
+    if not issue_list:
+        print("No issues to analyze.")
+        markdown += "As of our last update, there are no open or closed issues with discussions going on within the past week. \n\n"
+        return markdown
 
-    if len(parts) == 2:
-        summary = parts[0].strip()  # First part is the main summary
+    print("Analyzing issues...")
+    issue_count = 0
 
-        # Step 2: Split the second part on the first newline to separate score and reason
-        score_reason_parts = parts[1].split('\n', 1)
+    for issue in issue_list:
+        instructions = discussion_instructions()
+        print(f"Analyzing issue: {issue}")
+    
+        generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
+        print(f"Generated summary: \n{generated_summary}")
         
-        # Ensure score and reason are separated correctly
-        if len(score_reason_parts) == 2:
-            score = float(score_reason_parts[0].strip())  # Convert score to float
-            reason = score_reason_parts[1].strip()  # Remaining part is reason
+        # Use regular expression to capture the summary, score, and reasoning
+        pattern = r"^(.*?)\s+(\d\.\d{2})\s*,?\s*(.*)$"
+        match = re.match(pattern, generated_summary.strip())
 
-            print("Summary:", summary)
-            print("Score:", score)
-            print("Reason:", reason)
+        if match:
+            summary = match.group(1).strip()  # Summary
+            score = float(match.group(2).strip())  # Score (float)
+            reason = match.group(3).strip()  # Reasoning
+
+            # Add the analysis result to the markdown if score > 0.5
+            if score > 0.5:
+                issue_count += 1
+                markdown += f"{issue_count}. [**{issue['title']}**]({issue['url']})\n"
+                markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
+                markdown += f"   - {summary}\n\n"
         else:
-            print("Unexpected format: missing reason.")
-    else:
-        # If it's split properly, then split normally afterwards.
-        summary = parts[0].strip()
-        score = float(parts[1])
-        reason = parts[2].strip()
+            print(f"Unexpected format in generated summary for issue: {issue['title']}")
+            continue  # Skip this issue if format doesn't match expected
 
+    # If no issues with high toxicity scores
+    if issue_count == 0:
+        markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open issues from the past week. \n\n"
 
-    if score > 0.5:
-      issue_count += 1
-      
-      markdown += f"{issue_count}. [**{issue['title']}**]({issue['url']})\n"
-      markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
-      markdown += f"   - {summary}\n\n"
-    
-  if issue_count == 0:
-    markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open issues from the past week. \n\n"
-    
-  return markdown
+    return markdown
   
 
 
@@ -424,73 +412,52 @@ def closed_pull_requests(repo):
 
 # 8 - Pull Request Discussion Insights
 def pull_request_discussion_insights(repo):
-  pr_list = repo['open_pull_requests'] + repo['closed_pull_requests']
-  print("Printing pr_list")
-  print(pr_list)
+    pr_list = repo['open_pull_requests'] + repo['closed_pull_requests']
+    print("Printing pr_list")
+    print(pr_list)
 
-  markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed pull requests that occurred within the past week. It aims to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
-  if pr_list == [] or not pr_list:
-    markdown += "As of our last update, there are no open or closed pull requests with discussions going on within the past week. \n\n"
-    return markdown
-  
-  pull_request_count = 0
-  count = 0
-
-  for pr in pr_list:
-    instructions = discussion_instructions()
-  
-    generated_summary = generate_summary(pr, instructions, max_retries=5, base_wait=1)
-    print(f"Printing generated summary to analyze: \n{generated_summary}")
+    markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed pull requests that occurred within the past week. It aims to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
     
-    parts = generated_summary.rsplit('\n', 3)
+    if not pr_list:
+        markdown += "As of our last update, there are no open or closed pull requests with discussions going on within the past week. \n\n"
+        return markdown
+    
+    pull_request_count = 0
+    count = 0
 
-    print("Printing pull request parts")
-    print(parts)
+    for pr in pr_list:
+        instructions = discussion_instructions()
 
-    count += 1
-    print(f"Processing PR {count} of {len(pr_list)}")
-
-    if len(parts) == 2:
-        # First part is the main summary
-        summary = parts[0].strip()
-
-        # Split the second part on the first newline to separate score and reason
-        score_reason_parts = parts[1].split('\n', 1)
+        generated_summary = generate_summary(pr, instructions, max_retries=5, base_wait=1)
+        print(f"Generated summary to analyze: \n{generated_summary}")
         
-        # Make sure that score and reason are separated correctly
-        if len(score_reason_parts) == 2:
-          # Convert score to float, the last part is the reason
-          score = float(score_reason_parts[0])
-          reason = score_reason_parts[1].strip() 
+        # Use regex to capture the summary, score, and reasoning in one line
+        pattern = r"^(.*?)\s+(\d\.\d{2})\s*,?\s*(.*)$"
+        match = re.match(pattern, generated_summary.strip())
 
-          # Printing each part for proper error catching in generation
-          print("Summary:", summary)
-          print("Score:", score)
-          print("Reason:", reason)
+        if match:
+            summary = match.group(1).strip()  # summary
+            score = float(match.group(2).strip())  # score (float)
+            reason = match.group(3).strip()  # reasoning
+
+            print("Summary:", summary)
+            print("Score:", score)
+            print("Reason:", reason)
+
+            # Add the analysis result to the markdown if score > 0.5
+            if score > 0.5:
+                pull_request_count += 1
+                markdown += f"{pull_request_count}. [**{pr['title']}**]({pr['url']})\n"
+                markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
+                markdown += f"   - {summary}\n\n"
         else:
-          print("Unexpected format: missing reason.")
-    else:
-      print("Passing else statement")
-      summary = parts[0].strip()
-      score = float(parts[1])
-      reason = parts[2].strip()
+            print(f"Unexpected format in generated summary for PR: {pr['title']}")
+            continue  # Skip this PR if the format is incorrect
 
-
-    if score > 0.5:
-      # print('a')
-      # print(pr)
-      # print('b')
-
-      pull_request_count += 1
-      
-      markdown += f"{pull_request_count}. [**{pr['title']}**]({pr['url']})\n"
-      markdown += f"   - Toxicity Score: {score:.2f} ({reason})\n"
-      markdown += f"   - {summary}\n\n"
+    if pull_request_count == 0:
+        markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open pull requests from the past week. \n\n"
     
-  if pull_request_count == 0:
-    markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open pull requests from the past week. \n\n"
-    
-  return markdown
+    return markdown
 
 
 
@@ -646,7 +613,7 @@ if __name__ == '__main__':
     # "openxla/xla",
     # "stevenbui44/flashcode",
     "cnovalski1/APIexample",
-    # "tensorflow/tensorflow",
+    "tensorflow/tensorflow",
     "monicahq/monica"
   ]
 

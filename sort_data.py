@@ -121,7 +121,8 @@ def get_active_issues(session, one_week_ago, repository_full_name):
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
-            Issue.state == 'open'
+            Issue.state == 'open',
+            Issue.comments > 0
         )
     ).all()
     
@@ -154,13 +155,17 @@ def get_active_issues(session, one_week_ago, repository_full_name):
             issue_data["comments"].append({"body": comment.body})
         
         issue_data["num_comments_this_week"] = num_comments_this_week
+        
         active_issue_data.append(issue_data)
 
         
     # Sort the issues in order of number of comments this week
     sorted_active_issues = sorted(active_issue_data, key=lambda x: x["num_comments_this_week"], reverse=True)
 
-    return sorted_active_issues
+    if sorted_active_issues[0]['num_comments_this_week'] == 0:
+        return []
+
+    return sorted_active_issues[:5]
 
   
 # ISSUES 4: Gets stale issues (not updated within 30 days)

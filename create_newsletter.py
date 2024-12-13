@@ -321,92 +321,115 @@ def issue_discussion_insights(repo):
 
 # 6 - Open Pull Requests
 def open_pull_requests(repo):
-  if repo['open_pull_requests'] == []:
-    return "As of our latest update, there are no open pull requests for the project this week.\n\n"
+    if repo['open_pull_requests'] == []:
+        return "As of our latest update, there are no open pull requests for the project this week.\n\n"
 
-  all_pull_requests = ""
-  pr_instructions = pull_request_instructions()
-  
-
-  # Step 1: get summaries for each open pull request first from the llm
-  for pull_request in repo['open_pull_requests']:
-    data = pull_request
-
-    if (data['body']):
-      data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
-
-    # Process commits related to this PR
-    associated_commits = data.get('commits')
+    all_pull_requests = ""
+    key_pull_requests = 0  # To keep track of the first 3 "Key" pull requests
+    key_pull_request_summary = ""  # Store detailed summaries for the first 3 pull requests
+    remaining_pull_requests_summary = ""  # Store summaries for the subsequent pull requests
     
-    commit_list = ""
-    if associated_commits:
-      commit_list += "\n\n**Associated Commits:**\n\n"
-      for commit in associated_commits:
-        commit_list += f"- [{commit['commit_message'][:50]}...]({commit['html_url']})\n\n"
+    # Pull request instructions for the full detail and summarized formats
+    pr_instructions = pull_request_instructions()
+    summarized_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
+    
+    # Step 1: Process each pull request
+    for pull_request in repo['open_pull_requests']:
+        data = pull_request
 
-    # pull_request_summary = data
-    pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
-    pull_request_url = f"URL: {pull_request.get('url')}"
+        if (data['body']):
+            data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
-    # Add processed PR to summary
-    all_pull_requests += f"{pull_request_summary}\n{pull_request_url}{commit_list}\n\n"
+        # Process commits related to this PR
+        associated_commits = data.get('commits')
+        commit_list = ""
+        if associated_commits:
+            commit_list += "\n\n**Associated Commits:**\n\n"
+            for commit in associated_commits:
+                commit_list += f"- [{commit['commit_message'][:50]}...]({commit['html_url']})\n\n"
 
-  print("Printing all pull request information")
-  print("\n", all_pull_requests, "\n\n\n")
+        # Generate the summary for the current pull request
+        pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
+        pull_request_url = f"URL: {pull_request.get('url')}"
 
-  # Step 2: get markdown output for all open pull requests 
-  overall_summary = generate_summary(all_pull_requests, pr_instructions, max_retries=5, base_wait=1)
+        # Add the first 3 "Key" pull requests to the detailed list
+        if key_pull_requests < 3:
+            key_pull_request_summary += f"{pull_request_summary}\n{pull_request_url}{commit_list}\n\n"
+            key_pull_requests += 1
+        else:
+            # For subsequent pull requests, only summarize
+            summarized_pr_summary = generate_summary(data, summarized_instructions, max_retries=5, base_wait=1)
+            remaining_pull_requests_summary += f"{summarized_pr_summary}\n{pull_request_url}\n\n"
 
-  if "```" in overall_summary:
-    overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
+    # Step 2: Combine both key and remaining pull requests summaries
+    all_pull_requests = key_pull_request_summary + remaining_pull_requests_summary
 
-  return overall_summary + "\n\n"
+    print("Printing all pull request information")
+    print("\n", all_pull_requests, "\n\n\n")
 
+    # Step 3: Generate the overall markdown output for all open pull requests
+    overall_summary = generate_summary(all_pull_requests, summarized_instructions, max_retries=5, base_wait=1)
+
+    if "```markdown" in overall_summary:
+        overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
+
+    return overall_summary + "\n\n"
 
 # 7 - Closed Pull Requests
 def closed_pull_requests(repo):
-  if repo['closed_pull_requests'] == []:
-    return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
+    if repo['closed_pull_requests'] == []:
+        return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
 
-  all_pull_requests = ""
-  pr_instructions = pull_request_instructions()
-  print(pr_instructions)
+    all_pull_requests = ""
+    key_pull_requests = 0  # To track the first 3 "Key" closed pull requests
+    key_pull_request_summary = ""  # Store detailed summaries for the first 3 pull requests
+    remaining_pull_requests_summary = ""  # Store summaries for the subsequent closed pull requests
 
-  # Step 1: get summaries for each closed pull request first from the llm
-  for pull_request in repo['closed_pull_requests']:
-    data = pull_request
-    print(data)
+    # Pull request instructions for detailed and summarized formats
+    pr_instructions = pull_request_instructions()
+    summarized_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
 
-    print(f"Printing data body: {data['body']}")
-   
-    if (data['body']):
-      data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
+    # Step 1: Process each closed pull request
+    for pull_request in repo['closed_pull_requests']:
+        data = pull_request
 
-    # Process commits related to this PR
-    associated_commits = data.get('commits')
-    
-    commit_list = ""
-    if associated_commits:
-      commit_list += "\n\n**Associated Commits:**\n"
-      for commit in associated_commits:
-        commit_list += f"- [{commit['commit_message'][:50]}...]({commit['html_url']})\n\n"
+        if (data['body']):
+            data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
 
-    # pull_request_summary = data
-    pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
-    pull_request_url = f"URL: {pull_request.get('url')}"
+        # Process commits related to this PR
+        associated_commits = data.get('commits')
+        commit_list = ""
+        if associated_commits:
+            commit_list += "\n\n**Associated Commits:**\n"
+            for commit in associated_commits:
+                commit_list += f"- [{commit['commit_message'][:50]}...]({commit['html_url']})\n\n"
 
-    # Add processed PR to summary
-    all_pull_requests += f"{pull_request_summary}\n{pull_request_url}{commit_list}\n\n"
+        # Generate the summary for the current closed pull request
+        pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
+        pull_request_url = f"URL: {pull_request.get('url')}"
 
-  print("\n", all_pull_requests, "\n\n\n")
+        # Add the first 3 "Key" closed pull requests to the detailed list
+        if key_pull_requests < 3:
+            key_pull_request_summary += f"{pull_request_summary}\n{pull_request_url}{commit_list}\n\n"
+            key_pull_requests += 1
+        else:
+            # For subsequent closed pull requests, only summarize
+            summarized_pr_summary = generate_summary(data, summarized_instructions, max_retries=5, base_wait=1)
+            remaining_pull_requests_summary += f"{summarized_pr_summary}\n{pull_request_url}\n\n"
 
-  # Step 2: get markdown output for all closed pull requests 
-  overall_summary = generate_summary(all_pull_requests, pr_instructions, max_retries=5, base_wait=1)
+    # Step 2: Combine both key and remaining pull request summaries
+    all_pull_requests = key_pull_request_summary + remaining_pull_requests_summary
 
-  if "```" in overall_summary:
-    overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
+    print("Printing all closed pull request information")
+    print("\n", all_pull_requests, "\n\n\n")
 
-  return overall_summary + "\n\n"
+    # Step 3: Generate the overall markdown output for all closed pull requests
+    overall_summary = generate_summary(all_pull_requests, summarized_instructions, max_retries=5, base_wait=1)
+
+    if "```markdown" in overall_summary:
+        overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
+
+    return overall_summary + "\n\n"
 
 
 
@@ -600,7 +623,7 @@ if __name__ == '__main__':
     os.makedirs(newsletter_directory)
   one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
   thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
-  limit = 100;
+  limit = 100
 
   # 1.4: getting all of the repositories
   query = text("SELECT full_name FROM repositories")
@@ -613,7 +636,7 @@ if __name__ == '__main__':
     # "openxla/xla",
     # "stevenbui44/flashcode",
     "cnovalski1/APIexample",
-    "tensorflow/tensorflow",
+    # "tensorflow/tensorflow",
     "monicahq/monica"
   ]
 

@@ -572,6 +572,16 @@ def active_contributors(repo):
   return overall_summary + "\n\n"
 
 
+def generate_readme_summary(repo_name):
+   # Send fetched readme to API for summarization 
+   instructions = "Summarize the provided README file for a weekly developer newsletter, focusing on key features, updates, and important details in concise, user-friendly language. Make it 2-3 sentences long"
+   # fetched readme
+   readme = fetch_github_readme_direct(repo_name)
+   summarized_readme = generate_summary(readme, instructions)
+   return summarized_readme
+   
+
+
 def lastWeekLink(repo_name):
     # Get today's date
     today_date = datetime.today()
@@ -785,13 +795,17 @@ if __name__ == '__main__':
 
         outfile.write("\n\n")
 
-        # 4.1.4 Last Week's Link (if exists)
+       # 4.1.4 ReadMe summary
+       # Print nothing to the newsletter if something goes wrong with the function, print the summarization otherwise
+        if fetch_github_readme_direct(repo_name) != "404":
+           outfile.write("**ReadMe Summary:** \n" + generate_readme_summary(repo_name))
+        # 4.1.5 Last Week's Link (if exists)
         if check_link_works(lastWeekLink( repo_name)): 
           outfile.write("Access last week's newsletter: " + lastWeekLink( repo_name))
+        
 
         outfile.write("\n\n")
-
-        
+       
       
       print(f"Successfully added {repository} to {output_filename}")
 

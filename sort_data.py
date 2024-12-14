@@ -27,6 +27,8 @@ from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
 import operator
+import base64
+from urllib.parse import quote
 
 
 load_dotenv()
@@ -117,7 +119,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
 
 # ISSUES 3: Get list of "active" issues, which are issues commented on the most within the past week
 def get_active_issues(session, one_week_ago, repository_full_name):
-    # Retreive issues and set up variables
+    # Retrieve issues and set up variables
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
@@ -157,18 +159,24 @@ def get_active_issues(session, one_week_ago, repository_full_name):
         issue_data["num_comments_this_week"] = num_comments_this_week
         
         active_issue_data.append(issue_data)
-
     
     if not active_issue_data:
         return {}
-    
+
     # Sort the issues in order of number of comments this week
     sorted_active_issues = sorted(active_issue_data, key=lambda x: x["num_comments_this_week"], reverse=True)
 
-    if sorted_active_issues[0]['num_comments_this_week'] == 0:
+    # Check if there are any active issues
+    if sorted_active_issues:
+        # If there are active issues, check the first one
+        if sorted_active_issues[0]["num_comments_this_week"] == 0:
+            return []
+    else:
+        # Handle the case where there are no active issues
         return []
 
     return sorted_active_issues[:5]
+
 
   
 # ISSUES 4: Gets stale issues (not updated within 30 days)
@@ -559,8 +567,53 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
             "latest_release": get_latest_release(session, repo_name) 
         }
-        
         return repo_data
+
+# Fetch GitHub ReadMe
+
+def fetch_github_readme_direct(repo_name):
+    """
+    Fetch README by constructing the raw GitHub URL from just the repository name
+    
+    Parameters:
+    repo_name (str): Name of the repository
+
+    Returns:
+    str: README content or error message
+    """
+    # Construct base repository URL
+    repo_url = f"https://github.com/{repo_name}"
+    
+    # Possible README variations and paths
+    readme_variations = [
+        '/raw/main/README.md',
+        '/raw/master/README.md',
+        '/raw/main/Readme.md',
+        '/raw/main/readme.md',
+        '/raw/main/README',
+        '/raw/master/README'
+    ]
+    
+    try:
+        # Try different README paths
+        for variation in readme_variations:
+            try:
+                response = requests.get(repo_url + variation)
+                
+                # If successful, return the content
+                if response.status_code == 200:
+                    return response.text
+            
+            except requests.RequestException:
+                continue
+        
+        # If no README found
+        return "404"
+    
+    except Exception as e:
+        return f"Error fetching README: {str(e)}"
+
+
 
 # Main 
 if __name__ == '__main__':

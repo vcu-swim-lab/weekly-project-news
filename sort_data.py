@@ -53,6 +53,31 @@ def get_latest_release(session, repository_full_name):
 
     return latest_version if not None else None
 
+# RELEASES 2: Gets the additional release information
+def get_release_description(session, repository_full_name):
+    # Get the specific repo
+    release_description = session.query(Repository.release_description).filter(
+        and_(
+            Repository.full_name == repository_full_name
+        )
+    ).scalar()
+
+    return release_description if not None else None
+
+# RELEASES 3: Get the version release create date
+def get_release_create_date(session, repository_full_name):
+    release_create_date = session.query(Repository.release_create_date).filter(
+        and_(
+            Repository.full_name == repository_full_name
+        )
+    ).scalar()
+
+    
+    if release_create_date:
+        return release_create_date.isoformat()
+    return None
+
+
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(session, one_week_ago, repository_full_name):
     issues = session.query(Issue).filter(
@@ -85,6 +110,7 @@ def get_open_issues(session, one_week_ago, repository_full_name):
             
     
     return open_issue_data
+
     
 # ISSUES 2: Gets all closed issues within one_week_ago
 def get_closed_issues(session, one_week_ago, repository_full_name):
@@ -565,7 +591,9 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "commits": commits,
             "num_commits": get_num_commits(commits),
             "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
-            "latest_release": get_latest_release(session, repo_name) 
+            "latest_release": get_latest_release(session, repo_name),
+            "release_description": get_release_description(session, repo_name),
+            "release_create_date": get_release_create_date(session, repo_name)
         }
         return repo_data
 

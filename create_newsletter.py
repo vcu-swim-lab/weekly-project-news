@@ -559,11 +559,14 @@ def active_contributors(repo):
 # 10 - README S
 def generate_readme_summary(repo_name):
    # Send fetched readme to API for summarization 
-   instructions = "Summarize the provided README file for a weekly developer newsletter, focusing on key features, updates, and important details in concise, user-friendly language. Make it 2-3 sentences long"
+   instructions = "Summarize the provided README file for a weekly developer newsletter, focusing on key features, updates, and important details in concise, user-friendly language. Make it 2-3 sentences long."
    # fetched readme
    readme = fetch_github_readme_direct(repo_name)
+   print(f"Printing README: {readme}")
+   if not readme:
+      return None
    summarized_readme = generate_summary(readme, instructions)
-   return summarized_readme
+   return summarized_readme + "\n\n"
    
 
 # 11 - Last Week's Link
@@ -580,7 +583,16 @@ def lastWeekLink(repo_name):
 
 # 12 - Version Summary
 def version_summary(repo):
-   print()
+   release_information = [repo.get("release_description"), repo.get("release_create_date")]
+   if not release_information:
+      return None
+
+   instructions = f"Analyze the following version release information, including the description and creation date. Summarize it in 1-2 sentences, focusing on the key updates or changes introduced in this version and any notable highlights or trends. Make sure to incorporate the create date into your summary."
+
+   summary = generate_summary(release_information, instructions)
+
+   return summary + "\n\n"
+
 
 if __name__ == '__main__':
 
@@ -652,12 +664,13 @@ if __name__ == '__main__':
         outfile.write("# Table of Contents\n\n")      
         outfile.write("- [I. News](#news)\n")
         outfile.write("  - [1.1. Recent Version Releases](#releases)\n")
-        outfile.write("  - [1.2. Other Noteworthy Updates](#updates)\n\n")
+        outfile.write("  - [1.2. Other Noteworthy Updates](#updates)\n")
+        outfile.write("  - [1.3. README Analysis](#readme)\n\n")
         outfile.write("- [II. Issues](#issues)\n")
         outfile.write("  - [2.1. Top 5 Active Issues](#active)\n")
         outfile.write("  - [2.2. Top 5 Stale Issues](#stale)\n")
         outfile.write("  - [2.3. Open Issues](#open)\n")
-        outfile.write("  - [2.4. Closed Issues](#closed)\n\n")
+        outfile.write("  - [2.4. Closed Issues](#closed)\n")
         outfile.write("  - [2.5. Issue Discussion Insights](#discussion)\n\n")
         outfile.write("- [III. Pull Requests](#prs)\n")
         outfile.write("  - [3.1. Open Pull Requests](#open-prs)\n")
@@ -671,16 +684,38 @@ if __name__ == '__main__':
 
         # 1.1 Recent Version Releases
         outfile.write("## <a name='releases'></a>1.1 Recent Version Releases:\n\n")
-        
+
         latest_release = repo_data.get('latest_release')
-        
-        if latest_release is not {}:
-          outfile.write(f"The current version of this repository is {latest_release}\n\n")
+
+        # Check if `latest_release` is not None or an empty dictionary
+        if latest_release and latest_release != {}:
+            outfile.write(f"The current version of this repository is {latest_release}\n\n")
+        else:
+            # Skip writing this section if there's no release information
+            outfile.write("No recent version releases were found.\n\n")
 
         # 1.2 Other Noteworthy Updates
-        outfile.write("## <a name='updates'></a>1.2 Other Noteworthy Updates:\n\n")
-        # TODO Add code for analyzing the README file.
+        outfile.write("## <a name='updates'></a>1.2 Other Noteworthy Version Information:\n\n")
 
+        version_info = version_summary(repo_data)
+        # Check if version_info has content
+        if version_info.strip():
+            outfile.write(version_info)
+        else:
+            # Skip writing this section if version_summary is empty
+            outfile.write("No noteworthy version updates were found.\n\n")
+        
+        # 1.3 README Analysis
+        outfile.write("## <a name='readme'></a>1.3 README Analysis:\n\n")
+
+        # Call the README analysis function
+        readme_analysis = generate_readme_summary(repo_data)
+
+        # Check if readme_analysis has content
+        if readme_analysis and readme_analysis.strip():
+            outfile.write(readme_analysis)
+        else:
+            outfile.write("No README analysis available for this repository.\n\n")
 
         # 2: Issues
         outfile.write("# <a name='issues'></a>II. Issues\n\n")

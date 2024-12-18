@@ -346,8 +346,8 @@ def open_pull_requests(repo):
         if associated_commits:
             commit_list = "\n**Associated Commits:**\n"
             for commit_idx, commit in enumerate(associated_commits, 1):
-                message = commit['commit_message'][:50]
-                message = message + "..." if len(commit['commit_message']) > 50 else message
+                message = commit['commit_message'].strip().replace("\n", " ")
+                message = message[:50] + "..." if len(message) > 50 else message
                 commit_list += f"- [{message}]({commit['html_url']})\n"
                 print(f"  Processed commit {commit_idx} for open PR {idx}")
 
@@ -425,8 +425,8 @@ def closed_pull_requests(repo):
         if associated_commits:
             commit_list = "\n**Associated Commits:**\n"
             for commit_idx, commit in enumerate(associated_commits, 1):
-                message = commit['commit_message'][:50]
-                message = message + "..." if len(commit['commit_message']) > 50 else message
+                message = commit['commit_message'].strip().replace("\n", " ")
+                message = message[:50] + "..." if len(message) > 50 else message
                 commit_list += f"- [{message}]({commit['html_url']})\n"
                 print(f"  Processed commit {commit_idx} for closed PR {idx}")
 
@@ -703,14 +703,14 @@ if __name__ == '__main__':
         # 1.3 README Analysis
         outfile.write("## <a name='readme'></a>1.3 README Analysis:\n\n")
 
-        # Call the README analysis function
-        readme_analysis = generate_readme_summary(repo_data)
-
-        # Check if readme_analysis has content
-        if readme_analysis and readme_analysis.strip():
-            outfile.write(readme_analysis)
+        # Print nothing to the newsletter if something goes wrong with the function, print the summarization otherwise
+        if fetch_github_readme_direct(repo_name) != "404":
+           outfile.write(generate_readme_summary(repo_name))
         else:
-            outfile.write("No README analysis available for this repository.\n\n")
+          outfile.write("No README analysis available for this repository.\n\n")
+        
+
+        outfile.write("\n\n")
 
         # 2: Issues
         outfile.write("# <a name='issues'></a>II. Issues\n\n")
@@ -813,16 +813,10 @@ if __name__ == '__main__':
 
         outfile.write("\n\n")
 
-       # 4.1.4 ReadMe summary
-       # Print nothing to the newsletter if something goes wrong with the function, print the summarization otherwise
-        if fetch_github_readme_direct(repo_name) != "404":
-           outfile.write("**ReadMe Summary:** \n" + generate_readme_summary(repo_name))
         # 4.1.5 Last Week's Link (if exists)
         if check_link_works(lastWeekLink( repo_name)): 
           outfile.write("Access last week's newsletter: " + lastWeekLink( repo_name))
-        
 
-        outfile.write("\n\n")
        
       
       print(f"Successfully added {repository} to {output_filename}")

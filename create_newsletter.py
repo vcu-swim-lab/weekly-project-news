@@ -38,20 +38,7 @@ def general_instructions(param1, param2, param3, param4, param5, param6):
 # Instructions for pull requests
 def pull_request_instructions():
     return """
-Generate a one-paragraph summary of the pull request describing its purpose, key changes, and context. 
-Do not include specific commit details in this paragraph.
-
-Next, include a bulleted list titled 'Associated Commits' where each bullet point contains the commit message (truncated to 50 characters if needed) 
-followed by a hyperlink to the commit's URL in markdown format. 
-
-Use the following format for the list:
-**Associated Commits**:
-
-    - [Shortened commit message...](https://github.com/commit/commit_hash)
-
-    - [Another commit message...](https://github.com/commit/another_hash)
-    
-Do not add extra content or make up data beyond what is provided.
+Generate a one-paragraph summary of the pull request describing its purpose, key changes, and context. Do not include specific commit details in this paragraph. Do not add extra content or make up data beyond what is provided.
 """
 
 
@@ -346,7 +333,9 @@ def open_pull_requests(repo):
 
         # Generate the summary for the current open pull request
         pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
-        pull_request_url = f"[{data.get('title')}]({data.get('url')})"
+        print(f"Printing summary: {pull_request_summary}")
+        pull_request_url = pull_request.get('url', '#')
+        pull_request_title = pull_request.get('title')
         print(f"Generated summary for open PR {idx}")
 
         # Process commits
@@ -355,7 +344,7 @@ def open_pull_requests(repo):
 
         commit_list = ""
         if associated_commits:
-            commit_list += "\n**Associated Commits:**\n"
+            commit_list = "\n**Associated Commits:**\n"
             for commit_idx, commit in enumerate(associated_commits, 1):
                 message = commit['commit_message'][:50]
                 message = message + "..." if len(commit['commit_message']) > 50 else message
@@ -366,7 +355,9 @@ def open_pull_requests(repo):
         if key_pull_requests < 3:
             if key_pull_requests < 3:
               print(f"\n=== Adding Open PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
-              key_pull_request_summary += f"### {key_pull_requests + 1}. [{pull_request_url}]({data.get('url')})\n{pull_request_summary}\n{commit_list}\n\n"
+              key_pull_request_summary += (
+                f"### {key_pull_requests + 1}. [**{pull_request_title}**]({pull_request_url}): {pull_request_summary}\n"
+                f"{commit_list}\n\n")
               key_pull_requests += 1
               print(f"Current key pull request count: {key_pull_requests}")
         else:
@@ -404,6 +395,7 @@ def closed_pull_requests(repo):
     key_pull_requests = 0
     key_pull_request_summary = "## Key Closed Pull Requests\n\n"
     remaining_pull_requests_summary = "## Other Closed Pull Requests\n\n"
+    
 
     # Pull request instructions
     pr_instructions = pull_request_instructions()
@@ -421,7 +413,8 @@ def closed_pull_requests(repo):
 
         # Generate the summary for the current closed pull request
         pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
-        pull_request_url = f"[{data.get('title')}]({data.get('url')})"
+        pull_request_url = pull_request.get('url', '#')
+        pull_request_title = pull_request.get('title')
         print(f"Generated summary for closed PR {idx}")
 
         # Process commits
@@ -430,7 +423,7 @@ def closed_pull_requests(repo):
 
         commit_list = ""
         if associated_commits:
-            commit_list += "\n**Associated Commits:**\n"
+            commit_list = "\n**Associated Commits:**\n"
             for commit_idx, commit in enumerate(associated_commits, 1):
                 message = commit['commit_message'][:50]
                 message = message + "..." if len(commit['commit_message']) > 50 else message
@@ -441,7 +434,9 @@ def closed_pull_requests(repo):
         if key_pull_requests < 3:
             if key_pull_requests < 3:
               print(f"\n=== Adding Open PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
-              key_pull_request_summary += f"### {key_pull_requests + 1}. [{pull_request_url}]({data.get('url')})\n{pull_request_summary}\n{commit_list}\n\n"
+              key_pull_request_summary += (
+                f"### {key_pull_requests + 1}. [**{pull_request_title}**]({pull_request_url}): {pull_request_summary}\n"
+                f"{commit_list}\n\n")
               key_pull_requests += 1
               print(f"Current key pull request count: {key_pull_requests}")
         else:

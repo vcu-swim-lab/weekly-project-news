@@ -184,7 +184,10 @@ def get_active_issues(session, one_week_ago, repository_full_name):
         
         issue_data["num_comments_this_week"] = num_comments_this_week
         
-        active_issue_data.append(issue_data)
+        if issue_data["num_comments_this_week"] == 0:
+            continue
+        else:
+            active_issue_data.append(issue_data)
     
     if not active_issue_data:
         return {}
@@ -292,7 +295,8 @@ def get_open_prs(session, one_week_ago, repository_full_name):
         for commit in pr_commits:
             commit_data = {
                 "commit_message": commit.commit_message,
-                "html_url": commit.html_url
+                "html_url": commit.html_url,
+                "sha": commit.sha
             }
             pr_data["commits"].append(commit_data)
 
@@ -335,7 +339,8 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
         for commit in pr_commits:
             commit_data = {
                 "commit_message": commit.commit_message,
-                "html_url": commit.html_url
+                "html_url": commit.html_url,
+                "sha": commit.sha
             }
             pr_data["commits"].append(commit_data)
             print(commit_data)

@@ -316,12 +316,8 @@ def open_pull_requests(repo):
     key_pull_requests = 0
     key_pull_request_summary = "## Key Open Pull Requests\n\n"
     remaining_pull_requests_summary = "## Other Open Pull Requests\n\n"
-
-    # Pull request instructions
-    pr_instructions = pull_request_instructions()
-    summarized_instructions = individual_instructions(
-        "an open pull request", "pull request", "pull request", "only one detailed sentence"
-    )
+    pr_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
+    overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
 
     for idx, pull_request in enumerate(repo['open_pull_requests'], 1):
         print(f"\nProcessing open pull request {idx}")
@@ -333,8 +329,7 @@ def open_pull_requests(repo):
 
         # Generate the summary for the current open pull request
         pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
-        print(f"Printing summary: {pull_request_summary}")
-        pull_request_url = pull_request.get('url', '#')
+        pull_request_url = pull_request.get('url')
         pull_request_title = pull_request.get('title')
         print(f"Generated summary for open PR {idx}")
 
@@ -344,31 +339,39 @@ def open_pull_requests(repo):
 
         commit_list = ""
         if associated_commits:
-            commit_list = "\n**Associated Commits:**\n"
-            for commit_idx, commit in enumerate(associated_commits, 1):
-                message = commit['commit_message'].strip().replace("\n", " ")
-                message = message[:50] + "..." if len(message) > 50 else message
-                commit_list += f"- [{message}]({commit['html_url']})\n"
-                print(f"  Processed commit {commit_idx} for open PR {idx}")
+            # Extract and format SHA links
+            sha_links = ", ".join([f"{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
+            print(f"Printing commit list: {sha_links}")
+            print(f"Processed commits for open PR {idx}: {sha_links}")
 
         # Add the first 3 open pull requests to the detailed list
         if key_pull_requests < 3:
-            if key_pull_requests < 3:
-              print(f"\n=== Adding Open PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
-              key_pull_request_summary += (
-                f"### {key_pull_requests + 1}. [**{pull_request_title}**]({pull_request_url}): {pull_request_summary}\n"
-                f"{commit_list}\n\n")
-              key_pull_requests += 1
-              print(f"Current key pull request count: {key_pull_requests}")
+          print(f"\n=== Adding Open PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
+
+          key_pull_request_summary += (
+              f"### {key_pull_requests + 1}. {pull_request_title}:\n"
+              f" - {pull_request_summary}\n"
+              f"\n - **URL:** [{pull_request_url}]({pull_request_url})\n"
+              f"\n - **Associated Commits:**\n{commit_list}\n\n"
+          )
+          key_pull_requests += 1
+          print(f"Current key pull request count: {key_pull_requests}")
         else:
-            print(f"\n=== Adding Open PR {idx} to Other Pull Requests ===")
-            # For subsequent open pull requests, only summarize
-            summarized_pr_summary = generate_summary(data, summarized_instructions, max_retries=5, base_wait=1)
+            print(f"\n=== Adding Closed PR {idx} to Other Pull Requests ===")
+            # For subsequent closed pull requests, only summarize
+            summarized_pr_summary = generate_summary(data, pull_request_instructions, max_retries=5, base_wait=1)
             remaining_pull_requests_summary += f"- {summarized_pr_summary}\n{pull_request_url}\n"
+
+    other_pr_summary = generate_summary(remaining_pull_requests_summary, overall_instructions, max_retries=5, base_wait=1)
+
+    if "```markdown" in other_pr_summary:
+      start = other_pr_summary.index("```markdown") + len("```markdown")
+      end = other_pr_summary.rindex("```")
+      other_pr_summary = other_pr_summary[start:end].strip() + "\n"
 
     print("\n=== Combining Summaries ===")
     # Combine both key and remaining pull request summaries
-    all_pull_requests = f"{key_pull_request_summary}\n{remaining_pull_requests_summary}"
+    all_pull_requests = f"{key_pull_request_summary}\n ## Other Pull Requests \n{other_pr_summary}"
     print(all_pull_requests)
 
     print("\n=== Final Open Pull Request Information ===")
@@ -379,6 +382,7 @@ def open_pull_requests(repo):
 
     # Return the combined output
     return all_pull_requests + "\n\n"
+
 
 
 
@@ -395,13 +399,9 @@ def closed_pull_requests(repo):
     key_pull_requests = 0
     key_pull_request_summary = "## Key Closed Pull Requests\n\n"
     remaining_pull_requests_summary = "## Other Closed Pull Requests\n\n"
+    pr_instructions = individual_instructions("a closed pull request", "pull request", "pull request", "only one detailed sentence")
+    overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
     
-
-    # Pull request instructions
-    pr_instructions = pull_request_instructions()
-    summarized_instructions = individual_instructions(
-        "a closed pull request", "pull request", "pull request", "only one detailed sentence"
-    )
 
     for idx, pull_request in enumerate(repo['closed_pull_requests'], 1):
         print(f"\nProcessing closed pull request {idx}")
@@ -413,7 +413,7 @@ def closed_pull_requests(repo):
 
         # Generate the summary for the current closed pull request
         pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
-        pull_request_url = pull_request.get('url', '#')
+        pull_request_url = pull_request.get('url')
         pull_request_title = pull_request.get('title')
         print(f"Generated summary for closed PR {idx}")
 
@@ -423,31 +423,40 @@ def closed_pull_requests(repo):
 
         commit_list = ""
         if associated_commits:
-            commit_list = "\n**Associated Commits:**\n"
-            for commit_idx, commit in enumerate(associated_commits, 1):
-                message = commit['commit_message'].strip().replace("\n", " ")
-                message = message[:50] + "..." if len(message) > 50 else message
-                commit_list += f"- [{message}]({commit['html_url']})\n"
-                print(f"  Processed commit {commit_idx} for closed PR {idx}")
+            # Extract and format SHA links
+            sha_links = ", ".join([f"{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
+            print(f"Printing commit list: {sha_links}")
+            print(f"Processed commits for closed PR {idx}: {sha_links}")
 
         # Add the first 3 closed pull requests to the detailed list
         if key_pull_requests < 3:
-            if key_pull_requests < 3:
-              print(f"\n=== Adding Open PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
-              key_pull_request_summary += (
-                f"### {key_pull_requests + 1}. [**{pull_request_title}**]({pull_request_url}): {pull_request_summary}\n"
-                f"{commit_list}\n\n")
-              key_pull_requests += 1
-              print(f"Current key pull request count: {key_pull_requests}")
+          print(f"\n=== Adding Closed PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
+
+          key_pull_request_summary += (
+              f"### {key_pull_requests + 1}. {pull_request_title}:\n"
+              f" - {pull_request_summary}\n"
+              f"\n - **URL:** [{pull_request_url}]({pull_request_url})\n"
+              f"\n - **Associated Commits:**\n{commit_list}\n\n"
+          )
+          key_pull_requests += 1
+          print(f"Current key pull request count: {key_pull_requests}")
         else:
             print(f"\n=== Adding Closed PR {idx} to Other Pull Requests ===")
             # For subsequent closed pull requests, only summarize
-            summarized_pr_summary = generate_summary(data, summarized_instructions, max_retries=5, base_wait=1)
+            summarized_pr_summary = generate_summary(data, pull_request_instructions, max_retries=5, base_wait=1)
             remaining_pull_requests_summary += f"- {summarized_pr_summary}\n{pull_request_url}\n"
 
+    other_pr_summary = generate_summary(remaining_pull_requests_summary, overall_instructions, max_retries=5, base_wait=1)
+
+    if "```markdown" in other_pr_summary:
+      start = other_pr_summary.index("```markdown") + len("```markdown")
+      end = other_pr_summary.rindex("```")
+      other_pr_summary = other_pr_summary[start:end].strip() + "\n"
+    
+    
     print("\n=== Combining Summaries ===")
     # Combine both key and remaining pull request summaries
-    all_pull_requests = f"{key_pull_request_summary}\n{remaining_pull_requests_summary}"
+    all_pull_requests = f"{key_pull_request_summary}\n## Other Pull Requests \n\n{other_pr_summary}"
     print(all_pull_requests)
 
     print("\n=== Final Closed Pull Request Information ===")
@@ -617,9 +626,9 @@ if __name__ == '__main__':
     # "nodejs/node",
     # "openxla/xla",
     # "stevenbui44/flashcode",
-    "cnovalski1/APIexample",
+    # "cnovalski1/APIexample",
     "tensorflow/tensorflow",
-    "monicahq/monica"
+    # "monicahq/monica"
   ]
 
 

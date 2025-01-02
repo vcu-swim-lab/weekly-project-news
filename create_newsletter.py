@@ -573,14 +573,17 @@ def generate_readme_summary(repo_name):
 
 # 11 - Last Week's Link
 def lastWeekLink(repo_name):
+    # Get shorter repo name
+    repo = repo_name.split('/')[1].lower()
     # Get today's date
     today_date = datetime.today()
     # Calculate the date one week ago
     one_week_ago_object = today_date - timedelta(days=7)
     # Format the date as a string in "YYYY-MM-DD" format
-    one_week_ago_string = one_week_ago_object.strftime("%B-%d-%Y")
+    one_week_ago_string = one_week_ago_object.strftime("%B-%d")
     # Create the new link
-    link = f"https://buttondown.com/weekly-project-news/archive/weekly-github-report-for-{repo_name}-{one_week_ago_string.lower()}/"
+    link = f"https://buttondown.com/weekly-project-news/archive/weekly-github-report-for-{repo}-{one_week_ago_string.lower()}/"
+    print(f"Printing last week's link: {link}")
     return link
 
 # 12 - Version Summary
@@ -621,10 +624,10 @@ if __name__ == '__main__':
   # repositories = [row[0] for row in result]
   repositories = [
     # "ggerganov/llama.cpp",
-    "nodejs/node",
+    # "nodejs/node",
     # "openxla/xla",
     # "stevenbui44/flashcode",
-    # "cnovalski1/APIexample",
+    "cnovalski1/APIexample",
     # "tensorflow/tensorflow",
     # "monicahq/monica"
   ]

@@ -31,7 +31,7 @@ def individual_instructions(param1, param2, param3, param4):
 def general_instructions(param1, param2, param3, param4, param5, param6):
   instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
   if param5:
-    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [/topic_type/path_of_link](https://github.com/topic_type/path_of_link)). In the clickable portion of the hyperlink, only include the topic type (issues for issue, pull for pull request) and the path of the link. "
+    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [issues/82966](https://github.com/issues/82966)). In the clickable portion of the hyperlink, include the topic type (e.g., 'issues') and the last portion of the path (e.g., '82966'). "
   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
   return instructions
 
@@ -314,8 +314,8 @@ def open_pull_requests(repo):
     print(f"Total number of open pull requests: {len(repo['open_pull_requests'])}")
 
     key_pull_requests = 0
-    key_pull_request_summary = "## Key Open Pull Requests\n\n"
-    remaining_pull_requests_summary = "## Other Open Pull Requests\n\n"
+    key_pull_request_summary = "### Key Open Pull Requests\n\n"
+    remaining_pull_requests_summary = ""
     pr_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
     overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
 
@@ -340,17 +340,16 @@ def open_pull_requests(repo):
         commit_list = ""
         if associated_commits:
             # Extract and format SHA links
-            sha_links = ", ".join([f"{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
-            print(f"Printing commit list: {sha_links}")
-            print(f"Processed commits for open PR {idx}: {sha_links}")
+            commit_list = ", ".join([f"[{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
+            print(f"Printing commit list: {commit_list}")
+            print(f"Processed commits for open PR {idx}: {commit_list}")
 
         # Add the first 3 open pull requests to the detailed list
         if key_pull_requests < 3:
           print(f"\n=== Adding Open PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
 
           key_pull_request_summary += (
-              f"### {key_pull_requests + 1}. {pull_request_title}:\n"
-              f" - {pull_request_summary}\n"
+              f"**{key_pull_requests + 1}. {pull_request_title}: {pull_request_summary}**\n"
               f"\n - **URL:** [{pull_request_url}]({pull_request_url})\n"
               f"\n - **Associated Commits:**\n{commit_list}\n\n"
           )
@@ -371,7 +370,7 @@ def open_pull_requests(repo):
 
     print("\n=== Combining Summaries ===")
     # Combine both key and remaining pull request summaries
-    all_pull_requests = f"{key_pull_request_summary}\n ## Other Pull Requests \n{other_pr_summary}"
+    all_pull_requests = f"{key_pull_request_summary}\n### Other Open Pull Requests \n\n{other_pr_summary}"
     print(all_pull_requests)
 
     print("\n=== Final Open Pull Request Information ===")
@@ -397,8 +396,8 @@ def closed_pull_requests(repo):
     print(f"Total number of closed pull requests: {len(repo['closed_pull_requests'])}")
 
     key_pull_requests = 0
-    key_pull_request_summary = "## Key Closed Pull Requests\n\n"
-    remaining_pull_requests_summary = "## Other Closed Pull Requests\n\n"
+    key_pull_request_summary = "### Key Closed Pull Requests\n\n"
+    remaining_pull_requests_summary = ""
     pr_instructions = individual_instructions("a closed pull request", "pull request", "pull request", "only one detailed sentence")
     overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", True, 3)
     
@@ -424,17 +423,16 @@ def closed_pull_requests(repo):
         commit_list = ""
         if associated_commits:
             # Extract and format SHA links
-            sha_links = ", ".join([f"{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
-            print(f"Printing commit list: {sha_links}")
-            print(f"Processed commits for closed PR {idx}: {sha_links}")
+            commit_list = ", ".join([f"[{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
+            print(f"Printing commit list: {commit_list}")
+            print(f"Processed commits for closed PR {idx}: {commit_list}")
 
         # Add the first 3 closed pull requests to the detailed list
         if key_pull_requests < 3:
           print(f"\n=== Adding Closed PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
 
           key_pull_request_summary += (
-              f"### {key_pull_requests + 1}. {pull_request_title}:\n"
-              f" - {pull_request_summary}\n"
+              f"**{key_pull_requests + 1}. {pull_request_title}: {pull_request_summary}**\n"
               f"\n - **URL:** [{pull_request_url}]({pull_request_url})\n"
               f"\n - **Associated Commits:**\n{commit_list}\n\n"
           )
@@ -456,7 +454,7 @@ def closed_pull_requests(repo):
     
     print("\n=== Combining Summaries ===")
     # Combine both key and remaining pull request summaries
-    all_pull_requests = f"{key_pull_request_summary}\n## Other Pull Requests \n\n{other_pr_summary}"
+    all_pull_requests = f"{key_pull_request_summary}\n### Other Closed Pull Requests \n\n{other_pr_summary}"
     print(all_pull_requests)
 
     print("\n=== Final Closed Pull Request Information ===")
@@ -623,11 +621,11 @@ if __name__ == '__main__':
   # repositories = [row[0] for row in result]
   repositories = [
     # "ggerganov/llama.cpp",
-    # "nodejs/node",
+    "nodejs/node",
     # "openxla/xla",
     # "stevenbui44/flashcode",
     # "cnovalski1/APIexample",
-    "tensorflow/tensorflow",
+    # "tensorflow/tensorflow",
     # "monicahq/monica"
   ]
 

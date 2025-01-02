@@ -578,9 +578,9 @@ def lastWeekLink(repo_name):
     # Calculate the date one week ago
     one_week_ago_object = today_date - timedelta(days=7)
     # Format the date as a string in "YYYY-MM-DD" format
-    one_week_ago_string = one_week_ago_object.strftime("%Y-%m-%d")
+    one_week_ago_string = one_week_ago_object.strftime("%B-%d-%Y")
     # Create the new link
-    link = f"https://buttondown.com/weekly-project-news/archive/weekly-github-report-for-{repo_name}-{one_week_ago_string}/"
+    link = f"https://buttondown.com/weekly-project-news/archive/weekly-github-report-for-{repo_name}-{one_week_ago_string.lower()}/"
     return link
 
 # 12 - Version Summary

@@ -21,6 +21,7 @@ class PullRequest(Base):
 
     user_login = Column(String)
     repository_full_name = Column(String)
+    merged = Column(String)
     
 
     def __repr__(self):

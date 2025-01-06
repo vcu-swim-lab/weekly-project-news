@@ -368,39 +368,13 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
 # PRS 1: INSERT PULL REQUEST
 # TODO Add "associated_issue" column in database table to link pull request and issues
 def insert_pull_request(pull_request, repo_name):
-    pull_fields = {column.name for column in PullRequest.__table__.columns}
-    filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
-    
-    # Check if the pull request already exists
-    if session.query(PullRequest).filter_by(id=pull_request['id']).first() is not None:
-        print("Pull Request already exists!")
-        return
-    
-    # Try/except for user login
-    try:
-        filtered_data['user_login'] = pull_request['user']['login']
-    except Exception as e:
-        filtered_data['user_login'] = None
-        print(f"User data does not exist for pull request {pull_request['id']}: {e}")
-    filtered_data['repository_full_name'] = repo_name
-    
-
-    # Set repo name
-    filtered_data['repository_full_name'] = repo_name
-    
-    # Convert datetime fields
-    datetime_fields = ['created_at', 'updated_at', 'closed_at']
-    for field in datetime_fields:
-        if field in filtered_data:
-            if filtered_data[field] is None:
-                filtered_data[field] = None
-            else:
-                filtered_data[field] = datetime.fromisoformat(filtered_data[field])
     
     # Try/except for inserting pull request
     try:
         pull_fields = {column.name for column in PullRequest.__table__.columns}
         filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
+
+        print(json.dumps(pull_request, indent=4))
         
         # Check if the pull request already exists
         if session.query(PullRequest).filter_by(id=pull_request['id']).first() is not None:
@@ -418,6 +392,13 @@ def insert_pull_request(pull_request, repo_name):
 
         # Set repo name
         filtered_data['repository_full_name'] = repo_name
+
+        # Check for if the pull request is merged
+        if pull_request['pull_request']['merged_at']:
+            filtered_data['merged'] = "true"
+        else:
+            filtered_data['merged'] = "false"
+        
         
         # Convert datetime fields
         datetime_fields = ['created_at', 'updated_at', 'closed_at']

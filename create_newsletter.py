@@ -331,6 +331,7 @@ def open_pull_requests(repo):
         pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
         pull_request_url = pull_request.get('url')
         pull_request_title = pull_request.get('title')
+        merged_status = pull_request.get('merged')
         print(f"Generated summary for open PR {idx}")
 
         # Process commits
@@ -351,6 +352,7 @@ def open_pull_requests(repo):
           key_pull_request_summary += (
               f"**{key_pull_requests + 1}. {pull_request_title}: {pull_request_summary}**\n"
               f"\n - **URL:** [{pull_request_url}]({pull_request_url})\n"
+              f"\n - **Merged:** {merged_status}\n"
               f"\n - **Associated Commits:**\n{commit_list}\n\n"
           )
           key_pull_requests += 1
@@ -414,6 +416,7 @@ def closed_pull_requests(repo):
         pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
         pull_request_url = pull_request.get('url')
         pull_request_title = pull_request.get('title')
+        merged_status = pull_request.get('merged')
         print(f"Generated summary for closed PR {idx}")
 
         # Process commits
@@ -434,6 +437,7 @@ def closed_pull_requests(repo):
           key_pull_request_summary += (
               f"**{key_pull_requests + 1}. {pull_request_title}: {pull_request_summary}**\n"
               f"\n - **URL:** [{pull_request_url}]({pull_request_url})\n"
+              f"\n - **Merged:** {merged_status}\n"
               f"\n - **Associated Commits:**\n{commit_list}\n\n"
           )
           key_pull_requests += 1

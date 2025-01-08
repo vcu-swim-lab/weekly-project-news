@@ -285,6 +285,7 @@ def get_open_prs(session, one_week_ago, repository_full_name):
                 "title": pr.title,
                 "body": pr.body,
                 "url": pr.html_url,
+                "merged": pr.merged,
                 "commits": []
             }
         
@@ -329,6 +330,7 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
                 "title": pr.title,
                 "body": pr.body,
                 "url": pr.html_url,
+                "merged": pr.merged,
                 "commits": []
             }
         
@@ -440,11 +442,12 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     
     # By number of commits
     for commit in commits:
-        # if '[bot]' in commit.committer_name or 'bot' in commit.committer_name:
-        #     continue
-
-        author = commit.commit_author_name
+        author = commit.commit_author_login
         found = False
+
+        # Filter bots
+        if '[bot]' in author.lower() or 'bot' in author.lower():
+            continue
         
         for contributor in active_contributors:    
             if contributor['author'] == author:

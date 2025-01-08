@@ -373,8 +373,6 @@ def insert_pull_request(pull_request, repo_name):
     try:
         pull_fields = {column.name for column in PullRequest.__table__.columns}
         filtered_data = {key: value for key, value in pull_request.items() if key in pull_fields}
-
-        print(json.dumps(pull_request, indent=4))
         
         # Check if the pull request already exists
         if session.query(PullRequest).filter_by(id=pull_request['id']).first() is not None:
@@ -395,9 +393,9 @@ def insert_pull_request(pull_request, repo_name):
 
         # Check for if the pull request is merged
         if pull_request['pull_request']['merged_at']:
-            filtered_data['merged'] = "true"
+            filtered_data['merged'] = "Yes"
         else:
-            filtered_data['merged'] = "false"
+            filtered_data['merged'] = "No"
         
         
         # Convert datetime fields
@@ -472,17 +470,12 @@ def insert_commit(commit, repo_name, pr_id):
             print("Commit already exists!")
             return
         
-        # Try/except for committer and commit author data
+        # Print commit
+        print("Full commit data:", json.dumps(commit, indent=4))
+        
+        # Try/except for author data
         try:
-            # filtered_data['commit_author_login'] = commit['author']['login'] if not None else None
-            # filtered_data['commit_author_name'] = commit['commit']['author']['name'] if not None else None
             filtered_data['commit_author_login'] = commit['author']['login'] if not None else ''
-            filtered_data['commit_author_name'] = commit['commit']['author']['name'] if not None else ''
-            
-            # filtered_data['committer_login'] = commit['committer']['login'] if not None else None
-            # filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else None
-            filtered_data['committer_login'] = commit['committer']['login'] if not None else ''
-            filtered_data['committer_name'] = commit['commit']['committer']['name'] if not None else ''
         except Exception as e:
             print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
         

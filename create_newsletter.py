@@ -531,6 +531,8 @@ def active_contributors(repo):
   if repo['active_contributors'][-1]['number_of_active_contributors'] == 0:
     overall_summary += "As of our latest update, there are no active contributors for the project this week.\n\n"
     return overall_summary
+  else:
+    overall_summary += "If there are more than 10 active contributors, the list is truncated to the top 10 based on contribution metrics for better clarity.\n\n"
   
   print(len(repo['active_contributors']))
 
@@ -561,18 +563,6 @@ def active_contributors(repo):
     overall_summary +=f"{contributor['comments']}" + " | \n"
     
   return overall_summary + "\n\n"
-
-# 10 - README S
-def generate_readme_summary(repo_name):
-   # Send fetched readme to API for summarization 
-   instructions = "Summarize the provided README file for a weekly developer newsletter, focusing on key features, updates, and important details in concise, user-friendly language. Make it 2-3 sentences long."
-   # fetched readme
-   readme = fetch_github_readme_direct(repo_name)
-   print(f"Printing README: {readme}")
-   if not readme:
-      return None
-   summarized_readme = generate_summary(readme, instructions)
-   return summarized_readme + "\n\n"
    
 
 # 11 - Last Week's Link
@@ -631,9 +621,9 @@ if __name__ == '__main__':
     # "nodejs/node",
     # "openxla/xla",
     # "stevenbui44/flashcode",
-    "cnovalski1/APIexample",
-    # "tensorflow/tensorflow",
-    # "monicahq/monica"
+    # "cnovalski1/APIexample",
+    "tensorflow/tensorflow",
+    "monicahq/monica"
   ]
 
 
@@ -674,7 +664,6 @@ if __name__ == '__main__':
         outfile.write("- [I. News](#news)\n")
         outfile.write("  - [1.1. Recent Version Releases](#releases)\n")
         outfile.write("  - [1.2. Other Noteworthy Updates](#updates)\n")
-        outfile.write("  - [1.3. README Analysis](#readme)\n\n")
         outfile.write("- [II. Issues](#issues)\n")
         outfile.write("  - [2.1. Top 5 Active Issues](#active)\n")
         outfile.write("  - [2.2. Top 5 Stale Issues](#stale)\n")
@@ -704,7 +693,7 @@ if __name__ == '__main__':
             outfile.write("No recent version releases were found.\n\n")
 
         # 1.2 Other Noteworthy Updates
-        outfile.write("## <a name='updates'></a>1.2 Other Noteworthy Version Information:\n\n")
+        outfile.write("## <a name='updates'></a>1.2 Version Information:\n\n")
 
         version_info = version_summary(repo_data)
         # Check if version_info has content
@@ -713,16 +702,7 @@ if __name__ == '__main__':
         else:
             # Skip writing this section if version_summary is empty
             outfile.write("No noteworthy version updates were found.\n\n")
-        
-        # 1.3 README Analysis
-        outfile.write("## <a name='readme'></a>1.3 README Analysis:\n\n")
 
-        # Print nothing to the newsletter if something goes wrong with the function, print the summarization otherwise
-        if fetch_github_readme_direct(repo_name) != "404":
-           outfile.write(generate_readme_summary(repo_name))
-        else:
-          outfile.write("No README analysis available for this repository.\n\n")
-        
 
         outfile.write("\n\n")
 

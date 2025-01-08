@@ -98,13 +98,13 @@ def generate_summary(data, instructions, max_retries=5, base_wait=1):
 
 # 1 - Active Issues
 def active_issues(repo):
-  markdown = "We consider active issues to be issues that that have been commented on most frequently within the last week. \n\n"
+  markdown = "We consider active issues to be issues that that have been commented on most frequently within the last week. Bot comments are omitted. \n\n"
   if not repo.get('active_issues') or repo.get('active_issues') == []:
     markdown += "As of our latest update, there are no active issues with ongoing comments this week. \n\n"
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
-  issue_instructions += "Do not mention the URL in the summary. After that bullet point, you MUST give only one indented bullet point in markdown (which must start with three spaces, then '-') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
+  issue_instructions += "Do not mention the URL in the summary. In the next line, you MUST give exactly one bullet point that MUST start with EXACTLY three spaces followed by a hyphen and a space ('   - ') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
   issues = repo['active_issues']
   size = min(len(issues), 5)
 
@@ -274,11 +274,12 @@ def issue_discussion_insights(repo):
         print(f"Analyzing issue: {issue}")
     
         generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
-        print(f"Generated summary: \n{generated_summary}")
-        
-        # Use regular expression to capture the summary, score, and reasoning
-        pattern = r"^(.*?)\s+(\d\.\d{2})\s*,?\s*(.*)$"
-        match = re.match(pattern, generated_summary.strip())
+        print(f"Generated summary to analyze: \n{generated_summary}")
+        generated_summary_text = str(generated_summary)
+      
+        # Use regex to capture the summary, score, and reasoning in one line
+        pattern = r"(.*?)(?:\s+|,\s*)(0?\.\d+)(?:\s*,\s*|\s+)(.*?)$"
+        match = re.search(pattern, generated_summary_text, re.DOTALL)
 
         if match:
             summary = match.group(1).strip()  # Summary
@@ -350,7 +351,7 @@ def open_pull_requests(repo):
           print(f"\n=== Adding Open PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
 
           key_pull_request_summary += (
-              f"**{key_pull_requests + 1}. {pull_request_title}: {pull_request_summary}**\n"
+              f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
               f"\n - **URL:** [{pull_request_url}]({pull_request_url})\n"
               f"\n - **Merged:** {merged_status}\n"
               f"\n - **Associated Commits:**\n{commit_list}\n\n"
@@ -435,7 +436,7 @@ def closed_pull_requests(repo):
           print(f"\n=== Adding Closed PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
 
           key_pull_request_summary += (
-              f"**{key_pull_requests + 1}. {pull_request_title}: {pull_request_summary}**\n"
+              f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
               f"\n - **URL:** [{pull_request_url}]({pull_request_url})\n"
               f"\n - **Merged:** {merged_status}\n"
               f"\n - **Associated Commits:**\n{commit_list}\n\n"
@@ -495,10 +496,11 @@ def pull_request_discussion_insights(repo):
 
         generated_summary = generate_summary(pr, instructions, max_retries=5, base_wait=1)
         print(f"Generated summary to analyze: \n{generated_summary}")
-        
+        generated_summary_text = str(generated_summary)
+      
         # Use regex to capture the summary, score, and reasoning in one line
-        pattern = r"^(.*?)\s+(\d\.\d{2})\s*,?\s*(.*)$"
-        match = re.match(pattern, generated_summary.strip())
+        pattern = r"(.*?)(?:\s+|,\s*)(0?\.\d+)(?:\s*,\s*|\s+)(.*?)$"
+        match = re.search(pattern, generated_summary_text, re.DOTALL)
 
         if match:
             summary = match.group(1).strip()  # summary
@@ -768,7 +770,6 @@ if __name__ == '__main__':
         outfile.write(f"**Pull Requests Opened This Week:** {repo_data.get('num_open_prs', None)}\n\n")
 
         # 3.1.2 List of Pull Requests (Open)
-        outfile.write("**Pull Requests:**\n\n")
         result = open_pull_requests(repo_data)
         outfile.write(result)
 
@@ -781,7 +782,6 @@ if __name__ == '__main__':
         outfile.write(f"**Pull Requests Closed This Week:** {repo_data.get('num_closed_prs', None)}\n\n")
 
         # 3.2.2 List of Pull Requests (Closed)
-        outfile.write("**Pull Requests:**\n\n")
         result = closed_pull_requests(repo_data)
         outfile.write(result)
 

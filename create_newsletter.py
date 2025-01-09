@@ -29,11 +29,11 @@ def individual_instructions(param1, param2, param3, param4):
 
 # param1-4: "issues", param5: true if should include in instructions
 def general_instructions(param1, param2, param3, param4, param5, param6):
-  instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
-  if param5:
-    instructions += f"After each bullet point, there should be indented bullet points giving just the URLs of the {param3} that the topic covers, no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [issues/82966](https://github.com/issues/82966)). In the clickable portion of the hyperlink, include the topic type (e.g., 'issues') and the last portion of the path (e.g., '82966'). "
-  instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
-  return instructions
+   instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
+   if param5:
+       instructions += f"After each bullet point, there should be a list containing just the URLs of the {param3} that the topic covers like this [ URL1 , URL2, ...], no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [issues/82966](https://github.com/issues/82966)). In the clickable portion of the hyperlink, include the topic type (e.g., 'issues') and the last portion of the path (e.g., '82966'). "
+   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
+   return instructions
 
 # Instructions for pull requests
 def pull_request_instructions():

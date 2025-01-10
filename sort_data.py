@@ -442,8 +442,9 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     
     # By number of commits
     for commit in commits:
-        author = commit.commit_author_login
+        author = commit.commit_author_login if commit.commit_author_login is not None else 'No author found'
         found = False
+        print(author)
 
         # Filter bots
         if '[bot]' in author.lower() or 'bot' in author.lower():

@@ -31,11 +31,12 @@ def individual_instructions(param1, param2, param3, param4):
 def general_instructions(param1, param2, param3, param4, param5, param6, param7):
    instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
    if param5:
+       print("Param5 activated")
        instructions += f"After each bullet point summary, there should be a single bullet point containing a list of just the URLs of the {param3} that the topic covers like this [ URL1 , URL2, ...], no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [issues/82966](https://github.com/issues/82966)). In the clickable portion of the hyperlink, include the topic type (e.g., 'issues') and the last portion of the path (e.g., '82966'). "
    if param7:
        print("Param7 is activated")
-       instructions += f"After each bullet point summary, there should be a single bullet point containing a list of just the URLs of the {param3} that the topic covers like this [ URL1 , URL2, ...], no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [pull/12345](https://github.com/pull/12345)). In the clickable portion of the hyperlink, include the topic type (e.g., 'pull') and the last portion of the path (e.g., '12345'). "
-   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block.\n"
+       instructions += f"After each bullet point summary, there should be a single bullet point containing a list of just the URLs of the {param3} that the topic covers like this [ URL1 , URL2, ...], no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [pull/63524](https://github.com/pull/63524)). In the clickable portion of the hyperlink, include the topic type (e.g., 'pull') and the last portion of the path (e.g., '63524'). "
+   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block. Ensure the link list is formatted as a comma-separated list of shortened links exactly as mentioned earlier. DO NOT deviate from this format.\n"
    return instructions
 
 # Instructions for pull requests
@@ -126,7 +127,6 @@ def active_issues(repo):
   if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
 
-  print("\n", markdown, "\n\n\n")
   return markdown
 
 
@@ -157,7 +157,6 @@ def stale_issues(repo):
   if (size < 5):
     markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
 
-  print("\n", markdown, "\n\n\n")
   return markdown
 
 
@@ -169,6 +168,7 @@ def open_issues(repo):
   all_open_issues = ""
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "only one detailed sentence")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 2, False)
+  print(f"Printing overall instructions: {overall_instructions}")
 
   # Step 1: get summaries for each open issue first from the llm
   for open_issue in repo['open_issues']:
@@ -182,14 +182,9 @@ def open_issues(repo):
     # issue_summary = data
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
 
-    print('a')
-    print(issue_summary)
-    print('b')
-
     issue_url = f"URL: {open_issue.get('url')}"
     all_open_issues += f"{issue_summary}\n{issue_url}\n\n"
 
-  print("\n", all_open_issues, "\n\n\n")
   
   # Step 2: get markdown output for all open issues 
   overall_summary = generate_summary(all_open_issues, overall_instructions)
@@ -197,9 +192,6 @@ def open_issues(repo):
   if "```" in overall_summary:
     overall_summary = overall_summary.replace("```markdown", "").replace("```", "").strip()
 
-  print('c')
-  print(overall_summary)
-  print('d')
 
   return overall_summary + "\n"
 
@@ -214,6 +206,7 @@ def closed_issues(repo):
   all_closed_issues = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue", "only one detailed sentence")
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 2, False)
+  print(f"Printing overall instructions: {overall_instructions}")
 
   # Step 1: get summaries for each closed issue first from the llm
   for closed_issue in closed_issues_data:
@@ -228,8 +221,6 @@ def closed_issues(repo):
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = f"URL: {closed_issue.get('url')}"
     all_closed_issues += f"{issue_summary}\n{issue_url}\n\n"
-
-  print("\n", all_closed_issues, "\n\n\n")
   
   # Step 2: get markdown output for all closed issues 
   overall_summary = generate_summary(all_closed_issues, overall_instructions, max_retries=5, base_wait=1)
@@ -249,16 +240,13 @@ def issue_discussion_insights(repo):
     markdown = "This section will analyze the tone and sentiment of discussions within this project's open and closed issues that occurred within the past week. It aims to identify potentially heated exchanges and to maintain a constructive project environment. \n\n"
     
     if not issue_list:
-        print("No issues to analyze.")
         markdown += "As of our last update, there are no open or closed issues with discussions going on within the past week. \n\n"
         return markdown
 
-    print("Analyzing issues...")
     issue_count = 0
 
     for issue in issue_list:
         instructions = discussion_instructions()
-        print(f"Analyzing issue: {issue}")
     
         generated_summary = generate_summary(issue, instructions, max_retries=5, base_wait=1)
         print(f"Generated summary to analyze: \n{generated_summary}")
@@ -293,14 +281,15 @@ def issue_discussion_insights(repo):
 
 # 6 - Open Pull Requests
 def open_pull_requests(repo):
-    print("\n=== Starting Open Pull Requests Processing ===")
-
     if not repo.get('open_pull_requests'):
-        print("No open pull requests found")
         return "As of our latest update, there are no open pull requests for the project this week.\n\n"
 
-    total_prs = len(repo['open_pull_requests'])
-    print(f"Total number of open pull requests: {total_prs}")
+    # Sort pull requests by the number of commits in descending order
+    sorted_pull_requests = sorted(
+        repo['open_pull_requests'],
+        key=lambda pr: len(pr.get('commits', [])),
+        reverse=True
+    )
 
     key_pull_requests = 0
     key_pull_request_summary = "### Key Open Pull Requests\n\n"
@@ -308,13 +297,11 @@ def open_pull_requests(repo):
     pr_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
     overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", False, 2, True)
 
-    for idx, pull_request in enumerate(repo['open_pull_requests'], 1):
-        print(f"\nProcessing open pull request {idx}")
+    for idx, pull_request in enumerate(sorted_pull_requests):
         data = pull_request
 
         if data.get('body'):
             data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
-            print(f"Cleaned PR body - removed images and newlines")
 
         # Generate the summary for the current open pull request
         pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
@@ -323,89 +310,69 @@ def open_pull_requests(repo):
         shortened_url = f"pull/{pull_request_number}"
         pull_request_title = pull_request.get('title')
         merged_status = pull_request.get('merged')
-        print(f"Generated summary for open PR {idx}")
 
         # Process commits
         associated_commits = data.get('commits', [])
-        print(f"Number of commits found for open PR {idx}: {len(associated_commits)}")
-
         commit_list = ""
         if associated_commits:
             # Extract and format SHA links
             commit_list = ", ".join([f"[{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
-            print(f"Printing commit list: {commit_list}")
-            print(f"Processed commits for open PR {idx}: {commit_list}")
 
-        # Add the first 3 open pull requests to the detailed list
+        # Add the first 3 pull requests to the detailed "Key Pull Requests" list
         if key_pull_requests < 3:
-          print(f"\n=== Adding Open PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
-
-          key_pull_request_summary += (
-              f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
-              f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
-              f"\n - **Merged:** {merged_status}\n"
-              f"\n - **Associated Commits:**\n{commit_list}\n\n"
-          )
-          key_pull_requests += 1
-          print(f"Current key pull request count: {key_pull_requests}")
-        elif total_prs > 3:
-            print(f"\n=== Adding Closed PR {idx} to Other Pull Requests ===")
-            # For subsequent closed pull requests, only summarize
-            summarized_pr_summary = generate_summary(data, pull_request_instructions, max_retries=5, base_wait=1)
-            remaining_pull_requests_summary += f"- {summarized_pr_summary}\n{pull_request_url}\n"
+            key_pull_request_summary += (
+                f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
+                f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
+                f"\n - **Merged:** {merged_status}\n"
+                f"\n - **Associated Commits:** {commit_list}\n\n"
+            )
+            key_pull_requests += 1
+        else:
+            # For other pull requests, only summarize
+            summarized_pr_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
+            remaining_pull_requests_summary += f"- {summarized_pr_summary}\n[{shortened_url}]({pull_request_url})\n"
 
     # Generate "Other Pull Requests" summary only if applicable
-    if total_prs > 3 and remaining_pull_requests_summary:
+    if len(sorted_pull_requests) > 3 and remaining_pull_requests_summary:
         other_pr_summary = generate_summary(remaining_pull_requests_summary, overall_instructions, max_retries=5, base_wait=1)
         if "```markdown" in other_pr_summary:
             start = other_pr_summary.index("```markdown") + len("```markdown")
             end = other_pr_summary.rindex("```")
             other_pr_summary = other_pr_summary[start:end].strip() + "\n"
 
-        print("\n=== Combining Summaries ===")
         # Combine key and other pull request summaries
         all_pull_requests = f"{key_pull_request_summary}\n### Other Open Pull Requests \n\n{other_pr_summary}"
     else:
-        print("\n=== Skipping 'Other Pull Requests' ===")
         all_pull_requests = key_pull_request_summary
-
-    print("\n=== Final Open Pull Request Information ===")
-    print("Key Pull Requests processed:", key_pull_requests)
-    print("Remaining Pull Requests processed:", len(repo['open_pull_requests']) - key_pull_requests)
-
-    print("\n=== End of Processing ===\n")
 
     # Return the combined output
     return all_pull_requests + "\n\n"
 
 
-
-
 # 7 - Closed Pull Requests
 def closed_pull_requests(repo):
-    print("\n=== Starting Closed Pull Requests Processing ===")
-
     if not repo.get('closed_pull_requests'):
-        print("No closed pull requests found")
         return "As of our latest update, there are no closed pull requests for the project this week.\n\n"
 
-    total_prs = len(repo['closed_pull_requests'])
-    print(f"Total number of closed pull requests: {total_prs}")
+    # Sort pull requests by the number of commits in descending order
+    sorted_pull_requests = sorted(
+        repo['closed_pull_requests'], 
+        key=lambda pr: len(pr.get('commits', [])), 
+        reverse=True
+    )
 
+    total_prs = len(sorted_pull_requests)
     key_pull_requests = 0
     key_pull_request_summary = "### Key Closed Pull Requests\n\n"
     remaining_pull_requests_summary = ""
     pr_instructions = individual_instructions("a closed pull request", "pull request", "pull request", "only one detailed sentence")
     overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", False, 2, True)
-    
 
-    for idx, pull_request in enumerate(repo['closed_pull_requests'], 1):
-        print(f"\nProcessing closed pull request {idx}")
+    for idx, pull_request in enumerate(sorted_pull_requests, 1):
         data = pull_request
 
         if data.get('body'):
             data['body'] = re.sub(r'<img[^>]*>|\r\n', '', data['body'])
-            print(f"Cleaned PR body - removed images and newlines")
 
         # Generate the summary for the current closed pull request
         pull_request_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
@@ -414,35 +381,26 @@ def closed_pull_requests(repo):
         shortened_url = f"pull/{pull_request_number}"
         pull_request_title = pull_request.get('title')
         merged_status = pull_request.get('merged')
-        print(f"Generated summary for closed PR {idx}")
 
         # Process commits
         associated_commits = data.get('commits', [])
-        print(f"Number of commits found for closed PR {idx}: {len(associated_commits)}")
-
         commit_list = ""
         if associated_commits:
             # Extract and format SHA links
             commit_list = ", ".join([f"[{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
-            print(f"Printing commit list: {commit_list}")
-            print(f"Processed commits for closed PR {idx}: {commit_list}")
 
         # Add the first 3 closed pull requests to the detailed list
         if key_pull_requests < 3:
-          print(f"\n=== Adding Closed PR {idx} as Key Pull Request #{key_pull_requests + 1} ===")
-
-          key_pull_request_summary += (
-              f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
-              f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
-              f"\n - **Merged:** {merged_status}\n"
-              f"\n - **Associated Commits:**\n{commit_list}\n\n"
-          )
-          key_pull_requests += 1
-          print(f"Current key pull request count: {key_pull_requests}")
+            key_pull_request_summary += (
+                f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
+                f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
+                f"\n - **Merged:** {merged_status}\n"
+                f"\n - **Associated Commits:** {commit_list}\n\n"
+            )
+            key_pull_requests += 1
         elif total_prs > 3:
-            print(f"\n=== Adding Closed PR {idx} to Other Pull Requests ===")
             # For subsequent closed pull requests, only summarize
-            summarized_pr_summary = generate_summary(data, pull_request_instructions, max_retries=5, base_wait=1)
+            summarized_pr_summary = generate_summary(data, pr_instructions, max_retries=5, base_wait=1)
             remaining_pull_requests_summary += f"- {summarized_pr_summary}\n{pull_request_url}\n"
 
     # Generate "Other Pull Requests" summary only if applicable
@@ -453,21 +411,14 @@ def closed_pull_requests(repo):
             end = other_pr_summary.rindex("```")
             other_pr_summary = other_pr_summary[start:end].strip() + "\n"
 
-        print("\n=== Combining Summaries ===")
         # Combine key and other pull request summaries
         all_pull_requests = f"{key_pull_request_summary}\n### Other Closed Pull Requests \n\n{other_pr_summary}"
     else:
-        print("\n=== Skipping 'Other Pull Requests' ===")
         all_pull_requests = key_pull_request_summary
-
-    print("\n=== Final Closed Pull Request Information ===")
-    print("Key Pull Requests processed:", key_pull_requests)
-    print("Remaining Pull Requests processed:", len(repo['closed_pull_requests']) - key_pull_requests)
-
-    print("\n=== End of Processing ===\n")
 
     # Return the combined output
     return all_pull_requests + "\n\n"
+
 
 
 
@@ -627,16 +578,16 @@ if __name__ == '__main__':
   query = text("SELECT full_name FROM repositories")
   result = session.execute(query)
 
-  # repositories = [row[0] for row in result]
-  repositories = [
-    # "ggerganov/llama.cpp",
-    # "nodejs/node",
-    # "openxla/xla",
-    # "stevenbui44/flashcode",
-    # "cnovalski1/APIexample",
-    "tensorflow/tensorflow",
-    "monicahq/monica"
-  ]
+  repositories = [row[0] for row in result]
+  # repositories = [
+  #   # "ggerganov/llama.cpp",
+  #   # "nodejs/node",
+  #   # "openxla/xla",
+  #   # "stevenbui44/flashcode",
+  #   # "cnovalski1/APIexample",
+  #   # "tensorflow/tensorflow",
+  #   # "monicahq/monica"
+  # ]
 
 
   # PART TWO: create the markdown for a newsletter
@@ -774,7 +725,7 @@ if __name__ == '__main__':
 
         # 3.1: Open Pull Requests
         outfile.write("## <a name='open-prs'></a>3.1 Open Pull Requests\n\n")
-        outfile.write("This section lists and summarizes pull requests that were created within the last week in the repository. \n\n")
+        outfile.write("This section provides a summary of pull requests that were opened in the repository over the past week. The top three pull requests with the highest number of commits are highlighted as 'key' pull requests. All other pull requests are grouped based on similar characteristics for easier analysis.\n\n")
 
         # 3.1.1 Open Pull Requests This Week
         outfile.write(f"**Pull Requests Opened This Week:** {repo_data.get('num_open_prs', None)}\n\n")
@@ -786,7 +737,7 @@ if __name__ == '__main__':
 
         # 3.2: Closed Pull Requests
         outfile.write("## <a name='closed-prs'></a>3.2 Closed Pull Requests\n\n")
-        outfile.write("This section lists and summarizes pull requests that were closed within the last week in the repository. Similar pull requests are grouped, and associated commits are linked if applicable. \n\n")
+        outfile.write("This section provides a summary of pull requests that were closed in the repository over the past week. The top three pull requests with the highest number of commits are highlighted as 'key' pull requests. All other pull requests are grouped based on similar characteristics for easier analysis.\n\n")
 
         # 3.2.1 Closed Pull Requests This Week
         outfile.write(f"**Pull Requests Closed This Week:** {repo_data.get('num_closed_prs', None)}\n\n")

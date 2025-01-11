@@ -273,7 +273,7 @@ def issue_discussion_insights(repo):
 
     # If no issues with high toxicity scores
     if issue_count == 0:
-        markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open issues from the past week. \n\n"
+        markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open or closed issues from the past week. \n\n"
 
     return markdown
   
@@ -468,7 +468,7 @@ def pull_request_discussion_insights(repo):
             continue  # Skip this PR if the format is incorrect
 
     if pull_request_count == 0:
-        markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open pull requests from the past week. \n\n"
+        markdown += "Based on our analysis, there are no instances of toxic discussions in the project's open or closed pull requests from the past week. \n\n"
     
     return markdown
 

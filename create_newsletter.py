@@ -770,7 +770,7 @@ if __name__ == '__main__':
 
         # 4.1.5 Last Week's Link (if exists)
         if lastWeekLink(repo_name): 
-          outfile.write("**Access last week's newsletter: **" + lastWeekLink( repo_name))
+          outfile.write(f"**Access last week's newsletter: ** [{lastWeekLink(repo_name)}]({lastWeekLink(repo_name)})")
 
        
       

@@ -769,8 +769,11 @@ if __name__ == '__main__':
         outfile.write("\n\n\n")
 
         # 4.1.5 Last Week's Link (if exists)
-        if lastWeekLink(repo_name): 
-          outfile.write(f"**Access last week's newsletter: ** [{lastWeekLink(repo_name)}]({lastWeekLink(repo_name)})")
+        last_week_link = lastWeekLink(repo_name)
+        if last_week_link:
+           outfile.write(f"**Access Last Week's Newsletter: ** \n\n - [Link]({last_week_link})")
+
+        outfile.write("\n\n\n")
 
        
       

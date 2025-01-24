@@ -316,7 +316,7 @@ def open_pull_requests(repo):
         commit_list = ""
         if associated_commits:
             # Extract and format SHA links
-            commit_list = ", ".join([f"[{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
+            commit_list = ", ".join([f"[{commit['sha'][:5]}]({commit['html_url']})" for commit in associated_commits])
 
         # Add the first 3 pull requests to the detailed "Key Pull Requests" list
         if key_pull_requests < 3:
@@ -387,7 +387,7 @@ def closed_pull_requests(repo):
         commit_list = ""
         if associated_commits:
             # Extract and format SHA links
-            commit_list = ", ".join([f"[{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
+            commit_list = ", ".join([f"[{commit['sha'][:5]}]({commit['html_url']})" for commit in associated_commits])
 
         # Add the first 3 closed pull requests to the detailed list
         if key_pull_requests < 3:

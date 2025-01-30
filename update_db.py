@@ -193,6 +193,7 @@ def update_pr_comment_updated_at(session, new_comment_id, new_update_date):
         session.rollback()
         print(f"Error updating issue comment update date in {comment.repository_full_name}: {e}")
 
+# Handles the datetime formatting issues
 def handle_datetime(datetime_str):
     if datetime_str:
         return datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%SZ')

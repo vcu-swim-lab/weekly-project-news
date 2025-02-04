@@ -24,6 +24,12 @@ BASE_URL = "https://api.buttondown.email"
 # Function 1
 # POST /emails: DRAFT an email, not sending it out yet but getting an email id
 def draft_email(subject, content):
+    # Check if email has already been drafted
+    if subject in drafts:
+        logging.info(f"Reusing existing draft email for subject: {subject}")
+        print(f"Reusing existing draft email for subject: {subject}")
+        return {"id": drafts[subject]}  # Return the existing email ID
+
     url = f"{BASE_URL}/v1/emails"
     data = {
         "subject": subject,
@@ -35,6 +41,7 @@ def draft_email(subject, content):
 
     if response.status_code >= 200 and response.status_code < 300:
         response_data = response.json()
+        drafts[subject] = response_data['id']
         logging.info(f"Successfully drafted email with subject: {subject}")
         return response_data
     else:
@@ -98,6 +105,9 @@ def update_email_status(email_id):
 # "Main function"
 logging.info("- - - - - - - - - - - - - - - - - - - - -")
 logging.info("Starting newsletter sending process")
+
+# List to hold drafts
+drafts = {}
 
 with open('subscribers.json', 'r') as file:
     subscribers_data = json.load(file)

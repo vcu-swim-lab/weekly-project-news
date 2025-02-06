@@ -3,13 +3,10 @@ from datetime import datetime, timedelta, timezone
 import time
 import os
 import json
+import csv
 
-import requests
-import time
-from datetime import datetime, timedelta, timezone
-import os
 
-def get_recent_commit_emails(api_key, repo, days=7):
+def get_recent_commit_emails(api_key, repo, days=365):
     base_url = "https://api.github.com"
     headers = {
         "Authorization": f"token {api_key}",
@@ -164,33 +161,36 @@ def get_recent_issues_and_prs(api_key, repo):
 def process_repositories(api_key, repositories):
     results = {}
     for repo in repositories:
-        get_repo_contributors(api_key, repo)
         email_commit_count = get_recent_commit_emails(api_key, repo)
-        user_associations = get_recent_issues_and_prs(api_key, repo)
-        results[repo] = {
-            "email_commit_count": email_commit_count,
-            "user_associations": user_associations
-        }
+        email_commit_count = {email: count for email, count in email_commit_count.items() if "noreply" not in email}
+        # Cut the list to half size, keeping the users with the least number of commits
+        cutoff = len(email_commit_count) // 2
+        sorted_committers = sorted(email_commit_count.items(), key=lambda x: x[1])
+        email_commit_count = dict(sorted_committers[:cutoff])
+        results[repo] = email_commit_count
     return results
 
 def format_output(results):
     output = ""
-    for repo, data in results.items():
-        email_commit_count = data["email_commit_count"]
-        user_associations = data["user_associations"]
-
-        output += f"{repo}:\n"
-        output += f"{len(email_commit_count)} contributors by commit:\n"
+    for repo, email_commit_count in results.items():
+        output += f"{repo}: {len(email_commit_count)} contributors\n"
         sorted_contributors = sorted(email_commit_count.items(), key=lambda x: x[1], reverse=True)
         for email, count in sorted_contributors:
             output += f"{email}, {count} commits\n"
-
-        output += f"\n{len(user_associations)} unique users in issues and PRs for {repo}:\n"
-        for user, association in sorted(user_associations.items()):
-            output += f"{user} - {association}\n"
-
         output += "\n"
     return output.strip()
+
+import csv
+
+def save_to_csv(results, filename="github_email_commits.csv"):
+    with open(filename, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Email", "Commits"])  # Column headers
+        for repo, email_commit_count in results.items():
+            for email, count in email_commit_count.items():
+                writer.writerow([email, count])
+    print(f"Data saved to {filename}")
+
 
 # Main
 if __name__ == '__main__':
@@ -228,3 +228,6 @@ if __name__ == '__main__':
     
     with open('github_emails.txt', 'w') as f:
         f.write(formatted_output)
+    save_to_csv(results)
+    
+    

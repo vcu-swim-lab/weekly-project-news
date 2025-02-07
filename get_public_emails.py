@@ -180,12 +180,11 @@ def format_output(results):
         output += "\n"
     return output.strip()
 
-import csv
 
 def save_to_csv(results, filename="github_email_commits.csv"):
     with open(filename, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(["Email", "Commits"])  # Column headers
+        writer.writerow(["Email", "Commits"])
         for repo, email_commit_count in results.items():
             writer.writerow([f"{repo}: {len(email_commit_count)} contributors"])
             for email, count in email_commit_count.items():

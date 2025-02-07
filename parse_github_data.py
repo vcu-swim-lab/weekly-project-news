@@ -20,7 +20,6 @@ import logging
 load_dotenv()
 # Load API keys from .env file
 API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
-print(API_KEYS)
 current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 
@@ -51,7 +50,6 @@ def switch_api_key():
     current_key_index = (current_key_index + 1) % len(API_KEYS)
     del headers
     headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
-    print(API_KEYS[current_key_index])
     del g
     g = Github(API_KEYS[current_key_index])
     print(f"Switched to API key {current_key_index + 1}: ", API_KEYS[current_key_index])
@@ -77,26 +75,20 @@ def check_repo(url):
 
 # Check if the link works, if it does return true otherwise return false
 def check_link_works(url):
-    # Check if the URL seems valid by containing ".com"
     if ".com" not in url:
         return False
-
     try:
-        # Send a request to check if the URL is accessible
         response = requests.head(url, allow_redirects=True)
-        # Return True if the status code indicates success (status code 200)
         return response.status_code == 200
     except requests.RequestException:
         print("Link not working")
         print("Provided Link " + url)
-        # Return False if there's any issue with the request
         return False
 
 
 # Retreives a repository
 def get_a_repository(repository, headers):
     url = f'https://api.github.com/repos/{repository}'
-    print(url)
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         repo_info = response.json()
@@ -111,7 +103,7 @@ def get_repo_name(url):
         return f"{parts[3]}/{parts[4]}" 
     return None
 
-# Insert repository
+# INSERT REPOSITORY
 def insert_repository(data): 
     try:
         # Extract only the fields that exist in the Repository model
@@ -132,7 +124,6 @@ def insert_repository(data):
         new_repo = Repository(**filtered_data)
         session.add(new_repo)
         session.commit()
-        print("Successfully inserted repository")
     except Exception as e:
         logging.error(f"Error inserting repository: {e}")
         session.rollback()
@@ -183,7 +174,7 @@ def get_issue_comments(repo, issue):
 
         response = requests.get(url, headers=headers, params=params)
         if response.status_code != 200:
-            raise Exception(f"Failed to fetch issues: {response.status_code}")
+            raise Exception(f"Failed to fetch issue comments: {response.status_code}")
 
         page_issues = response.json()
         if not page_issues:
@@ -211,7 +202,7 @@ def get_pr_comments(repo, pr):
 
         response = requests.get(url, headers=headers, params=params)
         if response.status_code != 200:
-            raise Exception(f"Failed to fetch issues: {response.status_code}")
+            raise Exception(f"Failed to fetch PR comments: {response.status_code}")
 
         page_issues = response.json()
         if not page_issues:
@@ -238,7 +229,7 @@ def get_pr_commits(repo, pull_number):
 
         response = requests.get(url, headers=headers, params=params)
         if response.status_code != 200:
-            raise Exception(f"Failed to fetch issues: {response.status_code}")
+            raise Exception(f"Failed to fetch PR commits: {response.status_code}")
 
         page_issues = response.json()
         if not page_issues:
@@ -250,7 +241,6 @@ def get_pr_commits(repo, pull_number):
 
     return commits_array
 
-
 # RETRIEVE LATEST RELEASE
 def get_latest_release(repo):
     # Repo must be in the form "owner/repo"
@@ -258,29 +248,14 @@ def get_latest_release(repo):
 
     try:
         response = requests.get(url, headers=headers)
-
-        if response.status_code != 200:
-            print(f"Could not find release data for repository: {repo}")
-            return None
+        
+        if response.status_code == 200:
+            return response.json()
         else:
-            print("Printing version API return:")
-            release_data = response.json()
-            for key, value in release_data.items():
-                if key == 'author' and isinstance(value, dict):
-                    print(f"{key}:")
-                    for sub_key, sub_value in value.items():
-                        print(f"  {sub_key}: {sub_value}")
-                elif key == 'assets' and isinstance(value, list):
-                    print(f"{key}:")
-                    for index, asset in enumerate(value):
-                        print(f"  Asset {index + 1}:")
-                        for asset_key, asset_value in asset.items():
-                            print(f"    {asset_key}: {asset_value}")
-                else:
-                    print(f"{key}: {value}")
-            return release_data
-    except Exception as e:
-        print(f"An error has occurred: {e}")
+            logging.info(f"Could not find release data for repository: {repo}")
+            return None
+    except requests.RequestException as e:
+        logging.error(f"An error occurred while retrieving release data for {repo}: {e}")
         return None
 
 
@@ -366,7 +341,6 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
 
 
 # PRS 1: INSERT PULL REQUEST
-# TODO Add "associated_issue" column in database table to link pull request and issues
 def insert_pull_request(pull_request, repo_name):
     
     # Try/except for inserting pull request
@@ -386,17 +360,12 @@ def insert_pull_request(pull_request, repo_name):
             filtered_data['user_login'] = None
             print(f"User data does not exist for pull request {pull_request['id']}: {e}")
         filtered_data['repository_full_name'] = repo_name
-        
-
-        # Set repo name
-        filtered_data['repository_full_name'] = repo_name
 
         # Check for if the pull request is merged
         if pull_request['pull_request']['merged_at']:
             filtered_data['merged'] = "Yes"
         else:
             filtered_data['merged'] = "No"
-        
         
         # Convert datetime fields
         datetime_fields = ['created_at', 'updated_at', 'closed_at']
@@ -470,21 +439,14 @@ def insert_commit(commit, repo_name, pr_id):
             print("Commit already exists!")
             return
         
-        # Print commit
-        print("Full commit data:", json.dumps(commit, indent=4))
-        
         # Try/except for author data
         try:
             filtered_data['commit_author_login'] = commit['author']['login'] if not None else ''
         except Exception as e:
             print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
-        
-        
     
         # Set repo name, committer date, and commit message
         filtered_data['repository_full_name'] = repo_name
-        # filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date'])
-        # filtered_data['commit_message'] = commit['commit']['message'] if not None else None
         filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date']) if not None else ''
         filtered_data['commit_message'] = commit['commit']['message'] if not None else ''
         
@@ -514,13 +476,11 @@ def insert_all_data(repo_name, date):
         issue_create_date = datetime.fromisoformat(issue['created_at'])
         
         print(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
-        # TODO Print login and check for bot
         # Check for bots
         if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
             continue
         
-        one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
-        if issue_create_date <= one_year_ago: # Make sure the issue create date are within the date
+        if issue_create_date <= date: # Make sure the issue create date are within the date
             print("Skipping issue out of date")
             continue
         
@@ -581,9 +541,6 @@ def insert_all_data(repo_name, date):
     print(f"Successfully inserted {issues_inserted} issues for {repo_name} into the database for {repo_name}")
     print(f"Successfully inserted {pulls_inserted} pull requests for {repo_name} into the database for {repo_name}")
   
-     
- 
-# TODO Use get_readme to retreive and parse the readme file and check release data
 
 # Main
 if __name__ == '__main__':
@@ -604,6 +561,7 @@ if __name__ == '__main__':
     one_year_ago = datetime.now(timezone.utc) - timedelta(days=365)
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
     thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+    sixty_days_ago = datetime.now(timezone.utc) - timedelta(days=60)
     
     # Define the limit for API calls
     limit = 10000
@@ -626,7 +584,6 @@ if __name__ == '__main__':
                     print(f"Repository is either private or does not exist.")
                     logging.warning(f"Repository {repo_name} is either private or does not exist.")
                     continue
-                # ex. https://github.com/cnovalski1/APIexample
                 parts = repo_name.split('/')
                 if len(parts) >= 5:
                     full_repo_name = f"{parts[3]}/{parts[4]}"
@@ -658,18 +615,16 @@ if __name__ == '__main__':
 
                 # CHECK FOR LATEST RELEASE
                 repo_latest_release = get_latest_release(repo)
-                print("Printing latest release: ")
-                print(repo_latest_release)
                 if (repo_latest_release is None):
-                    print("Release data does not exist")
+                    logging.info(f"Release data does not exist for {repo}")
                 else:
                     repo_data['latest_release'] = repo_latest_release['tag_name'] if not None else None
                     repo_data['release_description'] = repo_latest_release['body'] if not None else None
                     repo_data['release_create_date'] = repo_latest_release['created_at'] if not None else None
                 
-                print(repo_data)
+                # Insert repo and data
                 insert_repository(repo_data)
-                insert_all_data(repo_name, one_year_ago)
+                insert_all_data(repo_name, sixty_days_ago)
 
             processed_repos.add(repo)
             elapsed_time = time.time() - start_time

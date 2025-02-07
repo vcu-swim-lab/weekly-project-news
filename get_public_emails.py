@@ -187,6 +187,7 @@ def save_to_csv(results, filename="github_email_commits.csv"):
         writer = csv.writer(file)
         writer.writerow(["Email", "Commits"])  # Column headers
         for repo, email_commit_count in results.items():
+            writer.writerow([f"{repo}: {len(email_commit_count)} contributors"])
             for email, count in email_commit_count.items():
                 writer.writerow([email, count])
     print(f"Data saved to {filename}")

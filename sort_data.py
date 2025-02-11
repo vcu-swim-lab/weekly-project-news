@@ -358,35 +358,6 @@ def get_num_closed_prs(pr_data_closed):
 
 
 
-# COMMITS 1: Gets ALL commits within one_week_ago
-def get_commit_messages(session, one_week_ago, repository_full_name):
-    # Query the database to retreive commits
-    commits = session.query(Commit).filter(
-        and_(
-            Commit.repository_full_name == repository_full_name,
-            Commit.committer_date >= one_week_ago
-        )
-    ).all()
-    
-    # Array to store commit data
-    commit_data = []
-
-    for commit in commits:
-        # Check for bots
-        # if commit.committer_name is None or "bot" in commit.committer_name.lower() or "[bot]" in commit.committer_name.lower():
-        #     continue
-        
-        data = {
-            "message": commit.commit_message
-        }
-
-        commit_data.append(data)
-
-    return commit_data
-
-# COMMITS 2: Gets NUMBER of commits made within one_week_ago
-def get_num_commits(commit_data):
-    return len(commit_data)
 
 
 
@@ -577,10 +548,7 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
         # PRS
         open_pull_requests = get_open_prs(session, one_week_ago, repo_name)            
         closed_pull_requests = get_closed_prs(session, one_week_ago, repo_name)           
-        
-        # COMMITS
-        commits = get_commit_messages(session, one_week_ago, repo_name)
-        
+                
         # Format and store data
         repo_data = {
             "repo_name": repo_name,
@@ -594,8 +562,6 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "closed_pull_requests": closed_pull_requests,
             "num_open_prs": get_num_open_prs(open_pull_requests),
             "num_closed_prs": get_num_closed_prs(closed_pull_requests),
-            "commits": commits,
-            "num_commits": get_num_commits(commits),
             "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
             "latest_release": get_latest_release(session, repo_name),
             "release_description": get_release_description(session, repo_name),

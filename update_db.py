@@ -20,178 +20,21 @@ current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 g = Github(API_KEYS[current_key_index])
 
-# ISSUES 1: Update the state of an issue
-def update_issue_state(session, new_issue_id, new_state):
+def update_attribute(session, new_id, new_data, table, column, id='id', name='repository_full_name'):
     try:
-        issue = session.query(Issue).filter(Issue.id == new_issue_id).first()
-        
-        if not issue:
-            print(f"Issue {new_issue_id} does not exist in the database")
-        elif issue.state != new_state:
-            issue.state = new_state
-            session.commit()
-            print(f"Issue {new_issue_id} state updated to {new_state} in {issue.repository_full_name}")
-        else:
-            print(f"Issue {new_issue_id} state is already {new_state} in {issue.repository_full_name}")
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating issue state in {issue.repository_full_name}: {e}")
-    
-# ISSUES 2: Update the number of comments on an issue
-def update_issue_num_comments(session, new_issue_id, new_num_comments):
-    try:
-        issue = session.query(Issue).filter(Issue.id == new_issue_id).first()
-        
-        if not issue:
-            print(f"Issue {new_issue_id} does not exist in the database")
-        elif issue.comments != new_num_comments:
-            issue.comments = new_num_comments
-            session.commit()
-            print(f"Issue {new_issue_id} number of comments updated to {new_num_comments} in {issue.repository_full_name}")
-        else:
-            print(f"Issue {new_issue_id} number of comments is already {new_num_comments} in {issue.repository_full_name}")
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating issue number of comments in {issue.repository_full_name}: {e}")
+        obj = session.query(table).filter(getattr(table, id) == new_id).first()
 
-# ISSUES 3: Update the closed_at date on an issue
-def update_issue_closed_at(session, new_issue_id, new_close_date):
-    try:
-        issue = session.query(Issue).filter(Issue.id == new_issue_id).first()
-        
-        if not issue:
-            print(f"Issue {new_issue_id} does not exist in the database")
-        elif issue.closed_at != new_close_date:
-            issue.closed_at = new_close_date
+        if not obj:
+            print(f"{table} {new_id} does not exist in the database")
+        elif getattr(obj, column) != new_data:
+            setattr(obj, column, new_data)
             session.commit()
-            print(f"Issue {new_issue_id} close date updated to {new_close_date} in {issue.repository_full_name}")
+            print(f"{table} {new_id} {column} updated to {new_data} in {name}")
         else:
-            print(f"Issue {new_issue_id} close date is already {new_close_date} in {issue.repository_full_name}")
+            print(f"{table} {new_id} {column} is already {new_data} in {name}")
     except Exception as e:
         session.rollback()
-        print(f"Error updating issue close date in {issue.repository_full_name}: {e}")
-
-# ISSUES 4: Update the updated_at date for an issue
-def update_issue_updated_at(session, new_issue_id, new_update_date):
-    try:
-        issue = session.query(Issue).filter(Issue.id == new_issue_id).first()
-        
-        if not issue:
-            print(f"Issue {new_issue_id} does not exist in the database")
-        elif issue.updated_at != new_update_date:
-            issue.updated_at = new_update_date
-            session.commit()
-            print(f"Issue {new_issue_id} update date updated to {new_update_date} in {issue.repository_full_name}")
-        else:
-            print(f"Issue {new_issue_id} update date is already {new_update_date} in {issue.repository_full_name}")
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating issue update date in {issue.repository_full_name}: {e}")
-    
-
-# ISSUE COMMENTS 1: Update the updated_at date for an issue comment
-def update_issue_comment_updated_at(session, new_comment_id, new_update_date):
-    try:
-        comment = session.query(IssueComment).filter(IssueComment.id == new_comment_id).first()
-        
-        if not comment:
-            print(f"Issue Comment {new_comment_id} does not exist in the database")
-        elif comment.updated_at != new_update_date:
-            comment.updated_at = new_update_date
-            session.commit()
-            print(f"Issue Comment {new_comment_id} update date updated to {new_update_date} in {comment.repository_full_name}")
-        else:
-            print(f"Issue Comment {new_comment_id} update date is already {new_update_date} in {comment.repository_full_name}")
-            
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating issue comment update date in {comment.repository_full_name}: {e}")
-
-# PRS 1: Update the state of a pull request
-def update_pr_state(session, new_pr_id, new_state):
-    try:
-        pull_request = session.query(PullRequest).filter(PullRequest.id == new_pr_id).first()
-        
-        if not pull_request:
-            print(f"Pull Request {new_pr_id} does not exist in the database")
-        elif pull_request.state != new_state:
-            pull_request.state = new_state
-            session.commit()
-            print(f"Pull Request {new_pr_id} state updated to {new_state} in {pull_request.repository_full_name}")
-        else:
-            print(f"Pull Request {new_pr_id} state is already {new_state} in {pull_request.repository_full_name}")
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating pull request state in {pull_request.repository_full_name}: {e}")
-
-# PRS 2: Update the number of comments of a pull request
-def update_pr_num_comments(session, new_pr_id, new_num_comments):
-    try:
-        pull_request = session.query(PullRequest).filter(PullRequest.id == new_pr_id).first()
-        
-        if not pull_request:
-            print(f"Pull Request {new_pr_id} does not exist in the database")
-        elif pull_request.comments != new_num_comments:
-            pull_request.comments = new_num_comments
-            session.commit()
-            print(f"Pull Request {new_pr_id} number of comments updated to {new_num_comments} in {pull_request.repository_full_name}")
-        else:
-            print(f"Pull Request {new_pr_id} number of comments is already {new_num_comments} in {pull_request.repository_full_name}")
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating pull request number of comments in {pull_request.repository_full_name}: {e}")
-
-# PRS 3: Update the close date of a pull request
-def update_pr_closed_at(session, new_pr_id, new_close_date):
-    try:
-        pull_request = session.query(PullRequest).filter(PullRequest.id == new_pr_id).first()
-        
-        if not pull_request:
-            print(f"Pull Request {new_pr_id} does not exist in the database")
-        elif pull_request.closed_at != new_close_date:
-            pull_request.closed_at = new_close_date
-            session.commit()
-            print(f"Pull Request {new_pr_id} close date updated to {new_close_date} in {pull_request.repository_full_name}")
-        else:
-            print(f"Pull Request {new_pr_id} close date is already {new_close_date} in {pull_request.repository_full_name}")
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating pull request close date in {pull_request.repository_full_name}: {e}")
-        
-# PRS 4: Update the update date of a pull request
-def update_pr_updated_at(session, new_pr_id, new_update_date):
-    try:
-        pull_request = session.query(PullRequest).filter(PullRequest.id == new_pr_id).first()
-        
-        if not pull_request:
-            print(f"Pull Request {new_pr_id} does not exist in the database")
-        elif pull_request.updated_at != new_update_date:
-            pull_request.updated_at = new_update_date
-            session.commit()
-            print(f"Pull Request {new_pr_id} update date updated to {new_update_date} in {pull_request.repository_full_name}")
-        else:
-            print(f"Pull Request {new_pr_id} update date is already {new_update_date} in {pull_request.repository_full_name}")
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating pull request update date in {pull_request.repository_full_name}: {e}")
-
-# PR COMMENTS 1: Update the update date of a pull request comment
-def update_pr_comment_updated_at(session, new_comment_id, new_update_date):
-    try:
-        comment = session.query(PullRequestComment).filter(PullRequestComment.id == new_comment_id).first()
-        
-        if not comment:
-            print(f"Pull Request Comment {new_comment_id} does not exist in the database")
-        elif comment.updated_at != new_update_date:
-            comment.updated_at = new_update_date
-            session.commit()
-            print(f"Pull Request Comment {new_comment_id} update date updated to {new_update_date} in {comment.repository_full_name}")
-        else:
-            print(f"Pull Request Comment {new_comment_id} update date is already {new_update_date} in {comment.repository_full_name}")
-            
-    except Exception as e:
-        session.rollback()
-        print(f"Error updating issue comment update date in {comment.repository_full_name}: {e}")
+        print(f"Error updating {table} {column} in {name}: {e}")
 
 def handle_datetime(datetime_str):
     if datetime_str:
@@ -219,13 +62,20 @@ def update_all_data(session, repo_name, one_week_ago):
             pr_comments = get_pr_comments(repo_name, pr)
             num_comments = len(pr_comments)
             
-            update_pr_state(session, pr['id'], pr['state'])
-            update_pr_num_comments(session, pr['id'], num_comments)
-            update_pr_closed_at(session, pr['id'], handle_datetime(pr['closed_at']))
-            update_pr_updated_at(session, pr['id'], handle_datetime(pr['updated_at']))
+            # PRS 1: Update the state of a pull request
+            update_attribute(session, pr['id'], pr['state'], PullRequest, 'state')
+            # PRS 2: Update the number of comments of a pull request
+            update_attribute(session, pr['id'], num_comments, PullRequest, 'comments')
+            # PRS 3: Update the close date of a pull request
+            update_attribute(session, pr['id'], handle_datetime(pr['closed_at']), PullRequest, 'closed_at')
+            # PRS 4: Update the update date of a pull request
+            update_attribute(session, pr['id'], handle_datetime(pr['updated_at']), PullRequest, 'updated_at')
+            # PRS 5: Update the merge date of a pull request
+            update_attribute(session, pr['id'], pr['merged'], PullRequest, 'merged')
             
             for comment in pr_comments:
-                update_pr_comment_updated_at(session, comment['id'], handle_datetime(comment['updated_at']))
+                # PR COMMENTS 1: Update the update date of a pull request comment
+                update_attribute(session, comment['id'], handle_datetime(comment['updated_at']), PullRequestComment, 'updated_at')
             
             pulls_updated += 1
             
@@ -237,16 +87,32 @@ def update_all_data(session, repo_name, one_week_ago):
         issue_comments = get_issue_comments(repo_name, issue)
         num_comments = len(issue_comments)
         
-        update_issue_state(session, issue['id'], issue['state'])
-        update_issue_num_comments(session, issue['id'], num_comments)
-        update_issue_closed_at(session, issue['id'], handle_datetime(issue['closed_at']))
-        update_issue_updated_at(session, issue['id'], handle_datetime(issue['updated_at']))
-        
+        # ISSUES 1: Update the state of an issue
+        update_attribute(session, issue['id'], issue['state'], Issue, 'state')
+        # ISSUES 2: Update the number of comments of an issue
+        update_attribute(session, issue['id'], num_comments, Issue, 'comments')
+        # ISSUES 3: Update the close date of an issue
+        update_attribute(session, issue['id'], handle_datetime(issue['closed_at']), Issue, 'closed_at')
+        # ISSUES 4: Update the update date of an issue
+        update_attribute(session, issue['id'], handle_datetime(issue['updated_at']), Issue, 'updated_at')
+
         for comment in issue_comments:
-            update_issue_comment_updated_at(session, comment['id'], handle_datetime(comment['updated_at']))
+            # ISSUE COMMENTS 1: Update the update date of an issue comment
+            update_attribute(session, comment['id'], handle_datetime(comment['updated_at']), IssueComment, 'updated_at')
         
         issues_updated += 1
         
+        # REPOSITORY 1: Update the latest_release of a repository
+        # update_attribute(session, ____, ____, Repository, 'latest_release', name='full_name')
+        # REPOSITORY 2: Update the release_description of a repository
+        # update_attribute(session, ____, ____, Repository, 'release_description', name='full_name')
+        # REPOSITORY 3: Update the release_create_date of a repository
+        # update_attribute(session, ____, handle_datetime(____), Repository, 'release_create_date', name='full_name')
+        # REPOSITORY 4: Update the update_date of a repository
+        # update_attribute(session, ____, handle_datetime(____), Repository, 'update_date', name='full_name')
+        # REPOSITORY 5: Update the open_issues_count of a repository
+        # update_attribute(session, ____, num_issues - pulls_updated, Repository, 'open_issues', name='full_name')
+
         if num_issues % 10 == 0:
                 rate_limit_check()
     

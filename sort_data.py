@@ -209,7 +209,7 @@ def get_active_issues(session, one_week_ago, repository_full_name):
 
   
 # ISSUES 4: Gets stale issues (not updated within 30 days)
-def get_stale_issues(session, repository_full_name, limit, thirty_days_ago): 
+def get_stale_issues(session, repository_full_name, thirty_days_ago): 
     issues = session.query(Issue).filter(
         and_(
             Issue.repository_full_name == repository_full_name, 
@@ -218,7 +218,7 @@ def get_stale_issues(session, repository_full_name, limit, thirty_days_ago):
         )
     ).order_by(
         Issue.created_at.asc()
-    ).all()
+    ).limit(5).all()
     
     # Set up data variables
     issue_data_sorted = []
@@ -233,21 +233,18 @@ def get_stale_issues(session, repository_full_name, limit, thirty_days_ago):
         time_open = datetime.now(timezone.utc)-issue.created_at.replace(tzinfo=timezone.utc)
         days = time_open.days
         hours, remainder = divmod(time_open.seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
+        minutes, _ = divmod(remainder, 60)
 
         # Store the issue title, time open in days, hours, and minutes, minutes open, and a link to the issue
         issue_data = {
             "title": issue.title,
             "time_open": f"{days} days, {hours:02} hours, {minutes:02} minutes",
+            "last_updated": issue.updated_at,
             "body": issue.body,
             "url": issue.html_url,
             "id": issue.id
         }
-        issue_data_sorted.append(issue_data) # Append to issue data for output
-        
-        # Break the for loop if the amount of data is large enough
-        if len(issue_data) >= limit:
-            break
+        issue_data_sorted.append(issue_data)
         
     
     return issue_data_sorted
@@ -361,35 +358,6 @@ def get_num_closed_prs(pr_data_closed):
 
 
 
-# COMMITS 1: Gets ALL commits within one_week_ago
-def get_commit_messages(session, one_week_ago, repository_full_name):
-    # Query the database to retreive commits
-    commits = session.query(Commit).filter(
-        and_(
-            Commit.repository_full_name == repository_full_name,
-            Commit.committer_date >= one_week_ago
-        )
-    ).all()
-    
-    # Array to store commit data
-    commit_data = []
-
-    for commit in commits:
-        # Check for bots
-        # if commit.committer_name is None or "bot" in commit.committer_name.lower() or "[bot]" in commit.committer_name.lower():
-        #     continue
-        
-        data = {
-            "message": commit.commit_message
-        }
-
-        commit_data.append(data)
-
-    return commit_data
-
-# COMMITS 2: Gets NUMBER of commits made within one_week_ago
-def get_num_commits(commit_data):
-    return len(commit_data)
 
 
 
@@ -580,25 +548,20 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
         # PRS
         open_pull_requests = get_open_prs(session, one_week_ago, repo_name)            
         closed_pull_requests = get_closed_prs(session, one_week_ago, repo_name)           
-        
-        # COMMITS
-        commits = get_commit_messages(session, one_week_ago, repo_name)
-        
+                
         # Format and store data
         repo_data = {
             "repo_name": repo_name,
             "open_issues": open_issues,
             "closed_issues": closed_issues,
             "active_issues": get_active_issues(session, one_week_ago, repo_name),
-            "stale_issues": get_stale_issues(session, one_week_ago, repo_name, thirty_days_ago),
+            "stale_issues": get_stale_issues(session, repo_name, thirty_days_ago),
             "num_weekly_open_issues": get_num_open_issues_weekly(open_issues),
             "num_weekly_closed_issues": get_num_closed_issues_weekly(closed_issues),
             "open_pull_requests": open_pull_requests,
             "closed_pull_requests": closed_pull_requests,
             "num_open_prs": get_num_open_prs(open_pull_requests),
             "num_closed_prs": get_num_closed_prs(closed_pull_requests),
-            "commits": commits,
-            "num_commits": get_num_commits(commits),
             "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
             "latest_release": get_latest_release(session, repo_name),
             "release_description": get_release_description(session, repo_name),
@@ -692,7 +655,7 @@ if __name__ == '__main__':
         processed_repos.add(repo)
     
     for item in all_repo_data:
-        print("repo_data = " + json.dumps(item, indent=4))
+        print("repo_data = " + json.dumps(item, indent=4, default=str))
     
     # Check how long the function takes to run and print result
     elapsed_time = time.time() - start_time

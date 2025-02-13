@@ -36,6 +36,7 @@ def update_attribute(session, new_id, new_data, table, column, id='id', name='re
         session.rollback()
         print(f"Error updating {table} {column} in {name}: {e}")
 
+# Handles the datetime formatting issues
 def handle_datetime(datetime_str):
     if datetime_str:
         return datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%SZ')

@@ -135,8 +135,8 @@ if __name__ == '__main__':
     
     for repo_name in repo_list:
         # Lists to compare
-        sorted_issues_open_date = sort_issues_open_date(session, repo_name, limit)
-        sorted_issues_num_comments = sort_issues_num_comments(session, repo_name, limit)
+        stale_issues = get_stale_issues(session, repo_name, one_week_ago)
+        closed_prs = get_closed_prs(session, repo_name, one_week_ago)
         
         # Delete commits older than one month
         commits = session.query(Commit).filter(Commit.repository_full_name == repo_name).all()
@@ -144,8 +144,11 @@ if __name__ == '__main__':
         num_commits_deleted = 0
         for commit in commits:
             commit_date = commit.committer_date
+
+            # Check if it's linked to a PR closed within one week ago
+            closed_pr_ids = {pr['id'] for pr in closed_prs}
             
-            if commit_date < thirty_days_ago:
+            if (commit_date < thirty_days_ago) and (commit.pull_request_id not in closed_pr_ids):
                 delete_commit(session, commit.sha)
                 num_commits_deleted += 1
         
@@ -157,20 +160,13 @@ if __name__ == '__main__':
         num_issues_deleted = 0
         for issue in issues:
             create_date = issue.created_at
-            update_date = issue.updated_at
             close_date = issue.closed_at
             
-            # Check if the issue ID is in sorted_issues_num_comments
-            found_in_num_comments = any(issue.id == item['id'] for item in sorted_issues_num_comments)
+            # Check if the issue ID is in stale_issues
+            stale_issue_ids = {item['id'] for item in stale_issues}
             
-            # Check if the issue ID is in sorted_issues_open_date
-            found_in_open_date = any(issue.id == item['id'] for item in sorted_issues_open_date)
-            
-            # Keep "active" issues updated within the last month
-            if create_date >= thirty_days_ago or update_date >= one_week_ago:
-                continue
-            # Delete closed issues older than one month and issues not in either of the two lists
-            elif (close_date and close_date < thirty_days_ago) or (not found_in_num_comments and not found_in_open_date) or (create_date < one_year_ago):
+            # Delete issues created more than thirty days ago and not closed within the last week, as long as they're not in stale issues
+            if (create_date < thirty_days_ago and close_date < one_week_ago) and (issue.id not in stale_issue_ids):
                 delete_issue(session, issue.id)
                 num_issues_deleted += 1
         
@@ -183,14 +179,11 @@ if __name__ == '__main__':
         for pr in pull_requests:
             # Handle timezone info
             create_date = pr.created_at
-            update_date = pr.updated_at
             close_date = pr.closed_at
 
-            # Keep "active" prs updated within the last month
-            if create_date >= thirty_days_ago or update_date >= one_week_ago:
-                continue
-            # Delete closed prs older than a month and delete open prs older than a month and not active
-            elif (close_date and close_date < thirty_days_ago) or (create_date < thirty_days_ago and update_date < one_week_ago) or (create_date < one_year_ago):
+            # Delete PRs older than 1 month. 
+            # Condition: PRs created more than thirty days ago and not closed within the last week
+            if (create_date < thirty_days_ago and close_date < one_week_ago):
                 delete_pr(session, pr.id)
                 num_prs_deleted += 1
         

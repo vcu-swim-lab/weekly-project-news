@@ -208,7 +208,7 @@ def get_active_issues(session, one_week_ago, repository_full_name):
 
 
   
-# ISSUES 4: Gets stale issues (not updated within 30 days)
+# ISSUES 4: Gets stale issues (open issues not updated within 30 days)
 def get_stale_issues(session, repository_full_name, thirty_days_ago): 
     issues = session.query(Issue).filter(
         and_(
@@ -548,7 +548,7 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
         # PRS
         open_pull_requests = get_open_prs(session, one_week_ago, repo_name)            
         closed_pull_requests = get_closed_prs(session, one_week_ago, repo_name)           
-                
+        
         # Format and store data
         repo_data = {
             "repo_name": repo_name,

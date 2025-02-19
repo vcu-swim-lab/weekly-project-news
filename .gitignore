@@ -170,3 +170,7 @@ newsletter_preparation.log
 
 newsletter_data/
 tempCodeRunnerFile.py
+github_email_commits.csv
+github_emails.txt
+contributor_data/
+contributors.json

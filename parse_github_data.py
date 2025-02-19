@@ -624,7 +624,7 @@ if __name__ == '__main__':
                 
                 # Insert repo and data
                 insert_repository(repo_data)
-                insert_all_data(repo_name, sixty_days_ago)
+                insert_all_data(repo_name, one_year_ago)
 
             processed_repos.add(repo)
             elapsed_time = time.time() - start_time

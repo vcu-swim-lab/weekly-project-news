@@ -71,8 +71,10 @@ def update_all_data(session, repo_name, one_week_ago):
             update_attribute(session, pr['id'], handle_datetime(pr['closed_at']), PullRequest, 'closed_at')
             # PRS 4: Update the update date of a pull request
             update_attribute(session, pr['id'], handle_datetime(pr['updated_at']), PullRequest, 'updated_at')
-            # PRS 5: Update the merge date of a pull request
-            update_attribute(session, pr['id'], pr['merged'], PullRequest, 'merged')
+
+            if pr['merged_at']:
+                # PRS 5: Update the merge date of a pull request
+                update_attribute(session, pr['id'], pr['merged_at'], PullRequest, 'merged')
             
             for comment in pr_comments:
                 # PR COMMENTS 1: Update the update date of a pull request comment
@@ -87,7 +89,6 @@ def update_all_data(session, repo_name, one_week_ago):
         
         issue_comments = get_issue_comments(repo_name, issue)
         num_comments = len(issue_comments)
-        
         # ISSUES 1: Update the state of an issue
         update_attribute(session, issue['id'], issue['state'], Issue, 'state')
         # ISSUES 2: Update the number of comments of an issue
@@ -103,16 +104,19 @@ def update_all_data(session, repo_name, one_week_ago):
         
         issues_updated += 1
         
+        repo_data = get_latest_release(repo_name)
+
         # REPOSITORY 1: Update the latest_release of a repository
-        # update_attribute(session, ____, ____, Repository, 'latest_release', name='full_name')
+        update_attribute(session, repo_name, repo_data['tag_name'], Repository, 'latest_release', name='full_name')
         # REPOSITORY 2: Update the release_description of a repository
-        # update_attribute(session, ____, ____, Repository, 'release_description', name='full_name')
+        update_attribute(session, repo_name, repo_data['body'], Repository, 'release_description', name='full_name')
         # REPOSITORY 3: Update the release_create_date of a repository
-        # update_attribute(session, ____, handle_datetime(____), Repository, 'release_create_date', name='full_name')
+        update_attribute(session, repo_name, handle_datetime(repo_data['created_date']), Repository, 'release_create_date', name='full_name')
         # REPOSITORY 4: Update the update_date of a repository
-        # update_attribute(session, ____, handle_datetime(____), Repository, 'update_date', name='full_name')
+        update_attribute(session, repo_name, handle_datetime(repo.updated_at.isoformat()), Repository, 'update_date', name='full_name')
         # REPOSITORY 5: Update the open_issues_count of a repository
-        # update_attribute(session, ____, num_issues - pulls_updated, Repository, 'open_issues', name='full_name')
+        update_attribute(session, repo_name, num_issues - pulls_updated, Repository, 'open_issues', name='full_name')
+
 
         if num_issues % 10 == 0:
                 rate_limit_check()

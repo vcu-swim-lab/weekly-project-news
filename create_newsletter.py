@@ -264,6 +264,7 @@ def open_pull_requests(repo):
   )
 
   key_pull_requests = 0
+  total_prs = len(sorted_pull_requests)
   key_pull_request_summary = "### Key Open Pull Requests\n\n"
   remaining_pull_requests_summary = ""
   pr_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
@@ -286,7 +287,7 @@ def open_pull_requests(repo):
     commit_list = ""
     if associated_commits:
       # Extract and format SHA links
-      commit_list = ", ".join([f"[{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
+      commit_list = ", ".join([f"[{commit['sha'][:5]}]({commit['html_url']})" for commit in associated_commits])
 
     # Add the first 3 pull requests to the detailed "Key Pull Requests" list
     if key_pull_requests < 3:
@@ -297,7 +298,7 @@ def open_pull_requests(repo):
         f"\n - **Associated Commits:** {commit_list}\n\n"
       )
       key_pull_requests += 1
-    else:
+    elif total_prs > 3:
       # For other pull requests, only summarize
       summarized_pr_summary = generate_summary(pull_request, pr_instructions, max_retries=5, base_wait=1)
       remaining_pull_requests_summary += f"- {summarized_pr_summary}\n[{shortened_url}]({pull_request_url})\n"
@@ -332,6 +333,7 @@ def closed_pull_requests(repo):
 
   total_prs = len(sorted_pull_requests)
   key_pull_requests = 0
+
   key_pull_request_summary = "### Key Closed Pull Requests\n\n"
   remaining_pull_requests_summary = ""
   pr_instructions = individual_instructions("a closed pull request", "pull request", "pull request", "only one detailed sentence")
@@ -354,7 +356,7 @@ def closed_pull_requests(repo):
       commit_list = ""
       if associated_commits:
           # Extract and format SHA links
-          commit_list = ", ".join([f"[{commit['sha']}]({commit['html_url']})" for commit in associated_commits])
+          commit_list = ", ".join([f"[{commit['sha'][:5]}]({commit['html_url']})" for commit in associated_commits])
 
       # Add the first 3 closed pull requests to the detailed list
       if key_pull_requests < 3:

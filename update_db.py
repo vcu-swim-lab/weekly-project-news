@@ -75,12 +75,6 @@ def update_all_data(session, repo_name, one_week_ago):
             if pr['pull_request']['merged_at']:
                 # PRS 5: Update the merge date of a pull request
                 update_attribute(session, pr['id'], pr['pull_request']['merged_at'], PullRequest, 'merged')
-            
-            # Check for if the pull request is merged
-            # if pull_request['pull_request']['merged_at']:
-            #     filtered_data['merged'] = "Yes"
-            # else:
-            #     filtered_data['merged'] = "No"
 
             for comment in pr_comments:
                 # PR COMMENTS 1: Update the update date of a pull request comment

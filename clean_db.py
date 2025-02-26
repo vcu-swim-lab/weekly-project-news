@@ -137,6 +137,7 @@ if __name__ == '__main__':
         # Lists to compare
         stale_issues = get_stale_issues(session, repo_name, one_week_ago)
         closed_prs = get_closed_prs(session, repo_name, one_week_ago)
+        closed_issues = get_closed_issues(session, repo_name, one_week_ago)
         
         # Delete commits older than one month
         commits = session.query(Commit).filter(Commit.repository_full_name == repo_name).all()
@@ -161,12 +162,18 @@ if __name__ == '__main__':
         for issue in issues:
             create_date = issue.created_at
             close_date = issue.closed_at
+
+            if (create_date is None):
+                delete_issue(session, issue.id)
+                num_issues_deleted += 1
+                print(f"Deleted issue from {repo_name} because create_date was None")
             
             # Check if the issue ID is in stale_issues
             stale_issue_ids = {item['id'] for item in stale_issues}
+            closed_issue_ids = {item['id'] for item in closed_issues}
             
             # Delete issues created more than thirty days ago and not closed within the last week, as long as they're not in stale issues
-            if (create_date < thirty_days_ago and close_date < one_week_ago) and (issue.id not in stale_issue_ids):
+            if (create_date < thirty_days_ago) and (issue.id not in closed_issue_ids) and (issue.id not in stale_issue_ids):
                 delete_issue(session, issue.id)
                 num_issues_deleted += 1
         
@@ -181,9 +188,17 @@ if __name__ == '__main__':
             create_date = pr.created_at
             close_date = pr.closed_at
 
+            if (create_date is None):
+                delete_pr(session, pr.id)
+                num_prs_deleted += 1
+                print(f"Deleted pull request from {repo_name} because create_date was None")
+
             # Delete PRs older than 1 month. 
             # Condition: PRs created more than thirty days ago and not closed within the last week
-            if (create_date < thirty_days_ago and close_date < one_week_ago):
+            if (close_date is not None and close_date < one_week_ago):
+                delete_pr(session, pr.id)
+                num_prs_deleted += 1
+            if (create_date < thirty_days_ago):
                 delete_pr(session, pr.id)
                 num_prs_deleted += 1
         

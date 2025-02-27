@@ -34,14 +34,14 @@ def run_script(script_name):
         print(f"Starting to run {script_name}...")
 
         # if running on server
-        subprocess.run(['/home/projectnews/venv/bin/python', script_name], check=True)
+        # subprocess.run(['/home/projectnews/venv/bin/python', script_name], check=True)
 
         # if running on local machine
         # subprocess.run(['/usr/local/bin/python3', script_name], check=True)
 
         # If running on local machine, change this to your own python file path
         # subprocess.run([r"C:\Users\chris\AppData\Roaming\Python\313", script_name], check=True)
-        # subprocess.run([r"C:\Users\chris\AppData\Local\Programs\Python\Python313\python.exe", script_name], check=True)
+        subprocess.run([r"C:\Users\chris\AppData\Local\Programs\Python\Python313\python.exe", script_name], check=True)
 
         end_time = time.time()
         duration = end_time - start_time
@@ -63,24 +63,20 @@ def run_script(script_name):
 def main():
     start_time = time.time()
     logging.info("Starting newsletter preparation process")
-
-   
-    remove_file('github.db')
     
+    scripts = [
+        # 'download_new_subscribers.py',
+        'fix_subscribers_file.py',
+        'clean_db.py',
+        'parse_github_data.py',
+        'update_db.py'
+    ]
+
     # scripts = [
     #     'download_new_subscribers.py',
     #     'fix_subscribers_file.py',
-    #     'clean_db.py',
     #     'parse_github_data.py',
-    #     'update_db.py',
-    #     'clean_db.py',
     # ]
-
-    scripts = [
-        'download_new_subscribers.py',
-        'fix_subscribers_file.py',
-        'parse_github_data.py',
-    ]
 
     for script in scripts:
         run_script(script)

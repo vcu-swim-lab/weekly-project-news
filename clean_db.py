@@ -116,11 +116,22 @@ if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
     
-    # Create SQLAlchemy engine and session
+    # Disable SQLAlchemy logging
     logging.getLogger('sqlalchemy').disabled = True
-    engine = create_engine('sqlite:///github.db')
-    Session = sessionmaker(bind=engine)
-    session = Session()
+
+    # Database file path
+    db_file = 'github.db'
+
+    # Check if the database file exists
+    # If it doesn't exit without error
+    if not os.path.exists(db_file):
+        print(f"Database file '{db_file}' not found. Skipping execution.")
+        sys.exit(0)
+    else:
+        # Create SQLAlchemy engine and session
+        engine = create_engine(f'sqlite:///{db_file}')
+        Session = sessionmaker(bind=engine)
+        session = Session()
     
     # Time variables
     thirty_days_ago = datetime.now() - timedelta(days=30)

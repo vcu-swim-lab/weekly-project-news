@@ -342,7 +342,6 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
                 "sha": commit.sha
             }
             pr_data["commits"].append(commit_data)
-            print(commit_data)
         
         closed_pr_data.append(pr_data)
 
@@ -412,7 +411,6 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     for commit in commits:
         author = commit.commit_author_login if commit.commit_author_login is not None else 'No author found'
         found = False
-        print(author)
 
         # Filter bots
         if '[bot]' in author.lower() or 'bot' in author.lower():

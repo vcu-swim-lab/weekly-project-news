@@ -9,7 +9,7 @@ from openai import RateLimitError
 from sort_data import *
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker 
 import re
 
 
@@ -270,6 +270,8 @@ def open_pull_requests(repo):
   pr_instructions = individual_instructions("an open pull request", "pull request", "pull request", "only one detailed sentence")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", False, 2, True)
 
+  other_pr_count = 0
+
   for pull_request in sorted_pull_requests:
     if pull_request.get('body'):
       pull_request['body'] = re.sub(r'<img[^>]*>|\r\n', '', pull_request['body'])
@@ -299,9 +301,12 @@ def open_pull_requests(repo):
       )
       key_pull_requests += 1
     elif total_prs > 3:
-      # For other pull requests, only summarize
-      summarized_pr_summary = generate_summary(pull_request, pr_instructions, max_retries=5, base_wait=1)
-      remaining_pull_requests_summary += f"- {summarized_pr_summary}\n[{shortened_url}]({pull_request_url})\n"
+      if other_pr_count < 25:
+          summarized_pr_summary = generate_summary(pull_request, pr_instructions, max_retries=5, base_wait=1)
+          remaining_pull_requests_summary += f"- {summarized_pr_summary}\n[{shortened_url}]({pull_request_url})\n"
+          other_pr_count += 1
+      else:
+          break
 
   # Generate "Other Pull Requests" summary only if applicable
   if len(sorted_pull_requests) > 3 and remaining_pull_requests_summary:
@@ -339,6 +344,8 @@ def closed_pull_requests(repo):
   pr_instructions = individual_instructions("a closed pull request", "pull request", "pull request", "only one detailed sentence")
   overall_instructions = general_instructions("pull requests", "pull requests", "pull requests", "pull requests", False, 2, True)
 
+  other_pr_count = 0
+
   for pull_request in sorted_pull_requests:
       if pull_request.get('body'):
           pull_request['body'] = re.sub(r'<img[^>]*>|\r\n', '', pull_request['body'])
@@ -360,18 +367,22 @@ def closed_pull_requests(repo):
 
       # Add the first 3 closed pull requests to the detailed list
       if key_pull_requests < 3:
-          key_pull_request_summary += (
-              f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
-              f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
-              f"\n - **Merged:** {merged_status}\n"
-              f"\n - **Associated Commits:** {commit_list}\n\n"
-          )
-          key_pull_requests += 1
+        key_pull_request_summary += (
+            f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
+            f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
+            f"\n - **Merged:** {merged_status}\n"
+            f"\n - **Associated Commits:** {commit_list}\n\n"
+        )
+        key_pull_requests += 1
       elif total_prs > 3:
-          # For subsequent closed pull requests, only summarize
-          summarized_pr_summary = generate_summary(pull_request, pr_instructions, max_retries=5, base_wait=1)
-          remaining_pull_requests_summary += f"- {summarized_pr_summary}\n{pull_request_url}\n"
-
+        # Limit other closed prs to 25
+        if other_pr_count < 25:
+            summarized_pr_summary = generate_summary(pull_request, pr_instructions, max_retries=5, base_wait=1)
+            remaining_pull_requests_summary += f"- {summarized_pr_summary}\n[{shortened_url}]({pull_request_url})\n"
+            other_pr_count += 1
+        else:
+            break
+    
   # Generate "Other Pull Requests" summary only if applicable
   if total_prs > 3 and remaining_pull_requests_summary:
       other_pr_summary = generate_summary(remaining_pull_requests_summary, overall_instructions, max_retries=5, base_wait=1)
@@ -530,6 +541,8 @@ if __name__ == '__main__':
 
   repositories = [row[0] for row in result]
 
+  # repositories = ["pytorch/pytorch"]
+
   # PART TWO: create the markdown for a newsletter
   for repository in repositories:
     # 2.1: call all sort_data.py functions on the repo
@@ -652,7 +665,7 @@ if __name__ == '__main__':
 
         # 3.1: Open Pull Requests
         outfile.write("## <a name='open-prs'></a>3.1 Open Pull Requests\n\n")
-        outfile.write("This section provides a summary of pull requests that were opened in the repository over the past week. The top three pull requests with the highest number of commits are highlighted as 'key' pull requests. All other pull requests are grouped based on similar characteristics for easier analysis.\n\n")
+        outfile.write("This section provides a summary of pull requests that were opened in the repository over the past week. The top three pull requests with the highest number of commits are highlighted as 'key' pull requests. Other pull requests are grouped based on similar characteristics for easier analysis. Up to 25 pull requests are displayed in this section, while any remaining pull requests beyond this limit are omitted for brevity.\n\n\n\n")
 
         # 3.1.1 Open Pull Requests This Week
         outfile.write(f"**Pull Requests Opened This Week:** {repo_data.get('num_open_prs', None)}\n\n")
@@ -663,7 +676,7 @@ if __name__ == '__main__':
 
         # 3.2: Closed Pull Requests
         outfile.write("## <a name='closed-prs'></a>3.2 Closed Pull Requests\n\n")
-        outfile.write("This section provides a summary of pull requests that were closed in the repository over the past week. The top three pull requests with the highest number of commits are highlighted as 'key' pull requests. All other pull requests are grouped based on similar characteristics for easier analysis.\n\n")
+        outfile.write("This section provides a summary of pull requests that were closed in the repository over the past week. The top three pull requests with the highest number of commits are highlighted as 'key' pull requests. Other pull requests are grouped based on similar characteristics for easier analysis. Up to 25 pull requests are displayed in this section, while any remaining pull requests beyond this limit are omitted for brevity.\n\n")
 
         # 3.2.1 Closed Pull Requests This Week
         outfile.write(f"**Pull Requests Closed This Week:** {repo_data.get('num_closed_prs', None)}\n\n")

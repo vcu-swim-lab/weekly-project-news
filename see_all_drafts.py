@@ -227,14 +227,15 @@ def delete_draft(draft_id):
 
 # Main
 def main():
+    print()
 
     # # 1: Get drafts
-    # drafts = get_drafts()
-    # if drafts:
-    #     display_drafts(drafts)
-    #     # delete_all_drafts(drafts)
-    # else:
-    #     print("Error: drafts is null :(")
+    drafts = get_drafts()
+    if drafts:
+        display_drafts(drafts)
+        # delete_all_drafts(drafts)
+    else:
+        print("Error: drafts is null :(")
 
     # # 2: Get about_to_sends
     # about_to_sends = get_about_to_sends()
@@ -269,12 +270,12 @@ def main():
     #     print("Error: sents is null :(")
 
     # 5: Get importeds
-    importeds = get_importeds()
-    if importeds:
-        display_drafts(importeds)
-        # delete_all_drafts(in_flights)
-    else:
-        print("Error: importeds is null :(")
+    # importeds = get_importeds()
+    # if importeds:
+    #     display_drafts(importeds)
+    #     # delete_all_drafts(in_flights)
+    # else:
+    #     print("Error: importeds is null :(")
 
 
     # # 6: Get deleteds

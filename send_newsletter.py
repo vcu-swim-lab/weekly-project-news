@@ -64,8 +64,8 @@ def send_email_to_subscriber(subscriber_id, email_id):
         # Update email status from "about_to_send" to "imported"
         update_response = update_email_status(email_id, "imported")
         if update_response and update_response.status_code >= 200 and update_response.status_code < 300:
-            print(f"Successfully updated email (ID: {email_id}) status to 'about_to_send'")
-            logging.info(f"Successfully updated email (ID: {email_id}) status to 'about_to_send'")
+            print(f"Successfully updated email (ID: {email_id}) status to 'imported'")
+            logging.info(f"Successfully updated email (ID: {email_id}) status to 'imported'")
             return response
         else:
             print("\nError updating email status after sending")
@@ -86,14 +86,14 @@ def send_email_to_subscriber(subscriber_id, email_id):
 def update_email_status(email_id, status, max_retries=3, delay=5):
     url = f"{BASE_URL}/v1/emails/{email_id}"
     data = {
-        "status": {status}
+        "status": status
     }
 
     for attempt in range(1, max_retries + 1):
         response = requests.patch(url, headers=headers, json=data)
 
         if response.status_code >= 200 and response.status_code < 300:
-            logging.info(f"Successfully updated email (ID: {email_id}) status to 'about_to_send'")
+            logging.info(f"Successfully updated email (ID: {email_id}) status to '{status}'")
             return response
 
         print(f"\nAttempt {attempt} - Error in update_email_status() - Status code: {response.status_code}")
@@ -179,8 +179,8 @@ for subscriber in subscribers_data['results']:
         print("Failed to send email to subscriber.")
         logging.error(f"Failed to send email to subscriber: {email}")
 
-    logging.info("Waiting for 60 seconds before processing next subscriber")
-    time.sleep(60)
+    # logging.info("Waiting for 60 seconds before processing next subscriber")
+    # time.sleep(60)
     print("\n\n\n")
 
 logging.info("Newsletter sending process completed")

@@ -62,10 +62,10 @@ def send_email_to_subscriber(subscriber_id, email_id):
         logging.info(f"Email (ID: {email_id}) successfully sent to subscriber (ID: {subscriber_id})")
 
         # Update email status from "about_to_send" to "imported"
+        logging.info(f"Attempting to update email (ID: {email_id}) status to 'imported'")
+        print(f"Attempting to update email (ID: {email_id}) status to 'imported'")
         update_response = update_email_status(email_id, "imported")
         if update_response and update_response.status_code >= 200 and update_response.status_code < 300:
-            print(f"Successfully updated email (ID: {email_id}) status to 'imported'")
-            logging.info(f"Successfully updated email (ID: {email_id}) status to 'imported'")
             return response
         else:
             print("\nError updating email status after sending")
@@ -118,9 +118,9 @@ with open('subscribers.json', 'r') as file:
 
 for subscriber in subscribers_data['results']:
     if not subscriber.get('email') or subscriber.get('subscriber_type') != 'regular':
-        # error_message = f"Invalid subscriber: {subscriber.get('email', 'No email')} - Type: {subscriber.get('subscriber_type', 'Unknown')}"
-        # print(error_message)
-        # logging.error(error_message)
+        error_message = f"Invalid subscriber: {subscriber.get('email', 'No email')} - Type: {subscriber.get('subscriber_type', 'Unknown')}"
+        print(error_message)
+        logging.error(error_message)
         continue
 
     email = subscriber['email']

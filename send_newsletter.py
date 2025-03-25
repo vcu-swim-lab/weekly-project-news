@@ -101,7 +101,7 @@ def update_email_status(email_id, status, max_retries=3, delay=5):
         logging.error(f"Attempt {attempt} - Error in update_email_status() - Status code: {response.status_code}, Response: {response.text}")
 
         if attempt < max_retries:
-            time.sleep(delay)  # Wait before retrying
+            time.sleep(delay)
         else:
             logging.error(f"Failed to update email status after {max_retries} attempts.")
             return None
@@ -139,7 +139,7 @@ for subscriber in subscribers_data['results']:
         continue
 
     # STEP 2: get the content for the email
-    with open(newsletter_filepath, 'r') as newsletter_file:
+    with open(newsletter_filepath, 'r', encoding='utf-8') as newsletter_file:
         content = newsletter_file.read()
 
     # STEP 3: get the subject for the email

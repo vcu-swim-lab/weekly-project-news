@@ -527,10 +527,24 @@ if __name__ == '__main__':
   Session = sessionmaker(bind=engine)
   session = Session()
 
+
+
+
   # 1.3: output folder + other stuff to run
   newsletter_directory = 'newsletter_data'
   if not os.path.exists(newsletter_directory):
     os.makedirs(newsletter_directory)
+
+  # DELETE ALL FILES IN NEWSLETTER DIRECTORY IF IT EXISTS
+  for filename in os.listdir(newsletter_directory):
+     file_path = os.path.join(newsletter_directory, filename)
+
+     # Check if it's a file, rather than a directory
+     if os.path.isfile(file_path):
+        os.remove(file_path)
+        print(f"Deleted newsletter file {file_path}")
+
+
   one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
   thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30) 
   limit = 100

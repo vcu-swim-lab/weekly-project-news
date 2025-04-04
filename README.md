@@ -1,49 +1,77 @@
-# project-news-beacon
+# Weekly Project News
 
-This newsletter is AI generated using gpt-4o. It takes data from the GitHub REST API and stores it into a SQLite database. It then takes that data, analyzes and sorts it, and is passed through ChatGPT to create a markdown file. This markdown file is then given to the Buttondown email service which creates the final newsletter in email format. The newsletter is maintained in a CRON job on a Linux server. 
+A weekly AI-generated newsletter that highlights updates from open-source GitHub repositories in email format. 
 
-Brief description of files in main:
-1. Building the database
+---
 
-The tables folder contains the structured classes for the database tables.
+### Automatically Curated From GitHub  
+Weekly Project News uses the GitHub REST API to gather recent repository activity including pull requests, issues, and contributions. This data is inserted into a SQLite database, sorted, categorized, and sent through GPT-4o to generate human-readable summaries.
 
-parse_github_data.py makes API calls and inserts data into the database.
+Stay informed on your favorite projects without all of the noise.
 
-update_db.py updates the existing entries in the database.
+*Sign-Up Screen: *
+![Newsletter Sign-Up Screen](./screenshots/newsletterSS.png)
+---
 
-clean_db.py deletes unnecessary entries from the database
+### Powered by GPT-4o for Smart Summaries  
+GPT-4o analyzes changes, organizes content into categories, and writes a markdown newsletter that feels like it was hand-crafted by a developer. The result is a structured email highlighting what’s new and what matters.
 
-All of these are run on a weekly basis.
+*Example Markdown Draft: *  
+![Newsletter Draft Screenshot](./screenshots/newsletterMarkdown.png)
 
+---
 
-2. Analyzing the data
+### Delivery via Buttondown  
+After generation, the newsletter is automatically delivered through the Buttondown email service. Everything runs on a weekly CRON job hosted on a Linux server with no manual intervention required.
 
-sort_data.py takes data from the database and sorts it into defined categories like open issues, closed issues, open PRs, etc.
+*Live Pmail Preview:*  
+![Newsletter Email Screenshot](./screenshots/newsletterEmail.png)
 
-4. Creating the newsletter
+---
 
-create_newsletter.py runs the sorted data through ChatGPT and creates a markdown file.
+### How It Works
 
-see_all_drafts retrieves specific data related to the Buttondown email service such as drafts.
+#### Building the Database
+- `tables/` – Contains the SQLAlchemy table definitions for GitHub entities  
+- `parse_github_data.py` – Fetches data from the GitHub REST API and populates the database  
+- `update_db.py` – Keeps repository data up to date  
+- `clean_db.py` – Removes stale or unnecessary records  
 
-send_newsletter.py sends the newsletter through Buttondown.
+#### Analyzing the Data
+- `sort_data.py` – Sorts entries by categories like open issues, closed PRs, etc.  
 
+#### Creating the Newsletter
+- `create_newsletter.py` – Passes sorted data through GPT-4o to generate a markdown file  
+- `see_all_drafts.py` – Retrieves drafts from Buttondown  
+- `send_newsletter.py` – Sends the completed newsletter  
 
-4. Cron jobs
+#### Subscriber Management
+- `download_new_subscribers.py` – Retrieves and outputs current subscribers  
+- `fix_subscribers.py` – Cleans up invalid usernames, repo links, etc.  
 
-test-run-everything.py runs all of the files above in the correct order. This file is executed on the Linux server.
+#### Orchestration
+- `test-run-everything.py` – Runs the full workflow in order via CRON  
 
+---
 
-6. Subscriber data
+### Testing (In Progress)
+- `test_db.py` – Unit tests for database integrity and insertions
 
-download_new_subscribers.py retrieves the users who are currently subscribed to the newsletter and outputs a JSON file. This is who we send the newsletters to.
+---
 
-fix_subscribers.py corrects any errors in the subscribers JSON file, such as checking for invalid repository links, incorrect usernames, etc.
+### Developed By  
+Christian Novalski, Steven Bui, Audrey Lewis, Ghalian Fayyadh, Damian Ashjian, Christopher Chavez
+Virginia Commonwealth University  
+SWIM Lab
 
+Dr. Kostadin Damevski – Project Originator & Faculty Advisor
+Virginia Commonwealth University
+SWIM Lab
 
-6. Testing
+---
 
-test_db.py contains tests for the database (incomplete)
+### Subscribe  
+Want to receive the newsletter?  
+Sign up here: https://buttondown.com/weekly-project-news
 
-
-Here is the design document link: https://docs.google.com/document/d/1x6iYWY72xoCQAvC7BRHFbhbi6nzcMLANXl9b2PwW9PQ/edit?usp=sharing
+---

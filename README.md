@@ -10,22 +10,22 @@ Weekly Project News uses the GitHub REST API to gather recent repository activit
 Stay informed on your favorite projects without all of the noise.
 
 *Sign-Up Screen: *
-![Newsletter Sign-Up Screen](/screenshots/newsletterSS.png)
+![Newsletter Sign-Up Screen](/screenshots/newsletterSS.PNG)
 ---
 
 ### Powered by GPT-4o for Smart Summaries  
 GPT-4o analyzes changes, organizes content into categories, and writes a markdown newsletter that feels like it was hand-crafted by a developer. The result is a structured email highlighting what’s new and what matters.
 
 *Example Markdown Draft: *  
-![Newsletter Draft Screenshot](/screenshots/newsletterMarkdown.png)
+![Newsletter Draft Screenshot](/screenshots/newsletterMarkdown.PNG)
 
 ---
 
 ### Delivery via Buttondown  
 After generation, the newsletter is automatically delivered through the Buttondown email service. Everything runs on a weekly CRON job hosted on a Linux server with no manual intervention required.
 
-*Live Pmail Preview:*  
-![Newsletter Email Screenshot](/screenshots/newsletterEmail.png)
+*Live Email Preview: *
+![Newsletter Email Screenshot](/screenshots/newsletterEmail.PNG)
 
 ---
 

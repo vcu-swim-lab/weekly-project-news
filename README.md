@@ -60,28 +60,20 @@ After generation, the newsletter is automatically delivered through the Buttondo
 ---
 
 ### Developed By  
-Christian Novalski, Steven Bui, Audrey Lewis
+Christian Novalski, Steven Bui, Audrey Lewis 
 
-Virginia Commonwealth University
+(Virginia Commonwealth University, NSF REU - SWIM Lab)
 
-NSF REU
 
-SWIM Lab
+Dr. Kostadin Damevski, Project Originator & Faculty Advisor 
 
-Dr. Kostadin Damevski 
-
-Project Originator & Faculty Advisor
-
-Virginia Commonwealth University
-
-SWIM Lab
+(Virginia Commonwealth University - SWIM Lab)
 
 **Other Contributors**
-Ghalian Fayyadh, Damian Ashjian, Christopher Chavez
 
-Virginia Commonwealth University
+Ghalian Fayyadh, Damian Ashjian, Christopher Chavez 
 
-SWIM Lab
+(Virginia Commonwealth University - SWIM Lab)
 
 ---
 

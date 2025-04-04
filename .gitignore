@@ -174,3 +174,5 @@ github_email_commits.csv
 github_emails.txt
 contributor_data/
 contributors.json
+*.log
+get_public_emails.py

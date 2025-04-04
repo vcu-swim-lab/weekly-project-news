@@ -729,3 +729,4 @@ if __name__ == '__main__':
     except Exception as e:
       print(f"Error writing {repository} to {output_filename}")
       print(f"Error code: {e}")
+      continue

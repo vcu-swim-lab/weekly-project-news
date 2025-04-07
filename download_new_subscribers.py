@@ -1,3 +1,6 @@
+# This file interacts with the Buttondown API to download all of the subscribers for the newsletter
+# Outputs a JSON file
+
 import requests
 import os
 import json

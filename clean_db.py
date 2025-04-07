@@ -1,3 +1,8 @@
+# This file cleans the database by removing outdated or unnecessary information
+# It deletes stale issues and pull requests that are no longer relevant
+# It also removes repositories and other entries that are no longer active/needed
+# The purpose is to keep the database lean and up to date
+
 from github import Github
 from datetime import datetime, timedelta, timezone
 import os
@@ -8,8 +13,7 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
-# from tables.user import User
-from datetime import datetime  # Import datetime
+from datetime import datetime
 import sys
 from parse_github_data import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

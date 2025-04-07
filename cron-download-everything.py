@@ -1,3 +1,8 @@
+# This file runs the scripts responsible for downloading GitHub data and interacting with the database
+# It logs the start and end of each script execution, including total run time as well
+# It also logs any errors that occur during the process
+# The full workflow is as follows: 'download_new_subscribers.py', 'fix_subscribers_file.py', 'clean_db.py', 'parse_github_data.py', and then 'update_db.py'
+
 import subprocess
 import logging
 from datetime import datetime

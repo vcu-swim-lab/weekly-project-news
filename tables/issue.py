@@ -1,3 +1,8 @@
+# This file creates the Issue and IssueComment tables for the database
+# They are joined using the issue_id column in the IssueComment table
+# One issue can have many comments but a comment can only have one issue
+# Also joins with the Repository table through repository_full_name
+
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from .base import Base

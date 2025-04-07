@@ -1,3 +1,7 @@
+# This file updates existing pull requests, issues, comments, version information, etc. in the database
+# It avoids the need to delete and recreate the entire database each week
+# This script significantly improves performance and efficiency and it scales much better
+
 from github import Github
 from datetime import datetime, timedelta, timezone
 import os

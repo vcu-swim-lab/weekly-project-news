@@ -1,3 +1,8 @@
+# This script parses data via the GitHub API and inserts it into the database
+# It inserts issues, PRs, commits, repositories, issue and PR comments, etc.
+# Logs any errors that occur during the process
+# Implements API key cycling so rate limit doesn't run out as fast
+
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
 from tables.repository import Repository

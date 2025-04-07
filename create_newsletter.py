@@ -1,3 +1,7 @@
+# This script interacts with LangChain to create markdown files for the newsletters to be sent out
+# It uses the data from sort_data.py to insert data into ChatGPT via prompting
+# It requires a .env file with an OPENAI_KEY
+
 from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
@@ -12,9 +16,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker 
 import re
 
-
 load_dotenv()  
-
 API_KEY = os.environ.get("OPENAI_KEY")
 
 # "gpt-3.5-turbo"

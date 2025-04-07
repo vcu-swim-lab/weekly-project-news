@@ -1,18 +1,17 @@
+# This file queries the database for issues, pull requests, commits, and other data
+# It processes and organizes the data into sections for the newsletter
+# Each section includes the relevant content to be displayed in the final email
+# The output is labeled and then written in JSON format for use by the create_newsletter.py script
+
 from github import Github
 from datetime import datetime, timedelta, timezone
 import time
 import json
-import os
 import requests
 from dotenv import load_dotenv
-import concurrent.futures
-import multiprocessing
-import asyncio
-import aiohttp
 from aiohttp import ClientSession
 from sqlalchemy.orm import sessionmaker
 import os
-import sys
 from datetime import datetime  # Import datetime
 import json
 import requests 
@@ -26,10 +25,7 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
-import operator
-import base64
 from urllib.parse import quote
-
 
 load_dotenv()
 

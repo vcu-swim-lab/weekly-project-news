@@ -1,3 +1,7 @@
+# This file runs "send_newsletter.py" to automate the sending of the newsletters on the Linux server
+# It logs the start and end of each script execution, including total run time as well
+# It also logs any errors that occur during the process
+
 import subprocess
 import logging
 from datetime import datetime

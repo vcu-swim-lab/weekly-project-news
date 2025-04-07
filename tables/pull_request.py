@@ -1,4 +1,7 @@
-# models/pull_request.py
+# This file creates the PullRequest and PullRequestComment tables for the database
+# They are joined using the pull_request_id column in the PullRequestComment table
+# One pull request can have many comments but a comment can only have one pull request
+# Also joins with the Repository table through repository_full_name
 
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship

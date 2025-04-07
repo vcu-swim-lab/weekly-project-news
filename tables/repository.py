@@ -1,4 +1,5 @@
-# models/repository.py
+# Repository table for the database
+# Inserted from subscriber repository links
 
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship

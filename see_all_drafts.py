@@ -1,3 +1,8 @@
+# This is a helper script for debugging the Buttondown API 
+# It can show the status of any kind of email loaded on the API
+# These include, drafts, about_to_sends, sent emails, in-flight, scheduled emails, imported, and deleted emails
+# The execution of the scripts are commented out, so to use them, uncomment what section is needed
+
 import requests
 import os
 from dotenv import load_dotenv
@@ -6,7 +11,6 @@ from datetime import datetime
 # Load environment variables
 load_dotenv()
 
-# https://api.buttondown.email/v1/docs#/
 # Buttondown API setup
 BUTTONDOWN_API_KEY = os.getenv('BUTTONDOWN_API_KEY')
 BASE_URL = "https://api.buttondown.email"

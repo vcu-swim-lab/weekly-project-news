@@ -1,3 +1,6 @@
+# This script fixes any problematic subscribers
+# This includes subscribers where the repository is not public or problematic
+
 import json
 import re
 import requests

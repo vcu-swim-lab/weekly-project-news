@@ -1,3 +1,6 @@
+# Commit table for the Database
+# Joins with the Repository table through repository_full_name
+
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from .base import Base

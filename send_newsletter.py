@@ -1,3 +1,9 @@
+# This file sends the newsletter using the Buttondown API
+# It logs each step of the sending process for debugging
+# The email status workflow is as follows: draft -> about_to_send -> imported
+# Each stage is logged with a status update to track progress
+# The script includes retry logic for 503 Service Unavailable errors from the Buttondown API
+
 import requests
 import os
 import json

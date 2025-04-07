@@ -5,6 +5,7 @@ import os
 import json
 import csv
 
+# This script retrieves the emails from public repository commits
 
 def get_recent_commit_emails(api_key, repo, days=365):
     base_url = "https://api.github.com"

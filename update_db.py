@@ -11,7 +11,7 @@ from tables.base import Base, engine
 from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
-from datetime import datetime  # Import datetime
+from datetime import datetime
 import logging
 from sqlalchemy import create_engine
 import time

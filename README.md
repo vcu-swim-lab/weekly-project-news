@@ -59,7 +59,7 @@ After generation, the newsletter is automatically delivered through the Buttondo
 
 ---
 
-### Developed By  
+### Developed By\
 
 **Christian Novalski, Steven Bui, Audrey Lewis**
 
@@ -71,7 +71,7 @@ After generation, the newsletter is automatically delivered through the Buttondo
 (Virginia Commonwealth University - SWIM Lab)
 
 
-**Other Contributors**
+**Other Contributors:**\
 
 
 **Ghalian Fayyadh, Damian Ashjian, Christopher Chavez**

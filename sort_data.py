@@ -283,7 +283,7 @@ def get_open_prs(session, one_week_ago, repository_full_name):
             }
         
         # Retreive commits for pull request
-        pr_commits = session.query(Commit).filter(Commit.pull_request_id == pr.id)
+        pr_commits = session.query(Commit).filter(Commit.pull_request_id == pr.id).all()
         
         # Loop through commits and add links to array
         for commit in pr_commits:
@@ -328,7 +328,7 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
             }
         
         # Retreive commits for pull request
-        pr_commits = session.query(Commit).filter(Commit.pull_request_id == pr.id)
+        pr_commits = session.query(Commit).filter(Commit.pull_request_id == pr.id).all()
         
         # Loop through commits and add links to array
         for commit in pr_commits:

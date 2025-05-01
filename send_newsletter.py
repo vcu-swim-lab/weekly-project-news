@@ -139,6 +139,7 @@ for subscriber in subscribers_data['results']:
 
     # STEP 1: get the subscriber's markdown file from the folder
     project_name = github_repo.split('github.com/')[-1].replace('/', '_')
+    print(project_name)
     newsletter_filepath = f"newsletter_data/newsletter_{project_name}.txt"
     if not os.path.exists(newsletter_filepath):
         print(f"No newsletter txt file found: {newsletter_filepath}")
@@ -150,6 +151,7 @@ for subscriber in subscribers_data['results']:
 
     # STEP 3: get the subject for the email
     name = github_repo.split('/')[-1]
+    print(name)
     capitalized_name = name[0].upper() + name[1:]
     timestamp = datetime.now().strftime('%H:%M:%S')
     timestamp_from = (datetime.now() - timedelta(days=7)).strftime('%B %d, %Y')

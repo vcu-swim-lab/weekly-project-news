@@ -21,20 +21,6 @@ def process_repo_names(data):
     data['results'] = valid_subscribers
     return data
 
-# def remove_specific_subscribers(data):
-#     emails_to_remove = [
-#         "kostadin@gmail.com",
-#         "stevenbui44@gmail.com",
-#         "shbui@ncsu.edu", 
-#         "novalski123@yopmail.com",
-#         "christian123@yopmail.com",
-#         "christian1234@yopmail.com",
-#         "imranm3@vcu.edu",
-#         "stevenbui91@gmail.com"
-#     ]
-#     data['results'] = [subscriber for subscriber in data['results'] if subscriber['email'] not in emails_to_remove]
-#     return data
-
 # Makes sure the repo is public and the link is actually a link
 def check_repo(url):
     if ".com" not in url:

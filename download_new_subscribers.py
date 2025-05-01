@@ -6,24 +6,34 @@ import os
 import json
 from dotenv import load_dotenv
 
-load_dotenv()  
+def download_subscribers(api_key=None):
+    load_dotenv()
+    
+    # Use provided API key or get from environment
+    api_key = api_key or os.environ.get('BUTTONDOWN_API_KEY')
+    
+    headers = {
+        "Authorization": f"Token {api_key}",
+    }
 
-headers = {
-    "Authorization": f"Token {os.environ['BUTTONDOWN_API_KEY']}",
-}
+    BASE_URL = "https://api.buttondown.email"
+    ENDPOINT = "/subscribers"
+    METHOD = "GET"
 
-BASE_URL = "https://api.buttondown.email"
-ENDPOINT = "/subscribers"
-METHOD = "GET"
+    response = requests.request(METHOD, f"{BASE_URL}/v1{ENDPOINT}", headers=headers)
 
-response = requests.request(METHOD, f"{BASE_URL}/v1{ENDPOINT}", headers=headers)
+    if response.status_code == 200:
+        subscribers_data = response.json()
+        # save it to subscribers.json
+        with open('subscribers.json', 'w') as file:
+            json.dump(subscribers_data, file, indent=2)
 
-if response.status_code == 200:
-  subscribers_data = response.json()
-  # save it to subscribers.json
-  with open('subscribers.json', 'w') as file:
-    json.dump(subscribers_data, file, indent=2)
+        print('Successfully saved to subscribers.json')
+        return True, subscribers_data
+    else:
+        print(f"Error: {response.status_code} - {response.text}")
+        return False, {"status_code": response.status_code, "response_text": response.text}
 
-  print('Successfully saved to subscribers.json')
-else:
-  print(f"Error: {response.status_code} - {response.text}")
+
+if __name__ == "__main__":
+    download_subscribers()

@@ -40,5 +40,8 @@ def test_download_subscribers(test_id, status_code, api_key_valid, expected_succ
         assert response_data == mock_data
         mock_file.assert_called_with('subscribers.json', 'w')
     else:
-        assert "status_code" in response_data
-        assert response_data["status_code"] == status_code
+        if (api_key_valid):
+            assert "status_code" in response_data
+            assert response_data["status_code"] == status_code
+        elif(not api_key_valid):
+            assert "error" in response_data

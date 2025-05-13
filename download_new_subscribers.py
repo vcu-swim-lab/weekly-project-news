@@ -11,6 +11,9 @@ def download_subscribers(api_key=None):
     
     # Use provided API key or get from environment
     api_key = api_key or os.environ.get('BUTTONDOWN_API_KEY')
+    if not api_key:
+        print("Invalid API key")
+        return False, {"error": "No API key provided"}
     
     headers = {
         "Authorization": f"Token {api_key}",

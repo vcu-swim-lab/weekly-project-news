@@ -81,11 +81,11 @@ def test_process_and_check_repo(mocker, test_id, url_is_valid, repo_is_public, j
                     match.group.return_value = test_repo
                     return match
                 else:
-                    return None
+                    return False
             return original_re_search(pattern, string, *args, **kwargs)
         mocker.patch('re.search', side_effect=mock_re_search)
     else:
-        mocker.patch('re.search', return_value=None)
+        mocker.patch('re.search', return_value=False)
     
     mock_response = MagicMock()
     mock_response.status_code = 200 if repo_is_public else 404
@@ -112,7 +112,7 @@ def test_process_and_check_repo(mocker, test_id, url_is_valid, repo_is_public, j
     
     # Test check_repo
     repo_check_result = fix_subscribers_file.check_repo(repo_url)
-    expected_repo_check = True if not (url_is_valid and repo_is_public) else None
+    expected_repo_check = True if not (url_is_valid and repo_is_public) else False
     assert repo_check_result == expected_repo_check, f"Test {test_id}: check_repo returned {repo_check_result}, expected {expected_repo_check}"
     
     # Test delete_problem_repos

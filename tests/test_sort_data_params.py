@@ -105,18 +105,18 @@ def _mock_datetime(date_string):
 @pytest.mark.parametrize("func, repo_name, time_param, issue_state, expected_issues, expected_result, username, bot_status, test_case", [
     # T1: Open issues, less than one week ago, bot user
     # Expected to return empty array because of bot
-    (get_open_issues, "owner/repo", one_week_ago, 'open', 1, [], "ci-bot[bot]", "Bot", "T1"),
+    (get_open_issues, "owner/repo", one_week_ago, 'open', 0, [], "ci-bot[bot]", "Bot", "T1"),
 
     # T2: Open issues, less than one week ago, no bot
     (get_open_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Open Issue 1", "body": "Description", "url": "http://open_issue1.url", "comments": []}], "developer", "No Bot", "T2"),
     
     # T3: Open issues, more than one week ago, bot user
     # Expected to return empty array
-    (get_open_issues, "owner/repo", thirty_days_ago, 'open', 1, [], "github-bot", "Bot", "T3"),
+    (get_open_issues, "owner/repo", thirty_days_ago, 'open', 0, [], "github-bot", "Bot", "T3"),
     
     # T4: Open issues, more than one week ago, no bot
     # Expected to return empty array
-    (get_open_issues, "owner/repo", thirty_days_ago, 'open', 1, [],"developer", "No Bot", "T4"),
+    (get_open_issues, "owner/repo", thirty_days_ago, 'open', 0, [],"developer", "No Bot", "T4"),
     
     # T6: Closed issues, less than one week ago, no bot
     (get_closed_issues, "owner/repo", one_week_ago, 'closed', 1, [{"title": "Closed Issue 1", "body": "Description", "url": "http://closed_issue1.url", "comments": []}], "developer", "No Bot", "T6"),

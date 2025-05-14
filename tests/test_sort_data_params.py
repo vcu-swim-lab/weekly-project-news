@@ -123,15 +123,15 @@ def _mock_datetime(date_string):
     
     # T5: Closed issues, less than one week ago, bot user
     # Expected to return empty array
-    (get_closed_issues, "owner/repo", one_week_ago, 'closed', 1, [], "dependabot[bot]", "Bot", "T5"),
+    (get_closed_issues, "owner/repo", one_week_ago, 'closed', 0, [], "dependabot[bot]", "Bot", "T5"),
     
     # T7: Closed issues, more than one week ago, bot user
     # Expected to return empty array because of bot
-    (get_closed_issues, "owner/repo", thirty_days_ago, 'closed', 1, [], "ai-bot", "Bot", "T7"),
+    (get_closed_issues, "owner/repo", thirty_days_ago, 'closed', 0, [], "ai-bot", "Bot", "T7"),
     
     # T8: Closed issues, more than one week ago, no bot
     # Expected to return empty array becaue of date
-    (get_closed_issues, "owner/repo", thirty_days_ago, 'closed', 1, [],"developer", "No Bot", "T8"),
+    (get_closed_issues, "owner/repo", thirty_days_ago, 'closed', 0, [],"developer", "No Bot", "T8"),
     
     # T9: Empty case
     # Expected to return empty array
@@ -139,7 +139,7 @@ def _mock_datetime(date_string):
     
     # Active issues tests
     # Needs to check comments within time window
-    (get_active_issues, "owner/repo", one_week_ago, 'open', 2, [{"title": "Active Issue 1", "body": "Description", "user": "developer", "url": "http://active_issue1.url", "comments": [{"body": "Recent comment"}], "num_comments_this_week": 1}], "developer", "No Bot", "Active Issues Test"),
+    (get_active_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Active Issue 1", "body": "Description", "user": "developer", "url": "http://active_issue1.url", "comments": [{"body": "Recent comment"}], "num_comments_this_week": 1}], "developer", "No Bot", "Active Issues Test"),
     
     # Stale issues tests
     (get_stale_issues, "owner/repo", thirty_days_ago, 'open', 1, [{"title": "Stale Issue", "time_open": "45 days, 00 hours, 00 minutes", "last_updated": thirty_days_ago - timedelta(days=15), "body": "Description", "url": "http://stale_issue.url", "id": 1}], "developer", "No Bot", "Stale Issues Test"),

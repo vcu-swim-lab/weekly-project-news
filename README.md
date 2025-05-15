@@ -61,11 +61,11 @@ After generation, the newsletter is automatically delivered through the Buttondo
 
 ### Developed By  
 
-**Christian Novalski:** [LinkedIn](https://www.linkedin.com/in/christian-novalski/)
+[Christian Novalski](https://www.linkedin.com/in/christian-novalski/)
 
-**Steven Bui:** [LinkedIn](https://www.linkedin.com/in/stevenbui-swe/)
+[Steven Bui](https://www.linkedin.com/in/stevenbui-swe/)
 
-**Audrey Lewis:** [LinkedIn](https://www.linkedin.com/in/audreyalewis/)
+[Audrey Lewis](https://www.linkedin.com/in/audreyalewis/)
 
 (Virginia Commonwealth University, NSF REU - SWIM Lab)  
 
@@ -78,11 +78,11 @@ After generation, the newsletter is automatically delivered through the Buttondo
 **Other Contributors:**  
 
 
-**Ghalian Fayyadh:** [LinkedIn](https://www.linkedin.com/in/ghalian-fayyadh/)
+[Ghalian Fayyadh](https://www.linkedin.com/in/ghalian-fayyadh/)
 
-**Damian Ashjian:** [LinkedIn](https://www.linkedin.com/in/damianashjian/)
+[Damian Ashjian](https://www.linkedin.com/in/damianashjian/)
 
-**Christopher Chavez:** [LinkedIn](https://www.linkedin.com/in/christopher-ignatius-chavez/)
+[Christopher Chavez](https://www.linkedin.com/in/christopher-ignatius-chavez/)
 
 (Virginia Commonwealth University - SWIM Lab)
 

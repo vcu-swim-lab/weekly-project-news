@@ -61,7 +61,11 @@ After generation, the newsletter is automatically delivered through the Buttondo
 
 ### Developed By  
 
-**Christian Novalski, Steven Bui, Audrey Lewis**
+**Christian Novalski:** https://www.linkedin.com/in/christian-novalski/
+
+**Steven Bui:** https://www.linkedin.com/in/stevenbui-swe/
+
+**Audrey Lewis:** https://www.linkedin.com/in/audreyalewis/
 
 (Virginia Commonwealth University, NSF REU - SWIM Lab)  
 
@@ -74,7 +78,11 @@ After generation, the newsletter is automatically delivered through the Buttondo
 **Other Contributors:**  
 
 
-**Ghalian Fayyadh, Damian Ashjian, Christopher Chavez**
+**Ghalian Fayyadh:** https://www.linkedin.com/in/ghalian-fayyadh/
+
+**Damian Ashjian:** https://www.linkedin.com/in/damianashjian/
+
+**Christopher Chavez:** https://www.linkedin.com/in/christopher-ignatius-chavez/
 
 (Virginia Commonwealth University - SWIM Lab)
 

@@ -384,7 +384,7 @@ def test_pr_functions(mock_session_fixture, mocker, func, repo_name, time_param,
     mock_pr_query = mocker.Mock()
     mock_pr_query.filter.return_value.all.return_value = mock_prs
 
-    # Fix: mock the commit query so it supports .filter().all()
+    # Mock the commit query
     mock_commit_query = mocker.Mock()
     mock_commit_query.filter.return_value.all.return_value = []
 

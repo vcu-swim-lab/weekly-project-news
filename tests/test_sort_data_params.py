@@ -312,52 +312,22 @@ def test_issue_functions(mock_session_fixture, mocker, func, repo_name, time_par
 
 ##### PR TESTS #####
 @pytest.mark.parametrize("func, repo_name, time_param, pr_state, expected_prs, expected_result, username, bot_status, test_case", [
-    # T1: Open PRs, less than one week ago, bot user
-    # Expected empty array
     (get_open_prs, "owner/repo", "one_week_ago", 'open', 1, [], "github-bot", "Bot", "T1"),
-    
-    # T2: Open PRs, less than one week ago, no bot
     (get_open_prs, "owner/repo", "one_week_ago", 'open', 1, [{"title": "Open PR 1", "body": "Description", "url": "http://open_pr1.url", "merged": False, "commits": []}], "developer", "No Bot", "T2"),
-    
-    # T3: Open PRs, more than one week ago, bot user
-    # Expected empty array
-    (get_open_prs, "owner/repo", "thirty_days_ago", 'open', 1, [],"dependabot[bot]", "Bot", "T3"),
-    
-    # T4: Open PRs, more than one week ago, no bot
-    # Expected empty array
-    (get_open_prs, "owner/repo", "thirty_days_ago", 'open', 1, [],"developer", "No Bot", "T4"),
-    
-    # T5: Closed PRs, less than one week ago, bot user
-    # Expected empty array
+    (get_open_prs, "owner/repo", "thirty_days_ago", 'open', 1, [], "dependabot[bot]", "Bot", "T3"),
+    (get_open_prs, "owner/repo", "thirty_days_ago", 'open', 0, [], "developer", "No Bot", "T4"),
     (get_closed_prs, "owner/repo", "one_week_ago", 'closed', 1, [], "renovate-bot", "Bot", "T5"),
-    
-    # T6: Closed PRs, less than one week ago, no bot
     (get_closed_prs, "owner/repo", "one_week_ago", 'closed', 1, [{"title": "Closed PR 1", "body": "Description", "url": "http://closed_pr1.url", "merged": True, "commits": []}], "developer", "No Bot", "T6"),
-    
-    # T7: Closed PRs, more than one week ago, bot user
-    # Expected empty array
-    (get_closed_prs, "owner/repo", "thirty_days_ago", 'closed', 1, [],"ci-bot[bot]", "Bot", "T7"),
-    
-    # T8: Closed PRs, more than one week ago, no bot
-    # Expected empty array
-    (get_closed_prs, "owner/repo", "thirty_days_ago", 'closed', 1, [],"developer", "No Bot", "T8"),
-    
-    # T9: Empty case no PRs
-    # Expected empty array
+    (get_closed_prs, "owner/repo", "thirty_days_ago", 'closed', 1, [], "ci-bot[bot]", "Bot", "T7"),
+    (get_closed_prs, "owner/repo", "thirty_days_ago", 'closed', 0, [], "developer", "No Bot", "T8"),
     (get_open_prs, "owner/repo", "one_week_ago", 'open', 0, [], None, "No PR just empty", "T9"),
-    
-    # Numeric functions tests
-    # Function just returns the length
-    (get_num_open_prs, "owner/repo", "one_week_ago", 'open', 3, 3,"developer", "No Bot", "Count Open PRs Test"),
-    
-     # Function just returns the length
-    (get_num_closed_prs, "owner/repo", "one_week_ago", 'closed', 2, 2,"developer", "No Bot", "Count Closed PRs Test"),
+    (get_num_open_prs, "owner/repo", "one_week_ago", 'open', 3, 3, "developer", "No Bot", "Count Open PRs Test"),
+    (get_num_closed_prs, "owner/repo", "one_week_ago", 'closed', 2, 2, "developer", "No Bot", "Count Closed PRs Test"),
 ])
-def test_pr_functions(mock_session_fixture, mocker, func, repo_name, time_param, pr_state, 
+def test_pr_functions(mock_session_fixture, mocker, func, repo_name, time_param, pr_state,
                       expected_prs, expected_result, username, bot_status, test_case):
     one_week_ago = datetime.now() - timedelta(days=7)
     thirty_days_ago = datetime.now() - timedelta(days=30)
-    
     actual_time_param = one_week_ago if time_param == "one_week_ago" else thirty_days_ago
 
     if func in [get_num_open_prs, get_num_closed_prs]:
@@ -369,12 +339,10 @@ def test_pr_functions(mock_session_fixture, mocker, func, repo_name, time_param,
     if expected_prs == 0:
         mock_query = mocker.Mock()
         mock_filter = mocker.Mock()
-        
         mock_query.filter.return_value = mock_filter
         mock_filter.all.return_value = []
-        
+
         mock_session_fixture["session"].query.return_value = mock_query
-        
         result = func(mock_session_fixture["session"], actual_time_param, repo_name)
         assert result == expected_result
         return
@@ -388,7 +356,7 @@ def test_pr_functions(mock_session_fixture, mocker, func, repo_name, time_param,
         pr.state = pr_state
         pr.user_login = username if username else "regular_user"
         pr.id = i + 1
-        
+
         if test_case in ["T1", "T2", "T5", "T6"]:
             if pr_state == 'open':
                 pr.created_at = one_week_ago + timedelta(days=1)
@@ -399,13 +367,12 @@ def test_pr_functions(mock_session_fixture, mocker, func, repo_name, time_param,
                 pr.created_at = one_week_ago - timedelta(days=5)
             else:
                 pr.closed_at = one_week_ago - timedelta(days=5)
-        
+
         if isinstance(expected_result, list) and i < len(expected_result):
-            if "title" in expected_result[i]:
-                pr.title = expected_result[i]["title"]
-                pr.body = expected_result[i].get("body", "")
-                pr.html_url = expected_result[i].get("url", "")
-                pr.merged = expected_result[i].get("merged", False)
+            pr.title = expected_result[i]["title"]
+            pr.body = expected_result[i].get("body", "")
+            pr.html_url = expected_result[i].get("url", "")
+            pr.merged = expected_result[i].get("merged", False)
         else:
             pr.title = f"Test PR {i+1}"
             pr.body = "Test PR description"
@@ -414,13 +381,15 @@ def test_pr_functions(mock_session_fixture, mocker, func, repo_name, time_param,
 
         mock_prs.append(pr)
 
-    mock_session_fixture["filter"].all.return_value = mock_prs
+    mock_pr_query = mocker.Mock()
+    mock_pr_query.filter.return_value.all.return_value = mock_prs
 
+    # Fix: mock the commit query so it supports .filter().all()
     mock_commit_query = mocker.Mock()
-    mock_commit_query.filter.return_value = []
+    mock_commit_query.filter.return_value.all.return_value = []
 
     mock_session_fixture["session"].query.side_effect = lambda model: (
-        mock_session_fixture["query"] if model == PullRequest else mock_commit_query
+        mock_pr_query if model == PullRequest else mock_commit_query
     )
 
     result = func(mock_session_fixture["session"], actual_time_param, repo_name)
@@ -431,11 +400,10 @@ def test_pr_functions(mock_session_fixture, mocker, func, repo_name, time_param,
         assert result == expected_result, f"Failed test case {test_case} for function {func.__name__}"
 
 
-# Test PR functions with commits
 def test_pr_with_commits(mock_session_fixture, mocker):
     one_week_ago = datetime.now() - timedelta(days=7)
     repo_name = "owner/repo"
-    
+
     mock_pr = mocker.Mock()
     mock_pr.id = 1
     mock_pr.repository_full_name = repo_name
@@ -447,28 +415,19 @@ def test_pr_with_commits(mock_session_fixture, mocker):
     mock_pr.html_url = "http://pr-url.com"
     mock_pr.merged = False
 
-    mock_session_fixture["filter"].all.return_value = [mock_pr]
+    mock_pr_query = mocker.Mock()
+    mock_pr_query.filter.return_value.all.return_value = [mock_pr]
 
     mock_commits = [
-        mocker.Mock(
-            pull_request_id=1,
-            commit_message="First commit",
-            html_url="http://commit1-url.com",
-            sha="abc123"
-        ),
-        mocker.Mock(
-            pull_request_id=1,
-            commit_message="Second commit",
-            html_url="http://commit2-url.com",
-            sha="def456"
-        )
+        mocker.Mock(pull_request_id=1, commit_message="First commit", html_url="http://commit1-url.com", sha="abc123"),
+        mocker.Mock(pull_request_id=1, commit_message="Second commit", html_url="http://commit2-url.com", sha="def456")
     ]
 
     mock_commit_query = mocker.Mock()
-    mock_commit_query.filter.return_value = mock_commits
+    mock_commit_query.filter.return_value.all.return_value = mock_commits
 
     mock_session_fixture["session"].query.side_effect = lambda model: (
-        mock_session_fixture["query"] if model == PullRequest else mock_commit_query
+        mock_pr_query if model == PullRequest else mock_commit_query
     )
 
     expected_result = [{
@@ -493,8 +452,6 @@ def test_pr_with_commits(mock_session_fixture, mocker):
     result = get_open_prs(mock_session_fixture["session"], one_week_ago, repo_name)
 
     assert result == expected_result, "PR with commits not properly processed"
-
-
 ##### CONTRIBUTOR TESTS #####
 
 # Setup mock fixture that doesn't return a dictionary for these specific tests

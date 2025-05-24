@@ -177,3 +177,4 @@ contributors.json
 *.log
 get_public_emails.py
 test.db
+get_public_emails

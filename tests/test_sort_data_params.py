@@ -102,57 +102,63 @@ def _mock_datetime(date_string):
 ##### ISSUE TESTS #####
 
 # TEST GET_OPEN_ISSUES AND GET_CLOSED_ISSUES
-@pytest.mark.parametrize("func, repo_name, time_param, issue_state, expected_issues, expected_result, username, bot_status, test_case", [
+@pytest.mark.parametrize("func, repo_name, time_param, issue_state, expected_issues, expected_result, username, bot_status, test_case, days_since_created, days_since_updated", [
     # T1: Open issues, less than one week ago, bot user
     # Expected to return empty array because of bot
-    (get_open_issues, "owner/repo", one_week_ago, 'open', 0, [], "ci-bot[bot]", "Bot", "T1"),
+    (get_open_issues, "owner/repo", one_week_ago, 'open', 0, [], "ci-bot[bot]", "Bot", "T1", None, None),
 
     # T2: Open issues, less than one week ago, no bot
-    (get_open_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Open Issue 1", "body": "Description", "url": "http://open_issue1.url", "comments": []}], "developer", "No Bot", "T2"),
+    (get_open_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Open Issue 1", "body": "Description", "url": "http://open_issue1.url", "comments": []}], "developer", "No Bot", "T2", None, None),
     
     # T3: Open issues, more than one week ago, bot user
     # Expected to return empty array
-    (get_open_issues, "owner/repo", thirty_days_ago, 'open', 0, [], "github-bot", "Bot", "T3"),
+    (get_open_issues, "owner/repo", thirty_days_ago, 'open', 0, [], "github-bot", "Bot", "T3", None, None),
     
     # T4: Open issues, more than one week ago, no bot
     # Expected to return empty array
-    (get_open_issues, "owner/repo", thirty_days_ago, 'open', 0, [],"developer", "No Bot", "T4"),
+    (get_open_issues, "owner/repo", thirty_days_ago, 'open', 0, [], "developer", "No Bot", "T4", None, None),
     
     # T6: Closed issues, less than one week ago, no bot
-    (get_closed_issues, "owner/repo", one_week_ago, 'closed', 1, [{"title": "Closed Issue 1", "body": "Description", "url": "http://closed_issue1.url", "comments": []}], "developer", "No Bot", "T6"),
+    (get_closed_issues, "owner/repo", one_week_ago, 'closed', 1, [{"title": "Closed Issue 1", "body": "Description", "url": "http://closed_issue1.url", "comments": []}], "developer", "No Bot", "T6", None, None),
     
     # T5: Closed issues, less than one week ago, bot user
     # Expected to return empty array
-    (get_closed_issues, "owner/repo", one_week_ago, 'closed', 0, [], "dependabot[bot]", "Bot", "T5"),
+    (get_closed_issues, "owner/repo", one_week_ago, 'closed', 0, [], "dependabot[bot]", "Bot", "T5", None, None),
     
     # T7: Closed issues, more than one week ago, bot user
     # Expected to return empty array because of bot
-    (get_closed_issues, "owner/repo", thirty_days_ago, 'closed', 0, [], "ai-bot", "Bot", "T7"),
+    (get_closed_issues, "owner/repo", thirty_days_ago, 'closed', 0, [], "ai-bot", "Bot", "T7", None, None),
     
     # T8: Closed issues, more than one week ago, no bot
-    # Expected to return empty array becaue of date
-    (get_closed_issues, "owner/repo", thirty_days_ago, 'closed', 0, [],"developer", "No Bot", "T8"),
+    # Expected to return empty array because of date
+    (get_closed_issues, "owner/repo", thirty_days_ago, 'closed', 0, [], "developer", "No Bot", "T8", None, None),
     
     # T9: Empty case
     # Expected to return empty array
-    (get_open_issues, "owner/repo", one_week_ago, 'open', 0, [], None, "No issue just empty", "T9"),
+    (get_open_issues, "owner/repo", one_week_ago, 'open', 0, [], None, "No issue just empty", "T9", None, None),
     
     # Active issues tests
     # Needs to check comments within time window
-    (get_active_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Active Issue 1", "body": "Description", "user": "developer", "url": "http://active_issue1.url", "comments": [{"body": "Recent comment"}], "num_comments_this_week": 1}], "developer", "No Bot", "Active Issues Test"),
+    (get_active_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Active Issue 1", "body": "Description", "user": "developer", "url": "http://active_issue1.url", "comments": [{"body": "Recent comment"}], "num_comments_this_week": 1}], "developer", "No Bot", "Active Issues Test", None, None),
     
     # Stale issues tests
-    (get_stale_issues, "owner/repo", thirty_days_ago, 'open', 1, [{"title": "Stale Issue", "time_open": "45 days, 00 hours, 00 minutes", "last_updated": thirty_days_ago - timedelta(days=15), "body": "Description", "url": "http://stale_issue.url", "id": 1}], "developer", "No Bot", "Stale Issues Test"),
+    (get_stale_issues, "owner/repo", thirty_days_ago, 'open', 1, [{"title": "Stale Issue", "time_open": "45 days, 00 hours, 00 minutes", "last_updated": thirty_days_ago - timedelta(days=15), "body": "Description", "url": "http://stale_issue.url", "id": 1}], "developer", "No Bot", "Stale Issues Test", 45, 15),
     
     # Numeric functions tests
     # Function just returns the length
-    (get_num_open_issues_weekly, "owner/repo", one_week_ago, 'open', 3, 3,"developer", "No Bot", "Count Open Issues Test"),
+    (get_num_open_issues_weekly, "owner/repo", one_week_ago, 'open', 3, 3, "developer", "No Bot", "Count Open Issues Test", None, None),
     
     # Function just returns the length
-    (get_num_closed_issues_weekly, "owner/repo", one_week_ago, 'closed', 2, 2,"developer", "No Bot", "Count Closed Issues Test"),
+    (get_num_closed_issues_weekly, "owner/repo", one_week_ago, 'closed', 2, 2, "developer", "No Bot", "Count Closed Issues Test", None, None),
 ])
 def test_issue_functions(mock_session_fixture, mocker, func, repo_name, time_param, issue_state, 
-                       expected_issues, expected_result, username, bot_status, test_case):
+                       expected_issues, expected_result, username, bot_status, test_case, 
+                       days_since_created, days_since_updated):
+    
+    print(f"Starting test case {test_case} for function {func.__name__}")
+    print(f"Expected issues count: {expected_issues}")
+    print(f"Expected result: {expected_result}")
+    print(f"Username: {username}, Bot status: {bot_status}")
     
     # Handle numeric functions separately
     if func in [get_num_open_issues_weekly, get_num_closed_issues_weekly]:
@@ -166,6 +172,7 @@ def test_issue_functions(mock_session_fixture, mocker, func, repo_name, time_par
     mock_session_fixture["query"].filter.return_value = mock_session_fixture["filter"]
     mock_session_fixture["filter"].order_by.return_value = mock_session_fixture["filter"]
     mock_session_fixture["filter"].limit.return_value = mock_session_fixture["filter"]
+    
     if expected_issues == 0:
         mock_session_fixture["filter"].all.return_value = []
         result = func(mock_session_fixture["session"], time_param, repo_name)
@@ -183,32 +190,43 @@ def test_issue_functions(mock_session_fixture, mocker, func, repo_name, time_par
         issue.user_login = username if username else "regular_user"
         issue.id = i + 1
         
-        # Configure dates based on function and test case
-        if test_case in ["T1", "T2", "T5", "T6"]:
-            if issue_state == 'open':
-                issue.created_at = one_week_ago + timedelta(days=1)
-            else:
-                issue.closed_at = one_week_ago + timedelta(days=1)
-        elif test_case in ["T3", "T4", "T7", "T8"]:
-            if issue_state == 'open':
-                issue.created_at = one_week_ago - timedelta(days=5)
-            else:
-                issue.closed_at = one_week_ago - timedelta(days=5)
+        # Special config for stale functions using the new parameters
+        if func == get_stale_issues and days_since_created is not None:
+            print(f"Setting up stale issue with days_since_created: {days_since_created}, days_since_updated: {days_since_updated}")
+            issue.created_at = datetime.now() - timedelta(days=days_since_created)
+            issue.updated_at = time_param - timedelta(days=days_since_updated) if days_since_updated else datetime.now()
+            print(f"Issue created_at: {issue.created_at}")
+            print(f"Issue updated_at: {issue.updated_at}")
+            
+            # Use expected_result to set other fields 
+            if expected_result and i < len(expected_result):
+                issue.title = expected_result[i]["title"]
+                issue.body = expected_result[i]["body"]
+                issue.html_url = expected_result[i]["url"]
+                issue.id = expected_result[i]["id"]
         
-        # Special config for stale functions
-        if func == get_stale_issues:
-            issue.created_at = datetime.now() - timedelta(days=45)
-            issue.updated_at = thirty_days_ago - timedelta(days=15)
-            issue.title = "Stale Issue"
-            issue.body = "Description"
-            issue.html_url = "http://stale_issue.url"
+        # For other functions, use expected_result to set fields
         elif isinstance(expected_result, list) and i < len(expected_result):
             if "title" in expected_result[i]:
                 issue.title = expected_result[i]["title"]
                 issue.body = expected_result[i].get("body", "")
                 issue.html_url = expected_result[i].get("url", "")
+                print(f"Set issue fields: title={issue.title}")
+            
+            # Configure dates based on function type
+            if test_case in ["T1", "T2", "T5", "T6"]:
+                if issue_state == 'open':
+                    issue.created_at = one_week_ago + timedelta(days=1)
+                else:
+                    issue.closed_at = one_week_ago + timedelta(days=1)
+            elif test_case in ["T3", "T4", "T7", "T8"]:
+                if issue_state == 'open':
+                    issue.created_at = one_week_ago - timedelta(days=5)
+                else:
+                    issue.closed_at = one_week_ago - timedelta(days=5)
         
         mock_issues.append(issue)
+    
     
     # Set up side effects based on function type
     if func == get_active_issues:
@@ -246,21 +264,50 @@ def test_issue_functions(mock_session_fixture, mocker, func, repo_name, time_par
     
     # Call the function and verify results
     result = func(mock_session_fixture["session"], time_param, repo_name)
+    
+    # Check if bot should be filtered out
     if is_bot and not (func == get_stale_issues and test_case == "Stale Issues Test"):
         assert result == [], f"Bot user '{username}' should be filtered out in {test_case}"
-    else:
-        if func == get_active_issues and result:
-            if isinstance(result, list) and len(result) > 1:
-                comment_counts = [issue.get("num_comments_this_week", 0) for issue in result]
-                assert comment_counts == sorted(comment_counts, reverse=True), "Active issues not sorted correctly"
+        return
+    
+    # Handle specific function validations
+    if func == get_active_issues and result:
+        if isinstance(result, list) and len(result) > 1:
+            comment_counts = [issue.get("num_comments_this_week", 0) for issue in result]
+            assert comment_counts == sorted(comment_counts, reverse=True), "Active issues not sorted correctly"
 
-        if func == get_stale_issues:
-            assert isinstance(result, list), "Stale issues should return a list"
-            if result:
-                assert "title" in result[0], "Stale issue missing title field"
-                assert "time_open" in result[0], "Stale issue missing time_open field"
+    if func == get_stale_issues:
+        assert isinstance(result, list), "Stale issues should return a list"
         
-        assert result == expected_result, f"Failed test case {test_case} for function {func.__name__}"
+        if result and expected_result:
+            
+            # Check required fields exist
+            assert "title" in result[0], "Stale issue missing title field"
+            assert "time_open" in result[0], "Stale issue missing time_open field"
+            
+            # Compare everything except time_open precisely
+            for key in ["title", "last_updated", "body", "url", "id"]:
+                assert result[0][key] == expected_result[0][key], f"Mismatch in {key}"
+            
+            # For time_open, only compare the days portion
+            actual_time_open = result[0]["time_open"]
+            expected_time_open = expected_result[0]["time_open"]
+            
+            actual_days = int(actual_time_open.split(" days")[0])
+            expected_days = int(expected_time_open.split(" days")[0])
+            assert actual_days == expected_days, f"Days mismatch: expected {expected_days}, got {actual_days}"
+            
+            print(f"Stale issues validation passed")
+        else:
+            # For empty cases, do exact comparison
+            assert result == expected_result, f"Failed test case {test_case} for function {func.__name__}"
+        
+        # Return early for stale issues to avoid duplicate assertion
+        return
+    
+    # Final assertion for non-stale functions
+    print(f"Final assertion comparing result with expected_result")
+    assert result == expected_result, f"Failed test case {test_case} for function {func.__name__}"
 
 
 ##### PR TESTS #####

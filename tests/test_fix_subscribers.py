@@ -1,3 +1,7 @@
+# This file contains the tests that are run for the fix_subscribers.py file
+# Input space partitioning was used to determine test cases
+# Run with pytest
+
 import pytest
 import json
 import re

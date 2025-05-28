@@ -1,3 +1,8 @@
+# This file contains the tests that are run to fuzz the download_new_subscribers.py file
+# It fuzzes random strings and status codes
+# The fuzzes are run 100 times, but can be changed if needed
+# Run with pytest
+
 import pytest
 import responses
 import os

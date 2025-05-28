@@ -1,3 +1,7 @@
+# This file contains parameterized tests that test the sort_data.py file
+# It tests Release Data, Issues, PRs, and Contributors
+# Run with pytest
+
 from unittest.mock import MagicMock
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -452,6 +456,7 @@ def test_pr_with_commits(mock_session_fixture, mocker):
     result = get_open_prs(mock_session_fixture["session"], one_week_ago, repo_name)
 
     assert result == expected_result, "PR with commits not properly processed"
+    
 ##### CONTRIBUTOR TESTS #####
 
 # Setup mock fixture that doesn't return a dictionary for these specific tests

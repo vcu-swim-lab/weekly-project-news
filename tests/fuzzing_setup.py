@@ -1,3 +1,5 @@
+# This is a helper file to set up the functions for fuzzing such as generating strings
+
 import random
 import string
 from datetime import datetime, timedelta

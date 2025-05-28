@@ -1,3 +1,8 @@
+# This file contains the tests that are run for the download_new_subscribers.py file
+# It mocks valid and invalid keys, as well as response codes
+# Input space partitioning was used to determine test cases
+# Run with pytest
+
 import pytest
 import responses
 import os

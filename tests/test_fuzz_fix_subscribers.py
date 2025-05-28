@@ -1,3 +1,7 @@
+# This file contains the tests that are run to fuzz (randomly test) the fix_subscribers.py file
+# The fuzzes are run 50-100 times, but can be changed if needed
+# Run with pytest
+
 import pytest
 import random
 import string

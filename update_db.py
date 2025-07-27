@@ -147,7 +147,6 @@ if __name__ == '__main__':
     
     # Create SQLAlchemy engine and session
     logging.getLogger('sqlalchemy').disabled = True
-    logging.disable(logging.WARNING)
     engine = create_engine('sqlite:///github.db')
     Session = sessionmaker(bind=engine)
     session = Session()

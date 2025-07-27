@@ -24,21 +24,29 @@ current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 g = Github(API_KEYS[current_key_index])
 
+# Set up logging to file
+logging.basicConfig(
+    filename='update-db.log',
+    filemode='a',
+    format='%(asctime)s %(levelname)s: %(message)s',
+    level=logging.INFO
+)
+
 def update_attribute(session, new_id, new_data, table, column, id='id', name='repository_full_name'):
     try:
         obj = session.query(table).filter(getattr(table, id) == new_id).first()
 
         if not obj:
-            print(f"{table} {new_id} does not exist in the database")
+            logging.info(f"{table} {new_id} does not exist in the database")
         elif getattr(obj, column) != new_data:
             setattr(obj, column, new_data)
             session.commit()
-            print(f"{table} {new_id} {column} updated to {new_data} in {name}")
+            logging.info(f"{table} {new_id} {column} updated to {new_data} in {name}")
         else:
-            print(f"{table} {new_id} {column} is already {new_data} in {name}")
+            logging.info(f"{table} {new_id} {column} is already {new_data} in {name}")
     except Exception as e:
         session.rollback()
-        print(f"Error updating {table} {column} in {name}: {e}")
+        logging.error(f"Error updating {table} {column} in {name}: {e}")
 
 # Handles the datetime formatting issues
 def handle_datetime(datetime_str):
@@ -55,7 +63,7 @@ def update_all_data(session, repo_name, one_week_ago):
     
     for issue in issues:
         num_issues += 1
-        print(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
+        logging.info(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
         
         # Check for bots
         if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
@@ -110,23 +118,25 @@ def update_all_data(session, repo_name, one_week_ago):
         
         repo_data = get_latest_release(repo_name)
 
-        # REPOSITORY 1: Update the latest_release of a repository
-        update_attribute(session, repo_name, repo_data['tag_name'], Repository, 'latest_release', name='name')
-        # REPOSITORY 2: Update the release_description of a repository
-        update_attribute(session, repo_name, repo_data['body'], Repository, 'release_description', name='full_name')
-        # REPOSITORY 3: Update the release_create_date of a repository
-        update_attribute(session, repo_name, handle_datetime(repo_data['created_at']), Repository, 'release_create_date', name='name')
-        # REPOSITORY 4: Update the update_date of a repository
-        update_attribute(session, repo_name, handle_datetime(repo.updated_at.isoformat()), Repository, 'update_date', name='name')
-        # REPOSITORY 5: Update the open_issues_count of a repository
-        update_attribute(session, repo_name, num_issues - pulls_updated, Repository, 'open_issues', name='name')
-
+        if repo_data is not None:
+            # REPOSITORY 1: Update the latest_release of a repository
+            update_attribute(session, repo_name, repo_data.get('tag_name'), Repository, 'latest_release', name='name')
+            # REPOSITORY 2: Update the release_description of a repository
+            update_attribute(session, repo_name, repo_data.get('body'), Repository, 'release_description', name='full_name')
+            # REPOSITORY 3: Update the release_create_date of a repository
+            update_attribute(session, repo_name, handle_datetime(repo_data.get('created_at')), Repository, 'release_create_date', name='name')
+            # REPOSITORY 4: Update the update_date of a repository
+            update_attribute(session, repo_name, handle_datetime(repo.updated_at.isoformat()), Repository, 'update_date', name='name')
+            # REPOSITORY 5: Update the open_issues_count of a repository
+            update_attribute(session, repo_name, num_issues - pulls_updated, Repository, 'open_issues', name='name')
+        else:
+            logging.warning(f"No release data found for {repo_name}")
 
         if num_issues % 10 == 0:
-                rate_limit_check()
+            rate_limit_check()
     
-    print(f"Successfully updated {issues_updated} issues in the database for {repo_name}")
-    print(f"Successfully updated {pulls_updated} pull requests in the database for {repo_name}")
+    logging.info(f"Successfully updated {issues_updated} issues in the database for {repo_name}")
+    logging.info(f"Successfully updated {pulls_updated} pull requests in the database for {repo_name}")
 
     
 
@@ -134,7 +144,6 @@ def update_all_data(session, repo_name, one_week_ago):
 if __name__ == '__main__':
     # Measure the time it takes for every function to execute. 
     start_time = time.time()
-    
     
     # Create SQLAlchemy engine and session
     logging.getLogger('sqlalchemy').disabled = True
@@ -168,6 +177,6 @@ if __name__ == '__main__':
     # Check how long the function takes to run and print result
     elapsed_time = time.time() - start_time
     if (elapsed_time >= 60):
-        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+        logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
     else:
-        print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+        logging.info("This entire program took {:.2f} seconds to run".format(elapsed_time))

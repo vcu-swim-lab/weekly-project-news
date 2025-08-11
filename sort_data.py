@@ -88,9 +88,11 @@ def get_open_issues(session, one_week_ago, repository_full_name):
 
     # Loop through each issue
     for issue in issues:
+
         # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
+        if issue.user_login is not None:
+            if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
+                continue
         
         issue_data = {
         'title': issue.title,
@@ -122,8 +124,9 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
 
     for issue in issues:
         # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
+        if issue.user_login is not None:
+            if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
+                continue
         
         issue_data = {
         'title': issue.title,
@@ -155,8 +158,9 @@ def get_active_issues(session, one_week_ago, repository_full_name):
     # Iterate through each issue and select "active" issues
     for issue in issues:
         # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
+        if issue.user_login is not None:
+            if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
+                continue
 
         # Add necessary data to the issue data array
         issue_data = {
@@ -222,8 +226,9 @@ def get_stale_issues(session, repository_full_name, thirty_days_ago):
     # Loop through each issue
     for issue in issues:
         # Omit bots
-        if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
-            continue
+        if issue.user_login is not None:
+            if "bot" in issue.user_login.lower() or "[bot]" in issue.user_login.lower():
+                continue
         
         # Calculate the time open in days, hours, and minutes
         time_open = datetime.now(timezone.utc)-issue.created_at.replace(tzinfo=timezone.utc)
@@ -271,8 +276,9 @@ def get_open_prs(session, one_week_ago, repository_full_name):
     # Loop through each PR
     for pr in pulls:
         # Omit bots
-        if "bot" in pr.user_login.lower() or "[bot]" in pr.user_login.lower():
-            continue
+        if pr.user_login is not None:
+            if "bot" in pr.user_login.lower() or "[bot]" in pr.user_login.lower():
+                continue
 
         pr_data = {
                 "title": pr.title,
@@ -316,8 +322,9 @@ def get_closed_prs(session, one_week_ago, repository_full_name):
     # Loop through each PR
     for pr in pulls:
         # Omit bots
-        if "bot" in pr.user_login.lower() or "[bot]" in pr.user_login.lower():
-            continue
+        if pr.user_login is not None:
+            if "bot" in pr.user_login.lower() or "[bot]" in pr.user_login.lower():
+                continue
         
         pr_data = {
                 "title": pr.title,
@@ -429,8 +436,9 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
         
     # By number of PRs
     for pr in pulls:
-        if '[bot]' in pr.user_login.lower() or 'bot' in pr.user_login.lower():
-            continue
+        if pr.user_login is not None:
+            if '[bot]' in pr.user_login.lower() or 'bot' in pr.user_login.lower():
+                continue
         
         author = pr.user_login
         found = False 
@@ -451,8 +459,9 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
     
     # By number of issues
     for issue in issues:
-        if '[bot]' in issue.user_login.lower() or 'bot' in issue.user_login.lower():
-            continue
+        if issue.user_login is not None:
+            if '[bot]' in issue.user_login.lower() or 'bot' in issue.user_login.lower():
+                continue
         
         author = issue.user_login
         found = False 
@@ -473,8 +482,9 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
         
     # By number of issue comments
     for comment in issue_comments:
-        if '[bot]' in comment.user_login.lower() or 'bot' in comment.user_login.lower():
-            continue
+        if comment.user_login is not None:
+            if '[bot]' in comment.user_login.lower() or 'bot' in comment.user_login.lower():
+                continue
 
         author = comment.user_login
         found = False
@@ -496,8 +506,9 @@ def get_active_contributors(session, thirty_days_ago, repository_full_name):
 
     # Loop through pull request comments
     for comment in pr_comments:
-        if '[bot]' in comment.user_login.lower() or 'bot' in comment.user_login.lower():
-            continue
+        if comment.user_login is not None:
+            if '[bot]' in comment.user_login.lower() or 'bot' in comment.user_login.lower():
+                continue
 
         author = comment.user_login
         found = False

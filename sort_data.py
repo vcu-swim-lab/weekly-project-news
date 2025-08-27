@@ -86,7 +86,7 @@ def get_open_issues(session, one_week_ago, repository_full_name):
     
     open_issue_data = []
 
-    # Loop through each issue
+    # Loop through each issue 
     for issue in issues:
 
         # Omit bots
@@ -119,7 +119,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
             Issue.closed_at >= one_week_ago
         )
     ).all()
-    
+    # closed issues
     closed_issue_data = []
 
     for issue in issues:

@@ -97,6 +97,7 @@ def get_a_repository(repository, headers):
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         repo_info = response.json()
+        print(f"Repo '{repository}' fetched successfully")
         return repo_info
     else:
         print(f'Failed to fetch repository information: {response.status_code}')

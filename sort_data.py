@@ -7,14 +7,12 @@ from github import Github
 from datetime import datetime, timedelta, timezone
 import time
 import json
-import requests
 from dotenv import load_dotenv
 from aiohttp import ClientSession
 from sqlalchemy.orm import sessionmaker
 import os
 from datetime import datetime  # Import datetime
 import json
-import requests 
 from parse_github_data import *
 from sqlalchemy import and_
 from sqlalchemy_json import NestedMutableJson
@@ -574,49 +572,6 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
         }
         return repo_data
 
-# Fetch GitHub ReadMe
-
-def fetch_github_readme_direct(repo_name):
-    """
-    Fetch README by constructing the raw GitHub URL from just the repository name
-    
-    Parameters:
-    repo_name (str): Name of the repository
-
-    Returns:
-    str: README content or error message
-    """
-    # Construct base repository URL
-    repo_url = f"https://github.com/{repo_name}"
-    
-    # Possible README variations and paths
-    readme_variations = [
-        '/raw/main/README.md',
-        '/raw/master/README.md',
-        '/raw/main/Readme.md',
-        '/raw/main/readme.md',
-        '/raw/main/README',
-        '/raw/master/README'
-    ]
-    
-    try:
-        # Try different README paths
-        for variation in readme_variations:
-            try:
-                response = requests.get(repo_url + variation)
-                
-                # If successful, return the content
-                if response.status_code == 200:
-                    return response.text
-            
-            except requests.RequestException:
-                continue
-        
-        # If no README found
-        return "404"
-    
-    except Exception as e:
-        return f"Error fetching README: {str(e)}"
 
 
 

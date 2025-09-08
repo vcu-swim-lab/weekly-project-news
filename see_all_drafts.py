@@ -30,13 +30,14 @@ def get_drafts():
     response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
-        print('c')
+        print("[INFO] get_drafts: request succeeded (200).")
+        print("[DEBUG] get_drafts: JSON payload follows:")
         print(response.json())
-        print('d')
+        print("[INFO] get_drafts: returning JSON payload.")
         return response.json()
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        print(f"[Error] get_drafts: request failed. status_code={response.status_code}")
+        print(f"[ERROR] get_drafts: response body:\n{response.text}")
         return None
     
 
@@ -52,13 +53,14 @@ def get_about_to_sends():
     response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
-        print('c')
+        print("[INFO] get_about_to_sends: request succeeded (200).")
+        print("[DEBUG] get_about_to_sends: JSON payload follows:")
         print(response.json())
-        print('d')
+        print("[INFO] get_about_to_sends: returning JSON payload.")
         return response.json()
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        print(f"[ERROR] get_about_to_sends: request failed. status_code={response.status_code}")
+        print(f"[ERROR] get_about_to_sends: response body:\n{response.text}")
         return None
     
 
@@ -74,13 +76,14 @@ def get_scheduleds():
     response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
-        print('c')
+        print("[INFO] get_scheduleds: request succeeded (200).")
+        print("[DEBUG] get_scheduleds: JSON payload follows:")
         print(response.json())
-        print('d')
+        print("[INFO] get_scheduleds: returning JSON payload.")
         return response.json()
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        print(f"[ERROR] get_scheduleds: request failed. status_code={response.status_code}")
+        print(f"[ERROR] get_scheduleds: response body:\n{response.text}")
         return None
     
 
@@ -96,13 +99,14 @@ def get_in_flights():
     response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
-        print('c')
+        print("[INFO] get_in_flights: request succeeded (200).")
+        print("[DEBUG] get_in_flights: JSON payload follows:")
         print(response.json())
-        print('d')
+        print("[INFO] get_in_flights: returning JSON payload.")
         return response.json()
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        print(f"[ERROR] get_in_flights: request failed. status_code={response.status_code}")
+        print(f"[ERROR] get_in_flights: response body:\n{response.text}")
         return None
     
 
@@ -118,13 +122,14 @@ def get_sents():
     response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
-        print('c')
+        print("[INFO] get_sents: request succeeded (200).")
+        print("[DEBUG] get_sents: JSON payload follows:")
         print(response.json())
-        print('d')
+        print("[INFO] get_sents: returning JSON payload.")
         return response.json()
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        print(f"[ERROR] get_sents: request failed. status_code={response.status_code}")
+        print(f"[ERROR] get_sents: response body:\n{response.text}")
         return None
     
 
@@ -140,13 +145,14 @@ def get_importeds():
     response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
-        print('c')
+        print("[INFO] get_importeds: request succeeded (200).")
+        print("[DEBUG] get_importeds: JSON payload follows:")
         print(response.json())
-        print('d')
+        print("[INFO] get_importeds: returning JSON payload.")
         return response.json()
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        print(f"[ERROR] get_importeds: request failed. status_code={response.status_code}")
+        print(f"[ERROR] get_importeds: response body:\n{response.text}")
         return None
 
 
@@ -161,13 +167,14 @@ def get_deleteds():
     response = requests.get(url, headers=headers, params=params)
     
     if response.status_code == 200:
-        print('c')
+        print("[INFO] get_deleteds: request succeeded (200).")
+        print("[DEBUG] get_deleteds: JSON payload follows:")
         print(response.json())
-        print('d')
+        print("[INFO] get_deleteds: returning JSON payload.")
         return response.json()
     else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
+        print(f"[ERROR] get_deleteds: request failed. status_code={response.status_code}")
+        print(f"[ERROR] get_deleteds: response body:\n{response.text}")
         return None
 
 
@@ -180,12 +187,12 @@ def display_drafts(drafts):
         print("No drafts found.")
         return
 
-    print('a')
-    print('Drafts:')
+    print("[INFO] display_drafts: begin")
+    print("Drafts (raw payload follows):")
     print(drafts)
-    print('b')
+    print("[INFO] display_drafts: end of raw payload")
 
-    print(f"Found {len(drafts['results'])} draft(s):")
+    print(f"[INFO] display_drafts: Found {len(drafts['results'])} draft(s):")
     for draft in drafts['results']:
         print(draft)
         print("-" * 30)
@@ -199,7 +206,7 @@ def delete_all_drafts(drafts):
     total = len(drafts['results'])
     deleted = 0
 
-    print("\nDeleting all drafts...")
+    print("\n[WARN] delete_all_drafts: Deleting all drafts...")
     for draft in drafts['results']:
         if 'id' in draft:
             print('ID:', draft['id']);

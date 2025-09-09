@@ -1,7 +1,7 @@
 # This script interacts with LangChain to create markdown files for the newsletters to be sent out
 # It uses the data from sort_data.py to insert data into ChatGPT via prompting
 # It requires a .env file with an OPENAI_KEY
-
+#hi
 from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
@@ -277,6 +277,8 @@ def open_pull_requests(repo):
   for pull_request in sorted_pull_requests:
     if pull_request.get('body'):
       pull_request['body'] = re.sub(r'<img[^>]*>|\r\n', '', pull_request['body'])
+      # ensures no merged status is present or used for open PRs
+      pull_request.pop('merged', None)
 
     # Generate the summary for the current open pull request
     pull_request_summary = generate_summary(pull_request, pr_instructions, max_retries=5, base_wait=1)
@@ -372,7 +374,7 @@ def closed_pull_requests(repo):
         key_pull_request_summary += (
             f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
             f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
-            f"\n - **Merged:** {merged_status}\n"
+            #f"\n - **Merged:** {merged_status}\n"
             f"\n - **Associated Commits:** {commit_list}\n\n"
         )
         key_pull_requests += 1

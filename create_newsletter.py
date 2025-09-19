@@ -16,6 +16,12 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker 
 import re
 
+def format_date(iso_str):
+   try:
+      return datetime.fromisoformat(iso_str.replace('Z', '+00:00')).strftime("%B %d, %Y")
+   except Exception:
+      return str(iso_str)
+
 load_dotenv()  
 API_KEY = os.environ.get("OPENAI_KEY")
 
@@ -286,7 +292,6 @@ def open_pull_requests(repo):
     pull_request_number = pull_request_url.split('/')[-1]
     shortened_url = f"pull/{pull_request_number}"
     pull_request_title = pull_request.get('title')
-    merged_status = pull_request.get('merged')
 
     # Process commits
     associated_commits = pull_request.get('commits', [])
@@ -300,7 +305,6 @@ def open_pull_requests(repo):
       key_pull_request_summary += (
         f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
         f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
-        f"\n - **Merged:** {merged_status}\n"
         f"\n - **Associated Commits:** {commit_list}\n\n"
       )
       key_pull_requests += 1
@@ -377,6 +381,10 @@ def closed_pull_requests(repo):
             #f"\n - **Merged:** {merged_status}\n"
             f"\n - **Associated Commits:** {commit_list}\n\n"
         )
+        if pull_request.get("merged_at"):
+           key_pull_request_summary += f"\n - **Merged:** {format_date(pull_request['merged_at'])}\n"
+
+        key_pull_request_summary += f"\n - **Associated Commits:** {commit_list}\n\n"
         key_pull_requests += 1
       elif total_prs > 3:
         # Limit other closed prs to 25

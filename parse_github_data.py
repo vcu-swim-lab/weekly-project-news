@@ -9,6 +9,7 @@ from tables.repository import Repository
 from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
+from tables.labels import Label
 from datetime import datetime
 import json
 import requests 

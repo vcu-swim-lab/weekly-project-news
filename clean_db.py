@@ -23,7 +23,6 @@ API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
 print(API_KEYS)
 current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
-g = Github(API_KEYS[current_key_index])
 
 # Set up logging to file
 logging.basicConfig(
@@ -40,12 +39,12 @@ def delete_element(session, obj_id, table, id='id', name='repository_full_name')
         if obj:
             session.delete(obj)
             session.commit()
-            logging.info(f"{table} {obj_id} deleted from {name}")
+            logging.info(f"{table.__tablename__} {obj_id} deleted from {name}")
         else:
-            logging.info(f"{table} {obj_id} does not exist in {name}")
+            logging.info(f"{table.__tablename__} {obj_id} does not exist in {name}")
     except Exception as e:
         session.rollback()
-        logging.error(f"Error deleting {table} {obj_id} in {name}: {e}")
+        logging.error(f"Error deleting {table.__tablename__} {obj_id} in {name}: {e}")
 
 # Handles the datetime formatting issues
 def handle_datetime(datetime_str):
@@ -55,7 +54,15 @@ def handle_datetime(datetime_str):
 
 # CLEAN ALL DATA
 def clean_all_data(session, repo_name, one_week_ago):
-    issues = get_issues(repo_name, one_week_ago)
+    logging.info(f"Starting cleaning process for {repo_name}")
+
+    try:
+        issues = get_issues(repo_name, one_week_ago)
+        logging.info(f"Retrieved {len(issues)} issues from GitHub for {repo_name}")
+    except Exception as e:
+        logging.error(f"Failed to retrieve issues for {repo_name}: {e}")
+        return
+
     issue_ids = {issue['id'] for issue in issues}
     pull_ids = {issue['id'] for issue in issues if 'pull' in issue['html_url']}
 
@@ -63,29 +70,31 @@ def clean_all_data(session, repo_name, one_week_ago):
     db_issues = session.query(Issue).filter(Issue.repository_full_name == repo_name).all()
     for db_issue in db_issues:
         if db_issue.id not in issue_ids:
+            logging.info(f"Issue {db_issue.id} not found in GitHub data; deleting from {repo_name}")
             delete_element(session, db_issue.id, Issue, name=repo_name)
 
     # Clean pull requests
     db_pulls = session.query(PullRequest).filter(PullRequest.repository_full_name == repo_name).all()
     for db_pull in db_pulls:
         if db_pull.id not in pull_ids:
+            logging.info(f"Pull request {db_pull.id} not found in GitHub data; deleting from {repo_name}")
             delete_element(session, db_pull.id, PullRequest, name=repo_name)
 
     # Clean issue comments
     db_issue_comments = session.query(IssueComment).all()
     for comment in db_issue_comments:
         if comment.issue_id not in issue_ids:
+            logging.info(f"Issue comment {comment.id} not tied to active issues; deleting from {repo_name}")
             delete_element(session, comment.id, IssueComment, name=repo_name)
 
     # Clean pull request comments
     db_pr_comments = session.query(PullRequestComment).all()
     for comment in db_pr_comments:
         if comment.pull_request_id not in pull_ids:
+            logging.info(f"Pull request comment {comment.id} not tied to active pull requests; deleting from {repo_name}")
             delete_element(session, comment.id, PullRequestComment, name=repo_name)
 
     logging.info(f"Finished cleaning data for {repo_name}")
-
-    
 
 # Main
 if __name__ == '__main__':
@@ -107,22 +116,21 @@ if __name__ == '__main__':
     # Get a list of repos in the database
     repo_list = [r[0] for r in session.query(Repository.full_name).all()]
 
+    logging.info(f"Beginning database cleaning for {len(repo_list)} repositories")
+
     # Loop through each and clean
     for repo_name in repo_list:
-
-        # Skip repos that have already been processed
         if repo_name in processed_repos:
+            logging.info(f"Skipping {repo_name}; already processed")
             continue
-
-        repo = g.get_repo(repo_name)
         
         clean_all_data(session, repo_name, one_week_ago)
 
         processed_repos.add(repo_name)
         
-    # Check how long the function takes to run and print result
+    # Check how long the function takes to run and log result
     elapsed_time = time.time() - start_time
-    if (elapsed_time >= 60):
-        logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+    if elapsed_time >= 60:
+        logging.info("Database cleaning completed in {:.2f} minutes".format(elapsed_time/60))
     else:
-        logging.info("This entire program took {:.2f} seconds to run".format(elapsed_time))
+        logging.info("Database cleaning completed in {:.2f} seconds".format(elapsed_time))

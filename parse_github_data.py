@@ -193,6 +193,18 @@ def get_issue_comments(repo, issue):
 
     return comment_array
 
+# RETRIEVE ISSUE LABELS
+def get_issue_labels(repo, issue):
+    issue_number = issue['number']
+    
+    url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/labels"
+    
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch issue labels: {response.status_code}")
+    
+    return response.json()
+
 # RETRIEVE PULL REQUEST COMMENTS
 def get_pr_comments(repo, pr):
     comment_array = []
@@ -343,6 +355,35 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         session.rollback()
     except Exception as e:
         logging.error(f"Error inserting issue: {e}")
+        session.rollback()
+
+
+# LABELS: INSERT ISSUE LABEL
+def insert_issue_label(label_data, issue_id, repo_name):
+    # Extract only the fields that exist in the Label model
+    print(f"Inserting label for issue: {issue_id}")
+    label_fields = {column.name for column in Label.__table__.columns}
+    filtered_label_data = {key: value for key, value in label_data.items() if key in label_fields}
+
+    # Check if label already exists for this issue in the database
+    if session.query(Label).filter_by(id=label_data['id'], issue_id=issue_id).first() is not None:
+        print("Label already exists for this issue!")
+        return
+        
+    # Add issue ID and repo name to database
+    filtered_label_data['issue_id'] = issue_id
+    filtered_label_data['repository_full_name'] = repo_name
+    
+    # Try/except for inserting label
+    try:
+        new_label = Label(**filtered_label_data)
+        session.add(new_label)
+        session.commit()
+    except IntegrityError as e:
+        logging.error(f"IntegrityError inserting label: {e}")
+        session.rollback()
+    except Exception as e:
+        logging.error(f"Error inserting label: {e}")
         session.rollback()
 
 
@@ -541,6 +582,11 @@ def insert_all_data(repo_name, date):
                 continue
 
             insert_issue_comment(comment, issue['id'], repo_name)
+        
+        # Loop through labels and insert
+        issue_labels = get_issue_labels(repo_name, issue)
+        for label in issue_labels:
+            insert_issue_label(label, issue['id'], repo_name)
 
         if num_issues % 10 == 0:
             rate_limit_check()

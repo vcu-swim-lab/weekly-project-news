@@ -14,8 +14,12 @@ from sort_data import *
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker 
-import re
-from prompts.discussion_prompt import DISCUSSION_INSTRUCTIONS
+# from prompts.discussion_prompt import discussion_instructions
+from prompts import (
+   individual_instructions,
+   general_instructions,
+   pull_request_instructions,
+)
 
 def format_date(iso_str):
    try:
@@ -31,32 +35,6 @@ prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
 llm=ChatOpenAI(model_name="gpt-4.1-mini", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
-
-# param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
-def individual_instructions(param1, param2, param3, param4):
-  return f"Above is JSON data describing {param1} from a GitHub project. Give {param4} describing what this {param2} is about, starting with 'This {param3}'. "
-
-# param1-4: "issues", param5: true if should include in instructions
-def general_instructions(param1, param2, param3, param4, param5, param6, param7):
-   instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
-   if param5:
-       print("Param5 activated")
-       instructions += f"After each bullet point summary, there should be a single bullet point containing a list of just the URLs of the {param3} that the topic covers like this [ URL1 , URL2, ...], no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [issues/82966](https://github.com/issues/82966)). In the clickable portion of the hyperlink, include the topic type (e.g., 'issues') and the last portion of the path (e.g., '82966'). "
-   if param7:
-       print("Param7 is activated")
-       instructions += f"After each bullet point summary, there should be a single bullet point containing a list of just the URLs of the {param3} that the topic covers like this [ URL1 , URL2, ...], no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [pull/63524](https://github.com/pull/63524)). In the clickable portion of the hyperlink, include the topic type (e.g., 'pull') and the last portion of the path (e.g., '63524'). "
-   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block. Ensure the link list is formatted as a comma-separated list of shortened links exactly as mentioned earlier. DO NOT deviate from this format.\n"
-   return instructions
-
-# Instructions for pull requests
-def pull_request_instructions():
-    return """
-Generate a one-paragraph summary of the pull request describing its purpose, key changes, and context. Do not include specific commit details in this paragraph. Do not add extra content or make up data beyond what is provided.
-"""
-
-
-def discussion_instructions():
-    return DISCUSSION_INSTRUCTIONS
 
 total_tokens = 0
 total_requests = 0

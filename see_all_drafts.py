@@ -269,7 +269,7 @@ def main():
     # if in_flights:
     #     display_drafts(in_flights)
     #     # delete_all_drafts(in_flights)
-    # else:
+    # else:7777777777777777777777777777k k7 
     #     print("Error: in_flights is null :(")
 
     # # 4: Get in_flights

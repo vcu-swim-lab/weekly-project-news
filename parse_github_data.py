@@ -62,35 +62,28 @@ def switch_api_key():
     logging.info(f"Switched to API key {current_key_index + 1}")
     return g
 
-# Makes sure the repo is public and the link is actually a link
+# Checks if a given repo URL is valid, public, and accessible.
 def check_repo(url):
+    if not url or not isinstance(url, str):
+        raise Exception(f"Invalid URL format: {url}")
+
     if ".com" not in url:
         print(f"Error: {url} does not contain a link.")
-        return True
+        return False
     try:
         response = requests.head(url, allow_redirects=True)
         if response.status_code == 404:
             print(f"Error 404: {url} not found.")
+            return False
+        elif 200 <= response.status_code < 400:
+            print(f"{url} is accessible. Status code: {response.status_code}")
             return True
         else:
-            print(f"{url} exists. Status code: {response.status_code}")
+            print(f"Unexpected status code {response.status_code} for {url}")
+            return False
     except requests.RequestException as e:
         print(f"Error accessing {url}: {e}")
-        return True
-    
-
-# Check if the link works, if it does return true otherwise return false
-def check_link_works(url):
-    if ".com" not in url:
         return False
-    try:
-        response = requests.head(url, allow_redirects=True)
-        return response.status_code == 200
-    except requests.RequestException:
-        print("Link not working")
-        print("Provided Link " + url)
-        return False
-
 
 # Retreives a repository
 def get_a_repository(repository, headers):

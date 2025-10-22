@@ -6,7 +6,7 @@
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
 from tables.repository import Repository
-from tables.issue import Issue, IssueComment
+from tables.issue import Issue, IssueComment, IssueLabel
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
 from tables.labels import Label
@@ -351,36 +351,48 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         session.rollback()
 
 
-# LABELS: INSERT ISSUE LABEL
+# LABELS: INSERT ISSUE LABELS
 def insert_issue_label(label_data, issue_id, repo_name):
-    # Extract only the fields that exist in the Label model
     print(f"Inserting label for issue: {issue_id}")
-    label_fields = {column.name for column in Label.__table__.columns}
-    filtered_label_data = {key: value for key, value in label_data.items() if key in label_fields}
-
-    # Check if label already exists for this issue in the database
-    # if session.query(Label).filter_by(id=label_data['id'], issue_id=issue_id).first() is not None:
-    #     print("Label already exists for this issue!")
-    #     return
     
-    print(f"Inserting label {label_data['id']} for issue: {issue_id}")
+    label_id = label_data['id']
+    
+    existing_label = session.query(Label).filter_by(id=label_id).first()
+    
+    if existing_label is None:
+        label_fields = {column.name for column in Label.__table__.columns}
+        filtered_label_data = {key: value for key, value in label_data.items() if key in label_fields}
+        filtered_label_data['repository_full_name'] = repo_name
         
-    # Add issue ID and repo name to database
-    filtered_label_data['issue_id'] = issue_id
-    filtered_label_data['repository_full_name'] = repo_name
+        try:
+            new_label = Label(**filtered_label_data)
+            session.add(new_label)
+            session.commit()
+            print(f"  Created new label: {label_data['name']}")
+        except Exception as e:
+            logging.error(f"Error inserting label: {e}")
+            session.rollback()
+            return
+    else:
+        print(f"Label '{label_data['name']}' already exists")
     
-    # Try/except for inserting label
-    try:
-        new_label = Label(**filtered_label_data)
-        session.add(new_label)
-        session.commit()
-    except IntegrityError as e:
-        logging.error(f"IntegrityError inserting label: {e}")
-        session.rollback()
-    except Exception as e:
-        logging.error(f"Error inserting label: {e}")
-        session.rollback()
-
+    existing_relationship = session.query(IssueLabel).filter_by(issue_id=issue_id, label_id=label_id).first()
+    
+    if existing_relationship is None:
+        try:
+            issue_label = IssueLabel(
+                issue_id=issue_id,
+                label_id=label_id,
+                repository_full_name=repo_name
+            )
+            session.add(issue_label)
+            session.commit()
+            print(f"Linked label '{label_data['name']}' to issue {issue_id}")
+        except Exception as e:
+            logging.error(f"Error creating issue-label relationship: {e}")
+            session.rollback()
+    else:
+        print(f"Relationship already exists")
 
 
 # PRS 1: INSERT PULL REQUEST
@@ -581,6 +593,7 @@ def insert_all_data(repo_name, date):
         # Loop through labels and insert
         issue_labels = get_issue_labels(repo_name, issue)
         for label in issue_labels:
+            print(f"Checking issue ID {issue['id']} and label ID {label}")
             insert_issue_label(label, issue['id'], repo_name)
 
         if num_issues % 10 == 0:

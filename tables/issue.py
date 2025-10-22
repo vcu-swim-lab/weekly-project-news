@@ -11,7 +11,7 @@ from .repository import Repository
 class Issue(Base):
     __tablename__ = 'issues'
     
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=False)
     html_url = Column(String)
     number = Column(Integer, nullable=False)
     state = Column(String, nullable=False)
@@ -40,3 +40,14 @@ class IssueComment(Base):
     repository_full_name = Column(String)
 
     issue_id = Column(Integer)
+
+class IssueLabel(Base):
+    __tablename__ = 'issue_labels'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    issue_id = Column(Integer, nullable=False)
+    label_id = Column(Integer, nullable=False)
+    repository_full_name = Column(String)
+    
+    def __repr__(self):
+        return f"<IssueLabel(issue_id={self.issue_id}, label_id={self.label_id})>"

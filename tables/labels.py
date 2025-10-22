@@ -10,7 +10,7 @@ from .repository import Repository
 class Label(Base):
     __tablename__ = 'labels'
     
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=False)
     url = Column(String)
     name = Column(String)
     description = Column(String)
@@ -18,7 +18,6 @@ class Label(Base):
 
     # Joins
     repository_full_name = Column(String)
-    issue_id = Column(Integer)
     
     def __repr__(self):
         return f"<Issue(title={self.title}, state={self.state})>"

@@ -96,11 +96,17 @@ def get_open_issues(session, one_week_ago, repository_full_name):
         'title': issue.title,
         "body": issue.body,
         "url": issue.html_url,
-        "comments": []
+        "comments": [],
+        "labels": []
         }
         comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         for comment in comments:
             issue_data["comments"].append({"body": comment.body})
+        
+        # Get labels
+        labels = session.query(Label).filter(Label.issue_id == issue.id).all()
+        for label in labels:
+            issue_data["labels"].append({"name": label.name})
         
         open_issue_data.append(issue_data)
             
@@ -130,11 +136,17 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
         'title': issue.title,
         "body": issue.body,
         "url": issue.html_url,
-        "comments": []
+        "comments": [],
+        "labels": []
         }
         comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         for comment in comments:
             issue_data["comments"].append({"body": comment.body})
+        
+        # Get labels
+        labels = session.query(Label).filter(Label.issue_id == issue.id).all()
+        for label in labels:
+            issue_data["labels"].append({"name": label.name})
         
         closed_issue_data.append(issue_data)
     
@@ -167,6 +179,7 @@ def get_active_issues(session, one_week_ago, repository_full_name):
             "user": issue.user_login,
             "url": issue.html_url,
             "comments": [],
+            "labels": [],
             "num_comments_this_week": 0 # Placeholder as 0
         }
         
@@ -179,6 +192,11 @@ def get_active_issues(session, one_week_ago, repository_full_name):
             if create_date >= one_week_ago:
                 num_comments_this_week += 1
             issue_data["comments"].append({"body": comment.body})
+
+        # Query labels
+        labels = session.query(Label).filter(Label.issue_id == issue.id).all()
+        for label in labels:
+            issue_data["labels"].append({"name": label.name})
         
         issue_data["num_comments_this_week"] = num_comments_this_week
         
@@ -241,8 +259,17 @@ def get_stale_issues(session, repository_full_name, thirty_days_ago):
             "last_updated": issue.updated_at,
             "body": issue.body,
             "url": issue.html_url,
-            "id": issue.id
+            "id": issue.id,
+            "labels": []
         }
+        print(f"Looking for labels for issue ID: {issue.id}")
+        # Query labels
+        labels = session.query(Label).filter(Label.issue_id == issue.id).all()
+        print(f"Found {len(labels)} labels for issue {issue.id}")
+        for label in labels:
+            print(f"Label found - Name: {label.name}, Issue ID: {label.issue_id}")
+            issue_data["labels"].append({"name": label.name})
+
         issue_data_sorted.append(issue_data)
         
     

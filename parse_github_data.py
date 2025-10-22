@@ -359,9 +359,11 @@ def insert_issue_label(label_data, issue_id, repo_name):
     filtered_label_data = {key: value for key, value in label_data.items() if key in label_fields}
 
     # Check if label already exists for this issue in the database
-    if session.query(Label).filter_by(id=label_data['id'], issue_id=issue_id).first() is not None:
-        print("Label already exists for this issue!")
-        return
+    # if session.query(Label).filter_by(id=label_data['id'], issue_id=issue_id).first() is not None:
+    #     print("Label already exists for this issue!")
+    #     return
+    
+    print(f"Inserting label {label_data['id']} for issue: {issue_id}")
         
     # Add issue ID and repo name to database
     filtered_label_data['issue_id'] = issue_id
@@ -626,7 +628,7 @@ if __name__ == '__main__':
             
             if repo_name and 'github.com' in repo_name:
                 # Check that the repository is public
-                if check_repo(repo_name):
+                if not check_repo(repo_name):
                     print(f"Repository is either private or does not exist.")
                     logging.warning(f"Repository {repo_name} is either private or does not exist.")
                     continue

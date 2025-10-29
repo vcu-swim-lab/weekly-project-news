@@ -410,11 +410,23 @@ def insert_pull_request(pull_request, repo_name):
         filtered_data['repository_full_name'] = repo_name
 
         # Check for if the pull request is merged
-        if pull_request['pull_request']['merged_at']:
-            filtered_data['merged'] = "Yes"
-        else:
-            filtered_data['merged'] = "No"
-        
+        #if pull_request['pull_request']['merged_at']:
+        #    filtered_data['merged'] = "Yes"
+        #else:
+        #    filtered_data['merged'] = "No"
+
+        # determine merged status with state awareness
+        pr_state = pull_request['pull request']['state']
+        merged_at = pull_request['pull_request']['merged_at']
+        if pr_state == "open":
+            filtered_data['merged'] = None
+        else: 
+            # PR is closed
+            if merged_at:
+                filtered_data['merged'] = "Yes"
+            else:
+                filtered_data['merged'] = "No"
+
         # Convert datetime fields
         datetime_fields = ['created_at', 'updated_at', 'closed_at']
         for field in datetime_fields:

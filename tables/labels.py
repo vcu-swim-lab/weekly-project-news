@@ -17,7 +17,8 @@ class Label(Base):
     color = Column(String)
 
     # Joins
+    issue_id = Column(Integer)
     repository_full_name = Column(String)
     
     def __repr__(self):
-        return f"<Issue(title={self.title}, state={self.state})>"
+        return f"<Label(name={self.name}, issue_id={self.issue_id})>"

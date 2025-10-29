@@ -6,7 +6,7 @@
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
 from tables.repository import Repository
-from tables.issue import Issue, IssueComment, IssueLabel
+from tables.issue import Issue, IssueComment
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
 from tables.labels import Label
@@ -18,7 +18,7 @@ from sqlalchemy import create_engine
 import logging
 from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
-from github import Github
+#from github import Github
 from datetime import datetime, timedelta, timezone
 import time
 import logging
@@ -30,60 +30,82 @@ current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 
 # Initialize Github instance
-g = Github(API_KEYS[current_key_index])
+#g = Github(API_KEYS[current_key_index])
 
 logging.basicConfig(filename='parse-log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Checks the rate limit
 def rate_limit_check():
-    global g
+    global current_key_index, headers
     try:
-        rate_limit = g.get_rate_limit().core
-        print(rate_limit)
-        print(f"Current key number: {current_key_index + 1} of {len(API_KEYS)}")
+        resp = requests.get("https://api.github.com/rate_limit", headers=headers)
+        if resp.status_code != 200:
+            logging.warning(
+                f"Rate limit check failed with {resp.status_code}, switching API key..."
+            )
+            switch_api_key()
+            return rate_limit_check()
         
-        if rate_limit.remaining < 50:  
+        data = resp.json()
+        core_info = data["resources"]["core"]
+        remaining = core_info["remaining"]
+        limit = core_info["limit"]
+        reset_unix = core_info["reset"]
+        print(f"Current key number: {current_key_index + 1} of {len(API_KEYS)}")
+        print(f"Rate limit remaining: {remaining}/{limit}")
+        
+        if remaining < 50:  
             print("Approaching rate limit, switching API key...")
             switch_api_key()
-            rate_limit_check()
+            return rate_limit_check()
+        
+        if remaining == 0:
+            sleep_for = max(reset_unix - int(time.time()), 0)
+            print(f"Out of requests. Sleeping {sleep_for} seconds until reset.")
+            time.sleep(sleep_for)
+
     except Exception as e:
         logging.error("Error checking rate limit: %s", e)
         print("Error checking rate limit:", e)
 
 # Switches API keys. When hits array limit, goes back to index 0
 def switch_api_key():
-    global current_key_index, g, headers
+    global current_key_index, headers
     current_key_index = (current_key_index + 1) % len(API_KEYS)
-    del headers
     headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
-    del g
-    g = Github(API_KEYS[current_key_index])
-    print(f"Switched to API key {current_key_index + 1}: ", API_KEYS[current_key_index])
+    print(f"Switched to API key {current_key_index + 1} of {len(API_KEYS)}")
     logging.info(f"Switched to API key {current_key_index + 1}")
-    return g
+    return headers
 
-# Checks if a given repo URL is valid, public, and accessible.
+# Makes sure the repo is public and the link is actually a link
 def check_repo(url):
-    if not url or not isinstance(url, str):
-        raise Exception(f"Invalid URL format: {url}")
-
     if ".com" not in url:
         print(f"Error: {url} does not contain a link.")
-        return False
+        return True
     try:
         response = requests.head(url, allow_redirects=True)
         if response.status_code == 404:
             print(f"Error 404: {url} not found.")
-            return False
-        elif 200 <= response.status_code < 400:
-            print(f"{url} is accessible. Status code: {response.status_code}")
             return True
         else:
-            print(f"Unexpected status code {response.status_code} for {url}")
-            return False
+            print(f"{url} exists. Status code: {response.status_code}")
     except requests.RequestException as e:
         print(f"Error accessing {url}: {e}")
+        return True
+    
+
+# Check if the link works, if it does return true otherwise return false
+def check_link_works(url):
+    if ".com" not in url:
         return False
+    try:
+        response = requests.head(url, allow_redirects=True)
+        return response.status_code == 200
+    except requests.RequestException:
+        print("Link not working")
+        print("Provided Link " + url)
+        return False
+
 
 # Retreives a repository
 def get_a_repository(repository, headers):
@@ -351,48 +373,34 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         session.rollback()
 
 
-# LABELS: INSERT ISSUE LABELS
+# LABELS: INSERT ISSUE LABEL
 def insert_issue_label(label_data, issue_id, repo_name):
+    # Extract only the fields that exist in the Label model
     print(f"Inserting label for issue: {issue_id}")
-    
-    label_id = label_data['id']
-    
-    existing_label = session.query(Label).filter_by(id=label_id).first()
-    
-    if existing_label is None:
-        label_fields = {column.name for column in Label.__table__.columns}
-        filtered_label_data = {key: value for key, value in label_data.items() if key in label_fields}
-        filtered_label_data['repository_full_name'] = repo_name
+    label_fields = {column.name for column in Label.__table__.columns}
+    filtered_label_data = {key: value for key, value in label_data.items() if key in label_fields}
+
+    # Check if label already exists for this issue in the database
+    if session.query(Label).filter_by(id=label_data['id'], issue_id=issue_id).first() is not None:
+        print("Label already exists for this issue!")
+        return
         
-        try:
-            new_label = Label(**filtered_label_data)
-            session.add(new_label)
-            session.commit()
-            print(f"  Created new label: {label_data['name']}")
-        except Exception as e:
-            logging.error(f"Error inserting label: {e}")
-            session.rollback()
-            return
-    else:
-        print(f"Label '{label_data['name']}' already exists")
+    # Add issue ID and repo name to database
+    filtered_label_data['issue_id'] = issue_id
+    filtered_label_data['repository_full_name'] = repo_name
     
-    existing_relationship = session.query(IssueLabel).filter_by(issue_id=issue_id, label_id=label_id).first()
-    
-    if existing_relationship is None:
-        try:
-            issue_label = IssueLabel(
-                issue_id=issue_id,
-                label_id=label_id,
-                repository_full_name=repo_name
-            )
-            session.add(issue_label)
-            session.commit()
-            print(f"Linked label '{label_data['name']}' to issue {issue_id}")
-        except Exception as e:
-            logging.error(f"Error creating issue-label relationship: {e}")
-            session.rollback()
-    else:
-        print(f"Relationship already exists")
+    # Try/except for inserting label
+    try:
+        new_label = Label(**filtered_label_data)
+        session.add(new_label)
+        session.commit()
+    except IntegrityError as e:
+        logging.error(f"IntegrityError inserting label: {e}")
+        session.rollback()
+    except Exception as e:
+        logging.error(f"Error inserting label: {e}")
+        session.rollback()
+
 
 
 # PRS 1: INSERT PULL REQUEST
@@ -417,11 +425,23 @@ def insert_pull_request(pull_request, repo_name):
         filtered_data['repository_full_name'] = repo_name
 
         # Check for if the pull request is merged
-        if pull_request['pull_request']['merged_at']:
-            filtered_data['merged'] = "Yes"
-        else:
-            filtered_data['merged'] = "No"
-        
+        #if pull_request['pull_request']['merged_at']:
+        #    filtered_data['merged'] = "Yes"
+        #else:
+        #    filtered_data['merged'] = "No"
+
+        # determine merged status with state awareness
+        pr_state = pull_request['pull request']['state']
+        merged_at = pull_request['pull_request']['merged_at']
+        if pr_state == "open":
+            filtered_data['merged'] = None
+        else: 
+            # PR is closed
+            if merged_at:
+                filtered_data['merged'] = "Yes"
+            else:
+                filtered_data['merged'] = "No"
+
         # Convert datetime fields
         datetime_fields = ['created_at', 'updated_at', 'closed_at']
         for field in datetime_fields:
@@ -593,7 +613,6 @@ def insert_all_data(repo_name, date):
         # Loop through labels and insert
         issue_labels = get_issue_labels(repo_name, issue)
         for label in issue_labels:
-            print(f"Checking issue ID {issue['id']} and label ID {label}")
             insert_issue_label(label, issue['id'], repo_name)
 
         if num_issues % 10 == 0:
@@ -641,7 +660,7 @@ if __name__ == '__main__':
             
             if repo_name and 'github.com' in repo_name:
                 # Check that the repository is public
-                if not check_repo(repo_name):
+                if check_repo(repo_name):
                     print(f"Repository is either private or does not exist.")
                     logging.warning(f"Repository {repo_name} is either private or does not exist.")
                     continue

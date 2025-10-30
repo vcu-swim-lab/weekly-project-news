@@ -16,6 +16,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker 
 # from prompts.discussion_prompt import discussion_instructions
 from prompts import (
+   discussion_instructions,
    individual_instructions,
    general_instructions,
    pull_request_instructions,
@@ -86,17 +87,23 @@ def active_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
-  issue_instructions += "Do not mention the URL in the summary. In the next line, you MUST give exactly one bullet point that MUST start with EXACTLY three spaces followed by a hyphen and a space ('   - ') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
+  issue_instructions += "Do not mention the URL in the summary. Do not mention the labels in the summary. Do NOT add any new lines to the start or end of your summary. In the next line, you MUST give exactly one bullet point that MUST start with EXACTLY three spaces followed by a hyphen and a space ('   - ') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
   issues = repo['active_issues'][:5]
 
   # We are only summarizing the top 5 open issues (active)
   for i, data in enumerate(issues):
     issue_title = data.get('title')
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
+    issue_summary = issue_summary.strip()  # Trim whitespace and newlines
     issue_url = data.get('url')
 
+    # Format labels as prefix inline
+    label_prefix = ""
+    if data.get('labels'):
+        label_prefix = " ".join([f"[{label['name'].upper()}]" for label in data['labels']]) + " "
+
     # Make the issue title a clickable link
-    markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
+    markdown += f"{i + 1}. {label_prefix}[**{issue_title}**]({issue_url}): {issue_summary}\n"
     markdown += f"   - Number of comments this week: {data.get('num_comments_this_week')}\n\n"
     
 
@@ -114,7 +121,7 @@ def stale_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
-  issue_instructions += "Do not mention the URL in the summary."
+  issue_instructions += "Do not mention the URL in the summary. Do not mention the labels in the summary. Do NOT add any new lines to the start or end of your summary."
   issues = repo['stale_issues'][:5]
 
   # We are only summarizing the top 5 open issues (stale)
@@ -123,15 +130,19 @@ def stale_issues(repo):
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = data.get('url')
 
+    # Format labels as prefix inline
+    label_prefix = ""
+    if data.get('labels'):
+        label_prefix = " ".join([f"[{label['name'].upper()}]" for label in data['labels']]) + " "
+
     # Make the issue title a clickable link
-    markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
+    markdown += f"{i + 1}. {label_prefix}[**{issue_title}**]({issue_url}): {issue_summary}\n\n"
     # markdown += f"   - Open for {data.get('time_open')}\n\n"
 
   if (len(issues) < 5):
-    markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
+    markdown += f"Since there were fewer than 5 stale issues, all of the stale issues have been listed above.\n\n"
 
   return markdown
-
 
 # 3 - Open Issues
 def open_issues(repo):
@@ -140,6 +151,7 @@ def open_issues(repo):
 
   all_open_issues = ""
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "only one detailed sentence")
+  issue_instructions += "Do not mention the labels in the summary. Do NOT add any new lines to the start or end of your summary."
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 2, False)
 
   # Step 1: get summaries for each open issue first from the llm
@@ -168,6 +180,7 @@ def closed_issues(repo):
 
   all_closed_issues = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue", "only one detailed sentence")
+  issue_instructions += "Do not mention the labels in the summary. Do NOT add any new lines to the start or end of your summary."
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 2, False)
 
   # Step 1: get summaries for each closed issue first from the llm

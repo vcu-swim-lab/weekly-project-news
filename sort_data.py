@@ -72,6 +72,15 @@ def get_release_create_date(session, repository_full_name):
         return release_create_date.isoformat()
     return None
 
+# RELEASES 4: Get the link of the latest release
+def get_release_link(session, repository_full_name):
+    release_link = session.query(Repository.release_link).filter(
+        and_(
+            Repository.full_name == repository_full_name
+        )
+    ).scalar()
+
+    return release_link if not None else None
 
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(session, one_week_ago, repository_full_name):
@@ -596,7 +605,8 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
             "latest_release": get_latest_release(session, repo_name),
             "release_description": get_release_description(session, repo_name),
-            "release_create_date": get_release_create_date(session, repo_name)
+            "release_create_date": get_release_create_date(session, repo_name),
+            "release_link": get_release_link(session, repo_name)
         }
         return repo_data
 

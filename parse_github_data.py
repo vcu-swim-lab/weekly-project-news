@@ -694,6 +694,7 @@ if __name__ == '__main__':
                     repo_data['latest_release'] = repo_latest_release['tag_name'] if not None else None
                     repo_data['release_description'] = repo_latest_release['body'] if not None else None
                     repo_data['release_create_date'] = repo_latest_release['created_at'] if not None else None
+                    repo_data['release_link'] = repo_latest_release['html_url'] if not None else None
                 
                 # Insert repo and data
                 insert_repository(repo_data)

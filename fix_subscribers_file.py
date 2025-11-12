@@ -77,7 +77,6 @@ def main():
     # Read the JSON file and validate the data
     try:
         with open('subscribers.json', 'r') as file:
-            data = json.load(file)
             try:
                 data = json.load(file)
             except json.JSONDecodeError as e:

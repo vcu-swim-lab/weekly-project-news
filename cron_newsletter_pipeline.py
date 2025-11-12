@@ -19,7 +19,8 @@ logging.basicConfig(
 )
 
 # Configuration
-PYTHON_PATH = '/home/projectnews/venv/bin/python'
+PYTHON_PATH = 'C:/Users/chris/AppData/Local/Programs/Python/Python313/python.exe'  # If running on local machine
+# PYTHON_PATH = '/home/projectnews/venv/bin/python'
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 30  # Initial delay, will increase exponentially
 NEWSLETTER_OUTPUT_DIR = 'newsletter_data'
@@ -36,6 +37,10 @@ def format_time(seconds):
 # Args: script_name: Name of the script to run, max_retries: Maximum number of retry attempts
 # Returns: bool: True if script ran successfully, False otherwise
 def run_script_with_retry(script_name, max_retries=MAX_RETRIES):
+    if script_name == 'clean_db.py' and not os.path.exists('github.db'):
+        print(f'Skipping {script_name} - github.db does not exist yet')
+        logging.info(f"Skipping {script_name} - github.db does not exist yet")
+        return True
 
     for attempt in range(1, max_retries + 1):
         try:
@@ -97,7 +102,7 @@ def run_script_with_retry(script_name, max_retries=MAX_RETRIES):
             formatted_time = format_time(duration)
             
             error_msg = f"Unexpected error running {script_name} on attempt {attempt}/{max_retries}: {e}"
-            print(f"✗ {error_msg}")
+            print(f"{error_msg}")
             logging.error(error_msg)
             logging.error(f"Time before error: {formatted_time}")
             
@@ -109,7 +114,6 @@ def run_script_with_retry(script_name, max_retries=MAX_RETRIES):
 # Validate that the database was updated successfully.
 # Returns:  bool: True if validation passes, False otherwise
 def validate_database_update():
-
     try:
         db_path = 'github.db'
         print("Validating database update...")
@@ -279,12 +283,12 @@ def run_pipeline():
     print("="*70)
     logging.info(f"Starting Stage 3: Newsletter Sending ({file_count} newsletters)")
     
-    if not run_script_with_retry('send_newsletter.py'):
-        logging.critical("Pipeline FAILED at Stage 3: send_newsletter.py failed after all retries")
-        print("\nPIPELINE FAILED: Newsletter sending failed")
-        print("WARNING: Newsletters were created but not sent!")
-        logging.warning("Newsletters were created but not sent - manual intervention may be needed")
-        return False
+    # if not run_script_with_retry('send_newsletter.py'):
+    #     logging.critical("Pipeline FAILED at Stage 3: send_newsletter.py failed after all retries")
+    #     print("\nPIPELINE FAILED: Newsletter sending failed")
+    #     print("WARNING: Newsletters were created but not sent!")
+    #     logging.warning("Newsletters were created but not sent - manual intervention may be needed")
+    #     return False
     
     # Success
     pipeline_end_time = time.time()

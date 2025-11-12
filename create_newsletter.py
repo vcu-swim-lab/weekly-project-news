@@ -623,6 +623,11 @@ if __name__ == '__main__':
         else:
             # Skip writing this section if version_summary is empty
             outfile.write("No noteworthy version updates were found.\n\n")
+        
+        # Include the release link
+        release_link = repo_data.get('release_link')
+        if release_link:
+           outfile.write(f"[Click here to view the full release notes!]({release_link})")
 
 
         outfile.write("\n\n")

@@ -18,7 +18,7 @@ from sqlalchemy import create_engine
 import logging
 from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
-from github import Github
+#from github import Github
 from datetime import datetime, timedelta, timezone
 import time
 import logging
@@ -30,37 +30,53 @@ current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 
 # Initialize Github instance
-g = Github(API_KEYS[current_key_index])
+#g = Github(API_KEYS[current_key_index])
 
 logging.basicConfig(filename='parse-log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Checks the rate limit
-def rate_limit_check():
-    global g
+def rate_limit_check(min_remaining: int = 50):
+    #ensures we have at least min_remaining core requests left
+    #tries to switch API keys if we're low, if all keys are low, sleeps until reset
     try:
-        rate_limit = g.get_rate_limit().core
-        print(rate_limit)
+        r = requests.get(
+            "https://api.github.com/rate_limit", 
+            headers=headers, 
+            timeout=10
+        )
+        r.raise_for_status()
+        core = r.json().get("resources", {}).get("core", {})
+        remaining = core.get("remaining", 0)
+        reset_ts = core.get("reset", int(time.time()) + 60)
+        
+        print(f"Rate limit: remaining={remaining}, resests_at={reset_ts}")
         print(f"Current key number: {current_key_index + 1} of {len(API_KEYS)}")
         
-        if rate_limit.remaining < 50:  
+        if remaining < min_remaining:  
             print("Approaching rate limit, switching API key...")
-            switch_api_key()
-            rate_limit_check()
+            switched = switch_api_key()
+            if not switched:
+                return rate_limit_check(min_remaining)
+            
+            sleep_for = max(0, reset_ts - int(time.time()) + 5)
+            print(f"All keys are exhausted. Sleeping {sleep_for}s until reset...")
+            time.sleep(sleep_for)
+            return rate_limit_check(min_remaining)
+        return
     except Exception as e:
         logging.error("Error checking rate limit: %s", e)
         print("Error checking rate limit:", e)
+        if switch_api_key():
+            return rate_limit_check(min_remaining)
 
 # Switches API keys. When hits array limit, goes back to index 0
 def switch_api_key():
-    global current_key_index, g, headers
+    global current_key_index, headers
     current_key_index = (current_key_index + 1) % len(API_KEYS)
-    del headers
     headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
-    del g
-    g = Github(API_KEYS[current_key_index])
-    print(f"Switched to API key {current_key_index + 1}: ", API_KEYS[current_key_index])
     logging.info(f"Switched to API key {current_key_index + 1}")
-    return g
+    print(f"Switched to API key index: {current_key_index + 1}")
+    return True
 
 # Checks if a given repo URL is valid, public, and accessible.
 def check_repo(url):

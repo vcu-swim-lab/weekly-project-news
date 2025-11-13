@@ -55,7 +55,7 @@ def rate_limit_check(min_remaining: int = 50):
         if remaining < min_remaining:  
             print("Approaching rate limit, switching API key...")
             switched = switch_api_key()
-            if not switched:
+            if switched:
                 return rate_limit_check(min_remaining)
             
             sleep_for = max(0, reset_ts - int(time.time()) + 5)

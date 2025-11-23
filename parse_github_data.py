@@ -18,10 +18,10 @@ from sqlalchemy import create_engine
 import logging
 from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
-#from github import Github
 from datetime import datetime, timedelta, timezone
 import time
 import logging
+from repo_utils import check_repo, get_repo_name
 
 load_dotenv()
 # Load API keys from .env file
@@ -30,7 +30,6 @@ current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 
 # Initialize Github instance
-#g = Github(API_KEYS[current_key_index])
 
 logging.basicConfig(filename='parse-log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -77,29 +76,6 @@ def switch_api_key():
     logging.info(f"Switched to API key {current_key_index + 1}")
     print(f"Switched to API key index: {current_key_index + 1}")
     return True
-
-# Checks if a given repo URL is valid, public, and accessible.
-def check_repo(url):
-    if not url or not isinstance(url, str):
-        raise Exception(f"Invalid URL format: {url}")
-
-    if ".com" not in url:
-        print(f"Error: {url} does not contain a link.")
-        return False
-    try:
-        response = requests.head(url, allow_redirects=True)
-        if response.status_code == 404:
-            print(f"Error 404: {url} not found.")
-            return False
-        elif 200 <= response.status_code < 400:
-            print(f"{url} is accessible. Status code: {response.status_code}")
-            return True
-        else:
-            print(f"Unexpected status code {response.status_code} for {url}")
-            return False
-    except requests.RequestException as e:
-        print(f"Error accessing {url}: {e}")
-        return False
 
 # Retreives a repository
 def get_a_repository(repository, headers):
@@ -320,10 +296,10 @@ def insert_issue(issue, repo_name):
         session.add(new_issue)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting Issue: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting Issue: {e}")
         session.rollback()
     
 # ISSUES 2: INSERT ISSUE COMMENT
@@ -360,10 +336,10 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         session.add(new_comment)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting Issue Comment: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting Issue Comment: {e}")
         session.rollback()
 
 
@@ -439,7 +415,7 @@ def insert_pull_request(pull_request, repo_name):
         #    filtered_data['merged'] = "No"
 
         # determine merged status with state awareness
-        pr_state = pull_request['pull request']['state']
+        pr_state = pull_request['state']
         merged_at = pull_request['pull_request']['merged_at']
         if pr_state == "open":
             filtered_data['merged'] = None
@@ -464,10 +440,10 @@ def insert_pull_request(pull_request, repo_name):
         session.add(new_pr)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting Pull Request: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting Pull Request: {e}")
         session.rollback()
 
     
@@ -504,10 +480,10 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
         session.add(new_comment)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting PR comment: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting PR comment: {e}")
         session.rollback()
     
 
@@ -540,10 +516,10 @@ def insert_commit(commit, repo_name, pr_id):
         session.add(new_commit)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting commit: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting commit: {e}")
         session.rollback()
 
 # Insert all repository data relative to a specific date (e.g. one week, one year, etc.)

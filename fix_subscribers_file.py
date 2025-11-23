@@ -4,6 +4,7 @@
 import json
 import re
 import requests
+from repo_utils import check_repo
 
 def process_repo_names(data):
     if not data or 'results' not in data:
@@ -24,29 +25,6 @@ def process_repo_names(data):
     data['results'] = valid_subscribers
     return data
 
-# Checks if a given repo URL is valid, public, and accessible.
-def check_repo(url):
-    if not url or not isinstance(url, str):
-        raise Exception(f"Invalid URL format: {url}")
-
-    if ".com" not in url:
-        print(f"Error: {url} does not contain a link.")
-        return False
-    try:
-        response = requests.head(url, allow_redirects=True)
-        if response.status_code == 404:
-            print(f"Error 404: {url} not found.")
-            return False
-        elif 200 <= response.status_code < 400:
-            print(f"{url} is accessible. Status code: {response.status_code}")
-            return True
-        else:
-            print(f"Unexpected status code {response.status_code} for {url}")
-            return False
-    except requests.RequestException as e:
-        print(f"Error accessing {url}: {e}")
-        return False
-
 def delete_problem_repos(data):
     if not data or 'results' not in data:
         raise Exception("Invalid data format: missing 'results field'")
@@ -57,7 +35,7 @@ def delete_problem_repos(data):
     while index < len(data['results']):
         repo_url = data['results'][index]['metadata'].get('repo_name', '')
 
-        if check_repo(repo_url):
+        if not check_repo(repo_url):
             data['results'].pop(index)
             print(f"Deleted {repo_url} from subscribers.json as the link was not valid.")
             repos_deleted += 1

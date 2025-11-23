@@ -552,8 +552,6 @@ if __name__ == '__main__':
 
   repositories = [row[0] for row in result]
 
-  # repositories = ["pytorch/pytorch"]
-
   # PART TWO: create the markdown for a newsletter
   for repository in repositories:
     # 2.1: call all sort_data.py functions on the repo

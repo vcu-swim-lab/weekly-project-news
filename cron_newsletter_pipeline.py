@@ -236,7 +236,7 @@ def run_pipeline():
     logging.info("Starting Stage 1: Data Download and Processing")
     
     download_scripts = [
-        'download_new_subscribers.py',
+        #'download_new_subscribers.py',
         'fix_subscribers_file.py',
         'clean_db.py',
         'parse_github_data.py',
@@ -283,12 +283,12 @@ def run_pipeline():
     print("="*70)
     logging.info(f"Starting Stage 3: Newsletter Sending ({file_count} newsletters)")
     
-    # if not run_script_with_retry('send_newsletter.py'):
-    #     logging.critical("Pipeline FAILED at Stage 3: send_newsletter.py failed after all retries")
-    #     print("\nPIPELINE FAILED: Newsletter sending failed")
-    #     print("WARNING: Newsletters were created but not sent!")
-    #     logging.warning("Newsletters were created but not sent - manual intervention may be needed")
-    #     return False
+    if not run_script_with_retry('send_newsletter.py'):
+        logging.critical("Pipeline FAILED at Stage 3: send_newsletter.py failed after all retries")
+        print("\nPIPELINE FAILED: Newsletter sending failed")
+        print("WARNING: Newsletters were created but not sent!")
+        logging.warning("Newsletters were created but not sent - manual intervention may be needed")
+        return False
     
     # Success
     pipeline_end_time = time.time()

@@ -3,6 +3,7 @@
 # This script combines download, create, and send processes into one operation
 # It includes retry logic, validation checks, and logging
 
+import json
 import subprocess
 import logging
 import time
@@ -19,8 +20,8 @@ logging.basicConfig(
 )
 
 # Configuration
-PYTHON_PATH = 'C:/Users/chris/AppData/Local/Programs/Python/Python313/python.exe'  # If running on local machine
-# PYTHON_PATH = '/home/projectnews/venv/bin/python'
+# PYTHON_PATH = 'C:/Users/chris/AppData/Local/Programs/Python/Python313/python.exe'  # If running on local machine
+PYTHON_PATH = '/home/projectnews/venv/bin/python'
 MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 30  # Initial delay, will increase exponentially
 NEWSLETTER_OUTPUT_DIR = 'newsletter_data'
@@ -172,10 +173,10 @@ def validate_newsletter_files():
         print("Validating newsletter files...")
         logging.info("Starting newsletter file validation")
         
-        # Look for markdown files in the newsletter directory
+        # Look for .txt files (not .md) in the newsletter directory
         patterns = [
-            f"{NEWSLETTER_OUTPUT_DIR}/*.md",
-            "*.md",  # Fallback if files are in current directory
+            f"{NEWSLETTER_OUTPUT_DIR}/newsletter_*.txt",
+            "newsletter_*.txt",
         ]
         
         newsletter_files = []
@@ -186,35 +187,50 @@ def validate_newsletter_files():
                 break
         
         if not newsletter_files:
-            logging.error("No newsletter markdown files found")
+            logging.error("No newsletter files found")
             print("No newsletter files found")
-            return False, 0
+            return False, 0, 0
         
         # Check that files are not empty
         valid_files = 0
         for file_path in newsletter_files:
             try:
                 file_size = os.path.getsize(file_path)
-                if file_size > 100:  # Arbitrary minimum size
+                if file_size > 100:
                     valid_files += 1
+                    logging.info(f"Valid newsletter file: {file_path} ({file_size} bytes)")
                 else:
                     logging.warning(f"Newsletter file {file_path} is too small ({file_size} bytes)")
             except Exception as e:
                 logging.error(f"Error checking file {file_path}: {e}")
         
         if valid_files == 0:
-            logging.error("No valid newsletter files found (all files too small or unreadable)")
+            logging.error("No valid newsletter files found")
             print("No valid newsletter files found")
-            return False, 0
+            return False, 0, 0
+        
+        # Count how many subscribers will receive newsletters
+        subscriber_count = 0
+        try:
+            if os.path.exists('subscribers.json'):
+                with open('subscribers.json', 'r') as f:
+                    subscribers_data = json.load(f)
+                    for subscriber in subscribers_data.get('results', []):
+                        if subscriber.get('subscriber_type') == 'regular' and subscriber.get('email'):
+                            subscriber_count += 1
+                logging.info(f"Found {subscriber_count} valid subscribers")
+                print(f"Found {subscriber_count} valid subscribers")
+        except Exception as e:
+            logging.warning(f"Could not count subscribers: {e}")
         
         logging.info(f"Found {valid_files} valid newsletter file(s)")
         print(f"Found {valid_files} valid newsletter file(s)")
-        return True, valid_files
+        return True, valid_files, subscriber_count
         
     except Exception as e:
         logging.error(f"Newsletter file validation failed: {e}")
         print(f"Newsletter validation error: {e}")
-        return False, 0
+        return False, 0, 0
 
 # Run the complete newsletter pipeline with validation gates.
 # Returns: bool: True if entire pipeline succeeded, False otherwise
@@ -236,7 +252,7 @@ def run_pipeline():
     logging.info("Starting Stage 1: Data Download and Processing")
     
     download_scripts = [
-        #'download_new_subscribers.py',
+        'download_new_subscribers.py',
         'fix_subscribers_file.py',
         'clean_db.py',
         'parse_github_data.py',
@@ -270,12 +286,14 @@ def run_pipeline():
     
     # Validation Gate 2: Check newsletter files were created
     print("\nValidation Gate 2: Checking newsletter files...")
-    files_valid, file_count = validate_newsletter_files()
+    files_valid, file_count, subscriber_count = validate_newsletter_files()
     if not files_valid:
         logging.critical("Pipeline FAILED at Validation Gate 2: Newsletter file validation failed")
         print("PIPELINE FAILED: Newsletter files were not created properly")
         return False
-    print(f"Newsletter file validation passed ({file_count} files ready)")
+    print(f"Newsletter file validation passed")
+    print(f"Newsletter files: {file_count}")
+    print(f"Valid subscribers: {subscriber_count}")
     
     # Stage 3: Newsletter Sending
     print("\n" + "="*70)
@@ -298,13 +316,15 @@ def run_pipeline():
     print("\n" + "="*70)
     print("PIPELINE COMPLETED SUCCESSFULLY")
     print(f"Total execution time: {formatted_total_time}")
-    print(f"Newsletters sent: {file_count}")
+    print(f"Newsletter files created: {file_count}")
+    print(f"Emails sent to: {subscriber_count} subscribers")
     print("="*70)
     
     logging.info("="*70)
     logging.info("PIPELINE COMPLETED SUCCESSFULLY")
     logging.info(f"Total execution time: {formatted_total_time}")
-    logging.info(f"Newsletters sent: {file_count}")
+    logging.info(f"Newsletter files created: {file_count}")
+    logging.info(f"Emails sent to: {subscriber_count} subscribers")
     logging.info("="*70)
     
     return True

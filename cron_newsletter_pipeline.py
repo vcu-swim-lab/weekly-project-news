@@ -300,12 +300,47 @@ def run_pipeline():
     print("STAGE 3: NEWSLETTER SENDING")
     print("="*70)
     logging.info(f"Starting Stage 3: Newsletter Sending ({file_count} newsletters)")
+
+    # Run send_newsletter.py WITHOUT retries to avoid duplicate emails
+    print("Running send_newsletter.py (no retries to prevent duplicates)")
+    logging.info("Running send_newsletter.py without retries")
     
-    if not run_script_with_retry('send_newsletter.py'):
-        logging.critical("Pipeline FAILED at Stage 3: send_newsletter.py failed after all retries")
+    try:
+        start_time = time.time()
+        
+        result = subprocess.run(
+            [PYTHON_PATH, 'send_newsletter.py'],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=600  # 10 minute timeout
+        )
+        
+        end_time = time.time()
+        duration = end_time - start_time
+        formatted_time = format_time(duration)
+        
+        print(f"Successfully finished send_newsletter.py")
+        print(f"Execution time: {formatted_time}")
+        logging.info(f"Successfully completed send_newsletter.py in {formatted_time}")
+        
+        if result.stdout.strip():
+            logging.debug(f"Output from send_newsletter.py: {result.stdout.strip()}")
+            
+    except subprocess.CalledProcessError as e:
+        logging.critical(f"Pipeline FAILED at Stage 3: send_newsletter.py failed")
+        logging.error(f"Error output: {e.stderr if e.stderr else 'None'}")
         print("\nPIPELINE FAILED: Newsletter sending failed")
         print("WARNING: Newsletters were created but not sent!")
         logging.warning("Newsletters were created but not sent - manual intervention may be needed")
+        return False
+    except subprocess.TimeoutExpired:
+        logging.critical("Pipeline FAILED at Stage 3: send_newsletter.py timed out after 10 minutes")
+        print("\nPIPELINE FAILED: Newsletter sending timed out")
+        return False
+    except Exception as e:
+        logging.critical(f"Pipeline FAILED at Stage 3: Unexpected error - {e}")
+        print(f"\nPIPELINE FAILED: Unexpected error in newsletter sending - {e}")
         return False
     
     # Success

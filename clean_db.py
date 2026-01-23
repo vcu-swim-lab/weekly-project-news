@@ -25,12 +25,7 @@ current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 
 # Set up logging to file
-logging.basicConfig(
-    filename='clean-db.log',
-    filemode='a',
-    format='%(asctime)s %(levelname)s: %(message)s',
-    level=logging.INFO
-)
+logging.basicConfig(filename='clean-db.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def delete_element(session, obj_id, table, id='id', name='repository_full_name'):
     try:

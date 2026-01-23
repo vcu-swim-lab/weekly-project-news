@@ -21,7 +21,7 @@ from prompts import (
    general_instructions,
    pull_request_instructions,
 )
-
+logging.basicConfig(filename='create-newsletter.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 def format_date(iso_str):
    try:
       return datetime.fromisoformat(iso_str.replace('Z', '+00:00')).strftime("%B %d, %Y")
@@ -523,9 +523,6 @@ if __name__ == '__main__':
   # 1.2: connect engine to the session
   Session = sessionmaker(bind=engine)
   session = Session()
-
-
-
 
   # 1.3: output folder + other stuff to run
   newsletter_directory = 'newsletter_data'

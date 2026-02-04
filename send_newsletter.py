@@ -17,6 +17,7 @@ logging.basicConfig(
 )
 
 load_dotenv()
+logging.basicConfig(filename='send-newsletter.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # https://api.buttondown.com/v1/docs
 headers = {

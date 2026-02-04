@@ -313,7 +313,7 @@ def run_pipeline():
             check=True,
             capture_output=True,
             text=True,
-            timeout=600  # 10 minute timeout
+            timeout=3600  # 10 minute timeout
         )
         
         end_time = time.time()

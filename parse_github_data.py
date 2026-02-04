@@ -127,6 +127,7 @@ def get_issues(repo, date):
     page = 1
 
     while True:
+        rate_limit_check()
         # Repo must be in form "owner/repo" for request to work
         url = f"https://api.github.com/repos/{repo}/issues"
         params = {
@@ -157,6 +158,7 @@ def get_issue_comments(repo, issue):
     issue_number = issue['number']
 
     while True:
+        rate_limit_check()
         # Repo must be in form "owner/repo" for request to work
         url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
         params = {
@@ -180,6 +182,7 @@ def get_issue_comments(repo, issue):
 
 # RETRIEVE ISSUE LABELS
 def get_issue_labels(repo, issue):
+    rate_limit_check()
     issue_number = issue['number']
     
     url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/labels"
@@ -197,6 +200,7 @@ def get_pr_comments(repo, pr):
     pr_number = pr['number']
 
     while True:
+        rate_limit_check()
         # Repo must be in form "owner/repo" for request to work
         url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/comments"
         params = {
@@ -224,6 +228,7 @@ def get_pr_commits(repo, pull_number):
     page = 1
 
     while True:
+        rate_limit_check()
         # Repo must be in form "owner/repo" for request to work
         url = f"https://api.github.com/repos/{repo}/pulls/{pull_number}/commits"
         params = {
@@ -247,6 +252,7 @@ def get_pr_commits(repo, pull_number):
 
 # RETRIEVE LATEST RELEASE
 def get_latest_release(repo):
+    rate_limit_check()
     # Repo must be in the form "owner/repo"
     url = f"https://api.github.com/repos/{repo}/releases/latest"
 

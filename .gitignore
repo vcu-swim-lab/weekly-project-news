@@ -178,3 +178,4 @@ contributors.json
 get_public_emails.py
 test.db
 get_public_emails
+add_column.py

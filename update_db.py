@@ -2,7 +2,6 @@
 # It avoids the need to delete and recreate the entire database each week
 # This script significantly improves performance and efficiency and it scales much better
 
-from github import Github
 from datetime import datetime, timedelta, timezone
 import os
 from dotenv import load_dotenv
@@ -19,10 +18,8 @@ from parse_github_data import *
 
 load_dotenv()
 API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
-print(API_KEYS)
 current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
-g = Github(API_KEYS[current_key_index])
 
 # Set up logging to file
 logging.basicConfig(filename='update-db.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -120,9 +117,7 @@ def update_all_data(session, repo_name, one_week_ago):
             update_attribute(session, repo_name, repo_data.get('body'), Repository, 'release_description', name='full_name')
             # REPOSITORY 3: Update the release_create_date of a repository
             update_attribute(session, repo_name, handle_datetime(repo_data.get('created_at')), Repository, 'release_create_date', name='name')
-            # REPOSITORY 4: Update the update_date of a repository
-            update_attribute(session, repo_name, handle_datetime(repo.updated_at.isoformat()), Repository, 'update_date', name='name')
-            # REPOSITORY 5: Update the open_issues_count of a repository
+            # REPOSITORY 4: Update the open_issues_count of a repository
             update_attribute(session, repo_name, num_issues - pulls_updated, Repository, 'open_issues', name='name')
         else:
             logging.warning(f"No release data found for {repo_name}")
@@ -162,8 +157,6 @@ if __name__ == '__main__':
         if repo_name in processed_repos:
             continue
 
-        repo = g.get_repo(repo_name)
-        
         update_all_data(session, repo_name, one_week_ago)
 
         processed_repos.add(repo_name)

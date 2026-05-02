@@ -74,8 +74,8 @@ def switch_api_key():
     current_key_index = (current_key_index + 1) % len(API_KEYS)
     headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
     logging.info(f"Switched to API key {current_key_index + 1}")
-<<<<<<< HEAD
-    return g
+    print(f"Switched to API key index: {current_key_index + 1}")
+    return True
 
 # GitHub GET with auto-retry on rate-limit responses.
 # On 403/429: logs body + rate-limit headers, honors Retry-After,
@@ -147,26 +147,15 @@ def check_link_works(url):
         print("Provided Link " + url)
         return False
 
-=======
-    print(f"Switched to API key index: {current_key_index + 1}")
-    return True
->>>>>>> a806d214fbeab212f6741a42b2c7cd0cdeb62a52
-
 # Retreives a repository
 def get_a_repository(repository, headers=None):
     url = f'https://api.github.com/repos/{repository}'
     response = github_get(url)
     if response.status_code == 200:
-<<<<<<< HEAD
-        return response.json()
-    print(f'Failed to fetch repository information: {response.status_code}')
-=======
         repo_info = response.json()
         print(f"Repo '{repository}' fetched successfully")
         return repo_info
-    else:
-        print(f'Failed to fetch repository information: {response.status_code}')
->>>>>>> a806d214fbeab212f6741a42b2c7cd0cdeb62a52
+    print(f'Failed to fetch repository information: {response.status_code}')
 
 # Retreives the repo name from the url
 def get_repo_name(url):
@@ -205,6 +194,7 @@ def insert_repository(data):
 def get_issues(repo, date):
     issues_array = []
     page = 1
+    since = date.isoformat() if isinstance(date, datetime) else date
 
     while True:
         rate_limit_check()
@@ -214,7 +204,7 @@ def get_issues(repo, date):
             'state': 'all',
             'page': page,
             'per_page': 100,
-            'since': date,
+            'since': since,
         }
 
         response = github_get(url, params=params)

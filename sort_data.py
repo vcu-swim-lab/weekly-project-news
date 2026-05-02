@@ -7,14 +7,12 @@ from github import Github
 from datetime import datetime, timedelta, timezone
 import time
 import json
-import requests
 from dotenv import load_dotenv
 from aiohttp import ClientSession
 from sqlalchemy.orm import sessionmaker
 import os
 from datetime import datetime  # Import datetime
 import json
-import requests 
 from parse_github_data import *
 from sqlalchemy import and_
 from sqlalchemy_json import NestedMutableJson
@@ -22,8 +20,9 @@ from sqlalchemy import create_engine
 import logging
 from tables.base import Base, engine
 from tables.repository import Repository
-from tables.issue import Issue, IssueComment
+from tables.issue import Issue, IssueComment, IssueLabel
 from tables.pull_request import PullRequest, PullRequestComment
+from tables.labels import Label
 from tables.commit import Commit
 from urllib.parse import quote
 
@@ -73,6 +72,15 @@ def get_release_create_date(session, repository_full_name):
         return release_create_date.isoformat()
     return None
 
+# RELEASES 4: Get the link of the latest release
+def get_release_link(session, repository_full_name):
+    release_link = session.query(Repository.release_link).filter(
+        and_(
+            Repository.full_name == repository_full_name
+        )
+    ).scalar()
+
+    return release_link if not None else None
 
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(session, one_week_ago, repository_full_name):
@@ -86,7 +94,7 @@ def get_open_issues(session, one_week_ago, repository_full_name):
     
     open_issue_data = []
 
-    # Loop through each issue
+    # Loop through each issue 
     for issue in issues:
 
         # Omit bots
@@ -98,11 +106,17 @@ def get_open_issues(session, one_week_ago, repository_full_name):
         'title': issue.title,
         "body": issue.body,
         "url": issue.html_url,
-        "comments": []
+        "comments": [],
+        "labels": []
         }
         comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         for comment in comments:
             issue_data["comments"].append({"body": comment.body})
+        
+        issue_labels = session.query(Label).join(IssueLabel, IssueLabel.label_id == Label.id).filter(IssueLabel.issue_id == issue.id).all()
+        
+        for label in issue_labels:
+            issue_data["labels"].append({"name": label.name})
         
         open_issue_data.append(issue_data)
             
@@ -119,7 +133,7 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
             Issue.closed_at >= one_week_ago
         )
     ).all()
-    
+    # closed issues
     closed_issue_data = []
 
     for issue in issues:
@@ -132,11 +146,18 @@ def get_closed_issues(session, one_week_ago, repository_full_name):
         'title': issue.title,
         "body": issue.body,
         "url": issue.html_url,
-        "comments": []
+        "comments": [],
+        "labels": []
         }
         comments = session.query(IssueComment).filter(IssueComment.issue_id == issue.id).all()
         for comment in comments:
             issue_data["comments"].append({"body": comment.body})
+        
+        # Get labels
+        issue_labels = session.query(Label).join(IssueLabel, IssueLabel.label_id == Label.id).filter(IssueLabel.issue_id == issue.id).all()
+        
+        for label in issue_labels:
+            issue_data["labels"].append({"name": label.name})
         
         closed_issue_data.append(issue_data)
     
@@ -169,6 +190,7 @@ def get_active_issues(session, one_week_ago, repository_full_name):
             "user": issue.user_login,
             "url": issue.html_url,
             "comments": [],
+            "labels": [],
             "num_comments_this_week": 0 # Placeholder as 0
         }
         
@@ -181,6 +203,12 @@ def get_active_issues(session, one_week_ago, repository_full_name):
             if create_date >= one_week_ago:
                 num_comments_this_week += 1
             issue_data["comments"].append({"body": comment.body})
+
+        # Query labels
+        issue_labels = session.query(Label).join(IssueLabel, IssueLabel.label_id == Label.id).filter(IssueLabel.issue_id == issue.id).all()
+        
+        for label in issue_labels:
+            issue_data["labels"].append({"name": label.name})
         
         issue_data["num_comments_this_week"] = num_comments_this_week
         
@@ -243,8 +271,15 @@ def get_stale_issues(session, repository_full_name, thirty_days_ago):
             "last_updated": issue.updated_at,
             "body": issue.body,
             "url": issue.html_url,
-            "id": issue.id
+            "id": issue.id,
+            "labels": []
         }
+        # Query labels
+        issue_labels = session.query(Label).join(IssueLabel, IssueLabel.label_id == Label.id).filter(IssueLabel.issue_id == issue.id).all()
+        
+        for label in issue_labels:
+            issue_data["labels"].append({"name": label.name})
+
         issue_data_sorted.append(issue_data)
         
     
@@ -570,53 +605,11 @@ def get_repo_data(session, one_week_ago, thirty_days_ago, limit, repo_name):
             "active_contributors": get_active_contributors(session, thirty_days_ago, repo_name),
             "latest_release": get_latest_release(session, repo_name),
             "release_description": get_release_description(session, repo_name),
-            "release_create_date": get_release_create_date(session, repo_name)
+            "release_create_date": get_release_create_date(session, repo_name),
+            "release_link": get_release_link(session, repo_name)
         }
         return repo_data
 
-# Fetch GitHub ReadMe
-
-def fetch_github_readme_direct(repo_name):
-    """
-    Fetch README by constructing the raw GitHub URL from just the repository name
-    
-    Parameters:
-    repo_name (str): Name of the repository
-
-    Returns:
-    str: README content or error message
-    """
-    # Construct base repository URL
-    repo_url = f"https://github.com/{repo_name}"
-    
-    # Possible README variations and paths
-    readme_variations = [
-        '/raw/main/README.md',
-        '/raw/master/README.md',
-        '/raw/main/Readme.md',
-        '/raw/main/readme.md',
-        '/raw/main/README',
-        '/raw/master/README'
-    ]
-    
-    try:
-        # Try different README paths
-        for variation in readme_variations:
-            try:
-                response = requests.get(repo_url + variation)
-                
-                # If successful, return the content
-                if response.status_code == 200:
-                    return response.text
-            
-            except requests.RequestException:
-                continue
-        
-        # If no README found
-        return "404"
-    
-    except Exception as e:
-        return f"Error fetching README: {str(e)}"
 
 
 

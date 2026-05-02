@@ -25,12 +25,7 @@ headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 g = Github(API_KEYS[current_key_index])
 
 # Set up logging to file
-logging.basicConfig(
-    filename='update-db.log',
-    filemode='a',
-    format='%(asctime)s %(levelname)s: %(message)s',
-    level=logging.INFO
-)
+logging.basicConfig(filename='update-db.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def update_attribute(session, new_id, new_data, table, column, id='id', name='repository_full_name'):
     try:

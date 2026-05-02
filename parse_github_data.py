@@ -6,9 +6,10 @@
 from sqlalchemy.orm import sessionmaker
 from tables.base import Base, engine
 from tables.repository import Repository
-from tables.issue import Issue, IssueComment
+from tables.issue import Issue, IssueComment, IssueLabel
 from tables.pull_request import PullRequest, PullRequestComment
 from tables.commit import Commit
+from tables.labels import Label
 from datetime import datetime
 import json
 import requests 
@@ -17,10 +18,10 @@ from sqlalchemy import create_engine
 import logging
 from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
-from github import Github
 from datetime import datetime, timedelta, timezone
 import time
 import logging
+from repo_utils import check_repo, get_repo_name
 
 load_dotenv()
 # Load API keys from .env file
@@ -29,36 +30,51 @@ current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 
 # Initialize Github instance
-g = Github(API_KEYS[current_key_index])
 
 logging.basicConfig(filename='parse-log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Checks the rate limit
-def rate_limit_check():
-    global g
+def rate_limit_check(min_remaining: int = 50):
+    #ensures we have at least min_remaining core requests left
+    #tries to switch API keys if we're low, if all keys are low, sleeps until reset
     try:
-        rate_limit = g.get_rate_limit().core
-        print(rate_limit)
+        r = requests.get(
+            "https://api.github.com/rate_limit", 
+            headers=headers, 
+            timeout=10
+        )
+        r.raise_for_status()
+        core = r.json().get("resources", {}).get("core", {})
+        remaining = core.get("remaining", 0)
+        reset_ts = core.get("reset", int(time.time()) + 60)
+        
+        print(f"Rate limit: remaining={remaining}, resests_at={reset_ts}")
         print(f"Current key number: {current_key_index + 1} of {len(API_KEYS)}")
         
-        if rate_limit.remaining < 50:  
+        if remaining < min_remaining:  
             print("Approaching rate limit, switching API key...")
-            switch_api_key()
-            rate_limit_check()
+            switched = switch_api_key()
+            if switched:
+                return rate_limit_check(min_remaining)
+            
+            sleep_for = max(0, reset_ts - int(time.time()) + 5)
+            print(f"All keys are exhausted. Sleeping {sleep_for}s until reset...")
+            time.sleep(sleep_for)
+            return rate_limit_check(min_remaining)
+        return
     except Exception as e:
         logging.error("Error checking rate limit: %s", e)
         print("Error checking rate limit:", e)
+        if switch_api_key():
+            return rate_limit_check(min_remaining)
 
 # Switches API keys. When hits array limit, goes back to index 0
 def switch_api_key():
-    global current_key_index, g, headers
+    global current_key_index, headers
     current_key_index = (current_key_index + 1) % len(API_KEYS)
-    del headers
     headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
-    del g
-    g = Github(API_KEYS[current_key_index])
-    print(f"Switched to API key {current_key_index + 1}: ", API_KEYS[current_key_index])
     logging.info(f"Switched to API key {current_key_index + 1}")
+<<<<<<< HEAD
     return g
 
 # GitHub GET with auto-retry on rate-limit responses.
@@ -131,14 +147,26 @@ def check_link_works(url):
         print("Provided Link " + url)
         return False
 
+=======
+    print(f"Switched to API key index: {current_key_index + 1}")
+    return True
+>>>>>>> a806d214fbeab212f6741a42b2c7cd0cdeb62a52
 
 # Retreives a repository
 def get_a_repository(repository, headers=None):
     url = f'https://api.github.com/repos/{repository}'
     response = github_get(url)
     if response.status_code == 200:
+<<<<<<< HEAD
         return response.json()
     print(f'Failed to fetch repository information: {response.status_code}')
+=======
+        repo_info = response.json()
+        print(f"Repo '{repository}' fetched successfully")
+        return repo_info
+    else:
+        print(f'Failed to fetch repository information: {response.status_code}')
+>>>>>>> a806d214fbeab212f6741a42b2c7cd0cdeb62a52
 
 # Retreives the repo name from the url
 def get_repo_name(url):
@@ -179,6 +207,7 @@ def get_issues(repo, date):
     page = 1
 
     while True:
+        rate_limit_check()
         # Repo must be in form "owner/repo" for request to work
         url = f"https://api.github.com/repos/{repo}/issues"
         params = {
@@ -209,6 +238,7 @@ def get_issue_comments(repo, issue):
     issue_number = issue['number']
 
     while True:
+        rate_limit_check()
         # Repo must be in form "owner/repo" for request to work
         url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments"
         params = {
@@ -230,6 +260,19 @@ def get_issue_comments(repo, issue):
 
     return comment_array
 
+# RETRIEVE ISSUE LABELS
+def get_issue_labels(repo, issue):
+    rate_limit_check()
+    issue_number = issue['number']
+    
+    url = f"https://api.github.com/repos/{repo}/issues/{issue_number}/labels"
+    
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch issue labels: {response.status_code}")
+    
+    return response.json()
+
 # RETRIEVE PULL REQUEST COMMENTS
 def get_pr_comments(repo, pr):
     comment_array = []
@@ -237,6 +280,7 @@ def get_pr_comments(repo, pr):
     pr_number = pr['number']
 
     while True:
+        rate_limit_check()
         # Repo must be in form "owner/repo" for request to work
         url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/comments"
         params = {
@@ -264,6 +308,7 @@ def get_pr_commits(repo, pull_number):
     page = 1
 
     while True:
+        rate_limit_check()
         # Repo must be in form "owner/repo" for request to work
         url = f"https://api.github.com/repos/{repo}/pulls/{pull_number}/commits"
         params = {
@@ -287,6 +332,7 @@ def get_pr_commits(repo, pull_number):
 
 # RETRIEVE LATEST RELEASE
 def get_latest_release(repo):
+    rate_limit_check()
     # Repo must be in the form "owner/repo"
     url = f"https://api.github.com/repos/{repo}/releases/latest"
 
@@ -336,10 +382,10 @@ def insert_issue(issue, repo_name):
         session.add(new_issue)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting Issue: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting Issue: {e}")
         session.rollback()
     
 # ISSUES 2: INSERT ISSUE COMMENT
@@ -376,12 +422,55 @@ def insert_issue_comment(comment_data, issue_id, repo_name):
         session.add(new_comment)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting Issue Comment: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting Issue Comment: {e}")
         session.rollback()
 
+
+# LABELS: INSERT ISSUE LABELS
+def insert_issue_label(label_data, issue_id, repo_name):
+    print(f"Inserting label for issue: {issue_id}")
+    
+    label_id = label_data['id']
+    
+    existing_label = session.query(Label).filter_by(id=label_id).first()
+    
+    if existing_label is None:
+        label_fields = {column.name for column in Label.__table__.columns}
+        filtered_label_data = {key: value for key, value in label_data.items() if key in label_fields}
+        filtered_label_data['repository_full_name'] = repo_name
+        
+        try:
+            new_label = Label(**filtered_label_data)
+            session.add(new_label)
+            session.commit()
+            print(f"  Created new label: {label_data['name']}")
+        except Exception as e:
+            logging.error(f"Error inserting label: {e}")
+            session.rollback()
+            return
+    else:
+        print(f"Label '{label_data['name']}' already exists")
+    
+    existing_relationship = session.query(IssueLabel).filter_by(issue_id=issue_id, label_id=label_id).first()
+    
+    if existing_relationship is None:
+        try:
+            issue_label = IssueLabel(
+                issue_id=issue_id,
+                label_id=label_id,
+                repository_full_name=repo_name
+            )
+            session.add(issue_label)
+            session.commit()
+            print(f"Linked label '{label_data['name']}' to issue {issue_id}")
+        except Exception as e:
+            logging.error(f"Error creating issue-label relationship: {e}")
+            session.rollback()
+    else:
+        print(f"Relationship already exists")
 
 
 # PRS 1: INSERT PULL REQUEST
@@ -406,11 +495,23 @@ def insert_pull_request(pull_request, repo_name):
         filtered_data['repository_full_name'] = repo_name
 
         # Check for if the pull request is merged
-        if pull_request['pull_request']['merged_at']:
-            filtered_data['merged'] = "Yes"
-        else:
-            filtered_data['merged'] = "No"
-        
+        #if pull_request['pull_request']['merged_at']:
+        #    filtered_data['merged'] = "Yes"
+        #else:
+        #    filtered_data['merged'] = "No"
+
+        # determine merged status with state awareness
+        pr_state = pull_request['state']
+        merged_at = pull_request['pull_request']['merged_at']
+        if pr_state == "open":
+            filtered_data['merged'] = None
+        else: 
+            # PR is closed
+            if merged_at:
+                filtered_data['merged'] = "Yes"
+            else:
+                filtered_data['merged'] = "No"
+
         # Convert datetime fields
         datetime_fields = ['created_at', 'updated_at', 'closed_at']
         for field in datetime_fields:
@@ -425,10 +526,10 @@ def insert_pull_request(pull_request, repo_name):
         session.add(new_pr)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting Pull Request: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting Pull Request: {e}")
         session.rollback()
 
     
@@ -465,10 +566,10 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
         session.add(new_comment)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting PR comment: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting PR comment: {e}")
         session.rollback()
     
 
@@ -501,10 +602,10 @@ def insert_commit(commit, repo_name, pr_id):
         session.add(new_commit)
         session.commit()
     except IntegrityError as e:
-        logging.error(f"IntegrityError inserting issue: {e}")
+        logging.error(f"IntegrityError inserting commit: {e}")
         session.rollback()
     except Exception as e:
-        logging.error(f"Error inserting issue: {e}")
+        logging.error(f"Error inserting commit: {e}")
         session.rollback()
 
 # Insert all repository data relative to a specific date (e.g. one week, one year, etc.)
@@ -578,6 +679,12 @@ def insert_all_data(repo_name, date):
                 continue
 
             insert_issue_comment(comment, issue['id'], repo_name)
+        
+        # Loop through labels and insert
+        issue_labels = get_issue_labels(repo_name, issue)
+        for label in issue_labels:
+            print(f"Checking issue ID {issue['id']} and label ID {label}")
+            insert_issue_label(label, issue['id'], repo_name)
 
         if num_issues % 10 == 0:
             rate_limit_check()
@@ -624,7 +731,7 @@ if __name__ == '__main__':
             
             if repo_name and 'github.com' in repo_name:
                 # Check that the repository is public
-                if check_repo(repo_name):
+                if not check_repo(repo_name):
                     print(f"Repository is either private or does not exist.")
                     logging.warning(f"Repository {repo_name} is either private or does not exist.")
                     continue
@@ -665,6 +772,7 @@ if __name__ == '__main__':
                     repo_data['latest_release'] = repo_latest_release['tag_name'] if not None else None
                     repo_data['release_description'] = repo_latest_release['body'] if not None else None
                     repo_data['release_create_date'] = repo_latest_release['created_at'] if not None else None
+                    repo_data['release_link'] = repo_latest_release['html_url'] if not None else None
                 
                 # Insert repo and data
                 insert_repository(repo_data)

@@ -1,7 +1,7 @@
 # This script interacts with LangChain to create markdown files for the newsletters to be sent out
 # It uses the data from sort_data.py to insert data into ChatGPT via prompting
 # It requires a .env file with an OPENAI_KEY
-
+#hi
 from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
@@ -14,7 +14,19 @@ from sort_data import *
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker 
-import re
+# from prompts.discussion_prompt import discussion_instructions
+from prompts import (
+   discussion_instructions,
+   individual_instructions,
+   general_instructions,
+   pull_request_instructions,
+)
+logging.basicConfig(filename='create-newsletter.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+def format_date(iso_str):
+   try:
+      return datetime.fromisoformat(iso_str.replace('Z', '+00:00')).strftime("%B %d, %Y")
+   except Exception:
+      return str(iso_str)
 
 load_dotenv()  
 API_KEY = os.environ.get("OPENAI_KEY")
@@ -24,39 +36,6 @@ prompt_template = "Data: {data}\nInstructions: {instructions}\n"
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["data", "instructions"])
 llm=ChatOpenAI(model_name="gpt-4.1-mini", temperature=0, openai_api_key = API_KEY)
 chain = PROMPT | llm
-
-# param1: "a closed issue", param2-3: "issue", param4: "only one detailed sentence"
-def individual_instructions(param1, param2, param3, param4):
-  return f"Above is JSON data describing {param1} from a GitHub project. Give {param4} describing what this {param2} is about, starting with 'This {param3}'. "
-
-# param1-4: "issues", param5: true if should include in instructions
-def general_instructions(param1, param2, param3, param4, param5, param6, param7):
-   instructions = f"Generate a bulleted list in markdown BASED ON THE DATA ABOVE ONLY where each bullet point starts with a concise topic covered by multiple {param1} in bold text, followed by a colon, followed by a one paragraph summary that must contain {param6} sentences describing the topic's {param2}. This topic, colon, and paragraph summary must all be on the same line on the same bullet point. Do NOT make up content that is not explicitly stated in the data. "
-   if param5:
-       print("Param5 activated")
-       instructions += f"After each bullet point summary, there should be a single bullet point containing a list of just the URLs of the {param3} that the topic covers like this [ URL1 , URL2, ...], no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [issues/82966](https://github.com/issues/82966)). In the clickable portion of the hyperlink, include the topic type (e.g., 'issues') and the last portion of the path (e.g., '82966'). "
-   if param7:
-       print("Param7 is activated")
-       instructions += f"After each bullet point summary, there should be a single bullet point containing a list of just the URLs of the {param3} that the topic covers like this [ URL1 , URL2, ...], no other text. Each URL must look like markdown WITHOUT the https://github.com/ in brackets, but only including the https://github.com/ in parentheses (ex. [pull/63524](https://github.com/pull/63524)). In the clickable portion of the hyperlink, include the topic type (e.g., 'pull') and the last portion of the path (e.g., '63524'). "
-   instructions += f"You must clump {param4} with similar topics together, so there are fewer bullet points. Show the output in markdown in a code block. Ensure the link list is formatted as a comma-separated list of shortened links exactly as mentioned earlier. DO NOT deviate from this format.\n"
-   return instructions
-
-# Instructions for pull requests
-def pull_request_instructions():
-    return """
-Generate a one-paragraph summary of the pull request describing its purpose, key changes, and context. Do not include specific commit details in this paragraph. Do not add extra content or make up data beyond what is provided.
-"""
-
-
-def discussion_instructions():
-    return """First, write a one-paragraph summary capturing the trajectory of a GitHub conversation. Be concise and objective, describing usernames, sentiments, tones, and triggers of tension without including specific topics, claims, or arguments. For example, 'username1 expresses frustration that username2's solution did not work'. Start your answer with 'This GitHub conversation'. 
-After the summary, on the same line, provide a single number to 2 decimal places on a 0 to 1 scale, indicating the likelihood of toxicity in future comments. Use a scale where:
-- 0.0 to 0.3 means very little toxicity,
-- 0.3 to 0.6 means a moderate possibility,
-- 0.6 to 1.0 means a high likelihood of toxicity.
-Do not add any extra text or newlines in this part.
-Then, on the same line, provide a brief, comma-separated list of specific reasons for assigning the score. For example, 'Rapid escalation, aggressive language'. Do not include any other details or newlines."""
-
 
 total_tokens = 0
 total_requests = 0
@@ -108,17 +87,23 @@ def active_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
-  issue_instructions += "Do not mention the URL in the summary. In the next line, you MUST give exactly one bullet point that MUST start with EXACTLY three spaces followed by a hyphen and a space ('   - ') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
+  issue_instructions += "Do not mention the URL in the summary. Do not mention the labels in the summary. Do NOT add any new lines to the start or end of your summary. In the next line, you MUST give exactly one bullet point that MUST start with EXACTLY three spaces followed by a hyphen and a space ('   - ') summarizing the entire interaction in the comments. This bullet point should be multiple concise sentences, summarizing the ENTIRE comment section. Do not mention specific usernames."
   issues = repo['active_issues'][:5]
 
   # We are only summarizing the top 5 open issues (active)
   for i, data in enumerate(issues):
     issue_title = data.get('title')
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
+    issue_summary = issue_summary.strip()  # Trim whitespace and newlines
     issue_url = data.get('url')
 
+    # Format labels as prefix inline
+    label_prefix = ""
+    if data.get('labels'):
+        label_prefix = " ".join([f"[{label['name'].upper()}]" for label in data['labels']]) + " "
+
     # Make the issue title a clickable link
-    markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
+    markdown += f"{i + 1}. {label_prefix}[**{issue_title}**]({issue_url}): {issue_summary}\n"
     markdown += f"   - Number of comments this week: {data.get('num_comments_this_week')}\n\n"
     
 
@@ -136,7 +121,7 @@ def stale_issues(repo):
     return markdown
 
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "two detailed sentences")
-  issue_instructions += "Do not mention the URL in the summary."
+  issue_instructions += "Do not mention the URL in the summary. Do not mention the labels in the summary. Do NOT add any new lines to the start or end of your summary."
   issues = repo['stale_issues'][:5]
 
   # We are only summarizing the top 5 open issues (stale)
@@ -145,15 +130,19 @@ def stale_issues(repo):
     issue_summary = generate_summary(data, issue_instructions, max_retries=5, base_wait=1)
     issue_url = data.get('url')
 
+    # Format labels as prefix inline
+    label_prefix = ""
+    if data.get('labels'):
+        label_prefix = " ".join([f"[{label['name'].upper()}]" for label in data['labels']]) + " "
+
     # Make the issue title a clickable link
-    markdown += f"{i + 1}. [**{issue_title}**]({issue_url}): {issue_summary}\n"
+    markdown += f"{i + 1}. {label_prefix}[**{issue_title}**]({issue_url}): {issue_summary}\n\n"
     # markdown += f"   - Open for {data.get('time_open')}\n\n"
 
   if (len(issues) < 5):
-    markdown += f"Since there were fewer than 5 open issues, all of the open issues have been listed above.\n\n"
+    markdown += f"Since there were fewer than 5 stale issues, all of the stale issues have been listed above.\n\n"
 
   return markdown
-
 
 # 3 - Open Issues
 def open_issues(repo):
@@ -162,6 +151,7 @@ def open_issues(repo):
 
   all_open_issues = ""
   issue_instructions = individual_instructions("an open issue", "issue", "issue", "only one detailed sentence")
+  issue_instructions += "Do not mention the labels in the summary. Do NOT add any new lines to the start or end of your summary."
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 2, False)
 
   # Step 1: get summaries for each open issue first from the llm
@@ -190,6 +180,7 @@ def closed_issues(repo):
 
   all_closed_issues = ""
   issue_instructions = individual_instructions("a closed issue", "issue", "issue", "only one detailed sentence")
+  issue_instructions += "Do not mention the labels in the summary. Do NOT add any new lines to the start or end of your summary."
   overall_instructions = general_instructions("issues", "issues", "issues", "issues", True, 2, False)
 
   # Step 1: get summaries for each closed issue first from the llm
@@ -277,6 +268,8 @@ def open_pull_requests(repo):
   for pull_request in sorted_pull_requests:
     if pull_request.get('body'):
       pull_request['body'] = re.sub(r'<img[^>]*>|\r\n', '', pull_request['body'])
+      # ensures no merged status is present or used for open PRs
+      pull_request.pop('merged', None)
 
     # Generate the summary for the current open pull request
     pull_request_summary = generate_summary(pull_request, pr_instructions, max_retries=5, base_wait=1)
@@ -284,7 +277,6 @@ def open_pull_requests(repo):
     pull_request_number = pull_request_url.split('/')[-1]
     shortened_url = f"pull/{pull_request_number}"
     pull_request_title = pull_request.get('title')
-    merged_status = pull_request.get('merged')
 
     # Process commits
     associated_commits = pull_request.get('commits', [])
@@ -298,7 +290,6 @@ def open_pull_requests(repo):
       key_pull_request_summary += (
         f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
         f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
-        f"\n - **Merged:** {merged_status}\n"
         f"\n - **Associated Commits:** {commit_list}\n\n"
       )
       key_pull_requests += 1
@@ -372,9 +363,13 @@ def closed_pull_requests(repo):
         key_pull_request_summary += (
             f"**{key_pull_requests + 1}. {pull_request_title}:** {pull_request_summary}\n"
             f"\n - **URL:** [{shortened_url}]({pull_request_url})\n"
-            f"\n - **Merged:** {merged_status}\n"
+            #f"\n - **Merged:** {merged_status}\n"
             f"\n - **Associated Commits:** {commit_list}\n\n"
         )
+        if pull_request.get("merged_at"):
+           key_pull_request_summary += f"\n - **Merged:** {format_date(pull_request['merged_at'])}\n"
+
+        key_pull_request_summary += f"\n - **Associated Commits:** {commit_list}\n\n"
         key_pull_requests += 1
       elif total_prs > 3:
         # Limit other closed prs to 25
@@ -529,9 +524,6 @@ if __name__ == '__main__':
   Session = sessionmaker(bind=engine)
   session = Session()
 
-
-
-
   # 1.3: output folder + other stuff to run
   newsletter_directory = 'newsletter_data'
   if not os.path.exists(newsletter_directory):
@@ -556,8 +548,6 @@ if __name__ == '__main__':
   result = session.execute(query)
 
   repositories = [row[0] for row in result]
-
-  # repositories = ["pytorch/pytorch"]
 
   # PART TWO: create the markdown for a newsletter
   for repository in repositories:
@@ -628,6 +618,11 @@ if __name__ == '__main__':
         else:
             # Skip writing this section if version_summary is empty
             outfile.write("No noteworthy version updates were found.\n\n")
+        
+        # Include the release link
+        release_link = repo_data.get('release_link')
+        if release_link:
+           outfile.write(f"[Click here to view the full release notes!]({release_link})")
 
 
         outfile.write("\n\n")

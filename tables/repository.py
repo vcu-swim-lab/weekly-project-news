@@ -19,6 +19,7 @@ class Repository(Base):
     latest_release = Column(String)
     release_description = Column(String)
     release_create_date = Column(DateTime)
+    release_link = Column(String)
     
     def __repr__(self):
         return f"<Repository(id={self.id}, full_name={self.full_name})>"

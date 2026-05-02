@@ -61,6 +61,47 @@ def switch_api_key():
     logging.info(f"Switched to API key {current_key_index + 1}")
     return g
 
+# GitHub GET with auto-retry on rate-limit responses.
+# On 403/429: logs body + rate-limit headers, honors Retry-After,
+# switches API keys, and retries. Returns the final Response — caller
+# should still check status_code in case all keys are exhausted.
+def github_get(url, params=None, max_retries=None):
+    if max_retries is None:
+        max_retries = len(API_KEYS) + 1
+    attempts = 0
+    while True:
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            return response
+
+        remaining = response.headers.get('X-RateLimit-Remaining')
+        reset = response.headers.get('X-RateLimit-Reset')
+        retry_after = response.headers.get('Retry-After')
+        body = response.text[:500]
+        logging.warning(
+            "GitHub API %s for %s (key %d/%d, remaining=%s, reset=%s, retry-after=%s): %s",
+            response.status_code, url, current_key_index + 1, len(API_KEYS),
+            remaining, reset, retry_after, body,
+        )
+
+        if response.status_code not in (403, 429):
+            return response
+
+        attempts += 1
+        if attempts >= max_retries:
+            logging.error("Exhausted rate-limit retries for %s", url)
+            return response
+
+        if retry_after:
+            try:
+                wait = min(int(retry_after), 60)
+                logging.info("Sleeping %ds due to Retry-After", wait)
+                time.sleep(wait)
+            except ValueError:
+                pass
+
+        switch_api_key()
+
 # Makes sure the repo is public and the link is actually a link
 def check_repo(url):
     if ".com" not in url:
@@ -92,14 +133,12 @@ def check_link_works(url):
 
 
 # Retreives a repository
-def get_a_repository(repository, headers):
+def get_a_repository(repository, headers=None):
     url = f'https://api.github.com/repos/{repository}'
-    response = requests.get(url, headers=headers)
+    response = github_get(url)
     if response.status_code == 200:
-        repo_info = response.json()
-        return repo_info
-    else:
-        print(f'Failed to fetch repository information: {response.status_code}')
+        return response.json()
+    print(f'Failed to fetch repository information: {response.status_code}')
 
 # Retreives the repo name from the url
 def get_repo_name(url):
@@ -149,14 +188,14 @@ def get_issues(repo, date):
             'since': date,
         }
 
-        response = requests.get(url, headers=headers, params=params)
+        response = github_get(url, params=params)
         if response.status_code != 200:
             raise Exception(f"Failed to fetch issues: {response.status_code}")
 
         page_issues = response.json()
         if not page_issues:
             break
-        
+
 
         issues_array.extend(page_issues)
         page += 1
@@ -177,7 +216,7 @@ def get_issue_comments(repo, issue):
             'per_page': 100
         }
 
-        response = requests.get(url, headers=headers, params=params)
+        response = github_get(url, params=params)
         if response.status_code != 200:
             raise Exception(f"Failed to fetch issue comments: {response.status_code}")
 
@@ -205,7 +244,7 @@ def get_pr_comments(repo, pr):
             'per_page': 100
         }
 
-        response = requests.get(url, headers=headers, params=params)
+        response = github_get(url, params=params)
         if response.status_code != 200:
             raise Exception(f"Failed to fetch PR comments: {response.status_code}")
 
@@ -232,7 +271,7 @@ def get_pr_commits(repo, pull_number):
             'per_page': 100
         }
 
-        response = requests.get(url, headers=headers, params=params)
+        response = github_get(url, params=params)
         if response.status_code != 200:
             raise Exception(f"Failed to fetch PR commits: {response.status_code}")
 
@@ -252,8 +291,8 @@ def get_latest_release(repo):
     url = f"https://api.github.com/repos/{repo}/releases/latest"
 
     try:
-        response = requests.get(url, headers=headers)
-        
+        response = github_get(url)
+
         if response.status_code == 200:
             return response.json()
         else:

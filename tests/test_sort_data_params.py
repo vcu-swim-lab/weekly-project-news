@@ -41,6 +41,9 @@ def mock_session_fixture(mocker):
     mock_filter = mocker.Mock()
 
     mock_query.filter.return_value = mock_filter
+    # sort_data also queries Label.join(IssueLabel).filter().all() per issue —
+    # default that to an empty list so the iteration in sort_data doesn't crash.
+    mock_query.join.return_value.filter.return_value.all.return_value = []
 
     return {
         "session": mock_session,
@@ -112,7 +115,7 @@ def _mock_datetime(date_string):
     (get_open_issues, "owner/repo", one_week_ago, 'open', 0, [], "ci-bot[bot]", "Bot", "T1", None, None),
 
     # T2: Open issues, less than one week ago, no bot
-    (get_open_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Open Issue 1", "body": "Description", "url": "http://open_issue1.url", "comments": []}], "developer", "No Bot", "T2", None, None),
+    (get_open_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Open Issue 1", "body": "Description", "url": "http://open_issue1.url", "comments": [], "labels": []}], "developer", "No Bot", "T2", None, None),
     
     # T3: Open issues, more than one week ago, bot user
     # Expected to return empty array
@@ -123,7 +126,7 @@ def _mock_datetime(date_string):
     (get_open_issues, "owner/repo", thirty_days_ago, 'open', 0, [], "developer", "No Bot", "T4", None, None),
     
     # T6: Closed issues, less than one week ago, no bot
-    (get_closed_issues, "owner/repo", one_week_ago, 'closed', 1, [{"title": "Closed Issue 1", "body": "Description", "url": "http://closed_issue1.url", "comments": []}], "developer", "No Bot", "T6", None, None),
+    (get_closed_issues, "owner/repo", one_week_ago, 'closed', 1, [{"title": "Closed Issue 1", "body": "Description", "url": "http://closed_issue1.url", "comments": [], "labels": []}], "developer", "No Bot", "T6", None, None),
     
     # T5: Closed issues, less than one week ago, bot user
     # Expected to return empty array
@@ -143,7 +146,7 @@ def _mock_datetime(date_string):
     
     # Active issues tests
     # Needs to check comments within time window
-    (get_active_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Active Issue 1", "body": "Description", "user": "developer", "url": "http://active_issue1.url", "comments": [{"body": "Recent comment"}], "num_comments_this_week": 1}], "developer", "No Bot", "Active Issues Test", None, None),
+    (get_active_issues, "owner/repo", one_week_ago, 'open', 1, [{"title": "Active Issue 1", "body": "Description", "user": "developer", "url": "http://active_issue1.url", "comments": [{"body": "Recent comment"}], "labels": [], "num_comments_this_week": 1}], "developer", "No Bot", "Active Issues Test", None, None),
     
     # Stale issues tests
     (get_stale_issues, "owner/repo", thirty_days_ago, 'open', 1, [{"title": "Stale Issue", "time_open": "45 days, 00 hours, 00 minutes", "last_updated": thirty_days_ago - timedelta(days=15), "body": "Description", "url": "http://stale_issue.url", "id": 1}], "developer", "No Bot", "Stale Issues Test", 45, 15),

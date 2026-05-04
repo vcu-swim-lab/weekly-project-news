@@ -142,11 +142,11 @@ def test_get_closed_issues_active():
     mock_comment2.body = 'Comment 2'
 
     mock_session.query().filter().all.side_effect = [
-        [mock_issue],                   
-        [mock_comment1, mock_comment2] 
+        [mock_issue],
+        [mock_comment1, mock_comment2]
     ]
 
-    result = sort_data.get_open_issues(mock_session, one_week_ago, 'test/repo')
+    result = sort_data.get_closed_issues(mock_session, one_week_ago, 'test/repo')
 
     assert len(result) == 1
     issue = result[0]
@@ -283,7 +283,7 @@ def test_get_num_closed_issues_weekly_active():
         {'title': 'Issue 2'}
     ]
 
-    assert sort_data.get_num_open_issues_weekly(issues) == 2
+    assert sort_data.get_num_closed_issues_weekly(issues) == 2
 
 ##### PR TESTS #####
 
@@ -356,7 +356,7 @@ def test_get_closed_prs_active():
         [commit1, commit2]
     ]
 
-    result = sort_data.get_open_prs(mock_session, one_week_ago, 'test/repo')
+    result = sort_data.get_closed_prs(mock_session, one_week_ago, 'test/repo')
 
     assert len(result) == 1
     pr = result[0]

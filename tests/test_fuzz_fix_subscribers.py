@@ -114,15 +114,13 @@ def test_check_repo_fuzzing(mocker):
     for url in urls:
         try:
             result = fix_subscribers_file.check_repo(url)
-            
-            # Expected behavior:
-            # - URLs with "valid" and proper format should return None (valid)
-            # - Others should return True (invalid)
+
+            # check_repo returns True for accessible/public repos, False otherwise.
             if url and isinstance(url, str) and "://" in url and ".com" in url and "valid" in url:
-                assert result is None, f"Expected valid URL {url} to return None, got {result}"
+                assert result is True, f"Expected valid URL {url} to return True, got {result}"
             else:
-                assert result is True, f"Expected invalid URL {url} to return True, got {result}"
-                
+                assert result is False, f"Expected invalid URL {url} to return False, got {result}"
+
         except Exception as e:
             pytest.fail(f"check_repo failed with URL '{url}': {e}")
 
@@ -145,7 +143,8 @@ def test_delete_problem_repos_fuzzing(mocker):
         test_data["results"].append(subscriber)
     
     def mock_check_repo(url):
-        return None if "valid-" in url else True
+        # check_repo returns True for valid/public, False otherwise
+        return True if "valid-" in url else False
     
     mocker.patch("fix_subscribers_file.check_repo", side_effect=mock_check_repo)
     mocker.patch("builtins.print")
@@ -187,7 +186,8 @@ def test_main_function_fuzzing(mocker):
     mocker.patch('builtins.open', m)
     
     def mock_check_repo(url):
-        return None if "valid-" in url else True
+        # check_repo returns True for valid/public, False otherwise
+        return True if "valid-" in url else False
     
     mocker.patch('fix_subscribers_file.check_repo', side_effect=mock_check_repo)
     mocker.patch('builtins.print')

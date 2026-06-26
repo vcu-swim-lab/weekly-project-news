@@ -130,6 +130,7 @@ def check_repo(url):
             return True
         else:
             print(f"{url} exists. Status code: {response.status_code}")
+            return False
     except requests.RequestException as e:
         print(f"Error accessing {url}: {e}")
         return True

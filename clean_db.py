@@ -20,7 +20,6 @@ from parse_github_data import *
 
 load_dotenv()
 API_KEYS = os.environ['GITHUB_API_KEYS'].split(' ')
-print(API_KEYS)
 current_key_index = 0
 headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 

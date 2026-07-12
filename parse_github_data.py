@@ -172,35 +172,10 @@ def github_get(url, params=None, max_retries=None):
 
         switch_api_key()
 
-# Makes sure the repo is public and the link is actually a link
-def check_repo(url):
-    if ".com" not in url:
-        print(f"Error: {url} does not contain a link.")
-        return True
-    try:
-        response = requests.head(url, allow_redirects=True)
-        if response.status_code == 404:
-            print(f"Error 404: {url} not found.")
-            return True
-        else:
-            print(f"{url} exists. Status code: {response.status_code}")
-            return False
-    except requests.RequestException as e:
-        print(f"Error accessing {url}: {e}")
-        return True
-    
-
-# Check if the link works, if it does return true otherwise return false
-def check_link_works(url):
-    if ".com" not in url:
-        return False
-    try:
-        response = requests.head(url, allow_redirects=True)
-        return response.status_code == 200
-    except requests.RequestException:
-        print("Link not working")
-        print("Provided Link " + url)
-        return False
+# NOTE: check_repo / check_link_works / get_repo_name are intentionally NOT
+# defined here — they are imported from repo_utils (see top of file). Local
+# copies used to shadow those imports with *inverted* return semantics, which
+# caused valid repos to be skipped at the call site below.
 
 # Retreives a repository
 def get_a_repository(repository, headers=None):
@@ -211,13 +186,6 @@ def get_a_repository(repository, headers=None):
         print(f"Repo '{repository}' fetched successfully")
         return repo_info
     print(f'Failed to fetch repository information: {response.status_code}')
-
-# Retreives the repo name from the url
-def get_repo_name(url):
-    parts = url.split('/')
-    if len(parts) >= 5 and parts[2] == 'github.com':
-        return f"{parts[3]}/{parts[4]}" 
-    return None
 
 # INSERT REPOSITORY
 def insert_repository(data): 
@@ -618,29 +586,36 @@ def insert_pr_comment(comment_data, pr_id, repo_name):
         session.rollback()
     
 
+# Pull author login, committer date, and message from a GitHub commit payload,
+# tolerating missing/None sub-objects (e.g. a commit whose GitHub `author` is
+# null, which is common for commits not linked to a GitHub account).
+def extract_commit_core_fields(commit):
+    author = commit.get('author') or {}
+    commit_obj = commit.get('commit') or {}
+    committer = commit_obj.get('committer') or {}
+    committer_date = committer.get('date')
+    return {
+        'commit_author_login': author.get('login', ''),
+        'committer_date': datetime.fromisoformat(committer_date) if committer_date else None,
+        'commit_message': commit_obj.get('message', ''),
+    }
+
 # COMMITS 1: INSERT COMMIT
 def insert_commit(commit, repo_name, pr_id):
     try:
         commit_fields = {column.name for column in Commit.__table__.columns}
         filtered_data = {key: value for key, value in commit.items() if key in commit_fields}
-        
+
         # Check if the commit already exists
         if session.query(Commit).filter_by(sha=commit['sha']).first() is not None:
             print("Commit already exists!")
             return
-        
-        # Try/except for author data
-        try:
-            filtered_data['commit_author_login'] = commit['author']['login'] if not None else ''
-        except Exception as e:
-            print(f"Failed to fetch user data for commit {commit['sha']}: {e}")
-    
-        # Set repo name, committer date, and commit message
+
+        # Set author login, committer date, and commit message (None-tolerant)
+        filtered_data.update(extract_commit_core_fields(commit))
+
+        # Set repo name and PR ID
         filtered_data['repository_full_name'] = repo_name
-        filtered_data['committer_date'] = datetime.fromisoformat(commit['commit']['committer']['date']) if not None else ''
-        filtered_data['commit_message'] = commit['commit']['message'] if not None else ''
-        
-        # Add pr ID to database
         filtered_data['pull_request_id'] = pr_id
 
         new_commit = Commit(**filtered_data)
@@ -814,10 +789,10 @@ if __name__ == '__main__':
                 if (repo_latest_release is None):
                     logging.info(f"Release data does not exist for {repo}")
                 else:
-                    repo_data['latest_release'] = repo_latest_release['tag_name'] if not None else None
-                    repo_data['release_description'] = repo_latest_release['body'] if not None else None
-                    repo_data['release_create_date'] = repo_latest_release['created_at'] if not None else None
-                    repo_data['release_link'] = repo_latest_release['html_url'] if not None else None
+                    repo_data['latest_release'] = repo_latest_release.get('tag_name')
+                    repo_data['release_description'] = repo_latest_release.get('body')
+                    repo_data['release_create_date'] = repo_latest_release.get('created_at')
+                    repo_data['release_link'] = repo_latest_release.get('html_url')
                 
                 # Insert repo and data
                 insert_repository(repo_data)

@@ -46,7 +46,7 @@ def get_latest_release(session, repository_full_name):
         )
     ).scalar()
 
-    return latest_version if not None else None
+    return latest_version
 
 # RELEASES 2: Gets the additional release information
 def get_release_description(session, repository_full_name):
@@ -57,7 +57,7 @@ def get_release_description(session, repository_full_name):
         )
     ).scalar()
 
-    return release_description if not None else None
+    return release_description
 
 # RELEASES 3: Get the version release create date
 def get_release_create_date(session, repository_full_name):
@@ -80,7 +80,7 @@ def get_release_link(session, repository_full_name):
         )
     ).scalar()
 
-    return release_link if not None else None
+    return release_link
 
 # ISSUES 1: Gets all open issues within one_week_ago
 def get_open_issues(session, one_week_ago, repository_full_name):

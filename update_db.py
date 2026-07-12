@@ -105,26 +105,27 @@ def update_all_data(session, repo_name, one_week_ago):
         for comment in issue_comments:
             # ISSUE COMMENTS 1: Update the update date of an issue comment
             update_attribute(session, comment['id'], handle_datetime(comment['updated_at']), IssueComment, 'updated_at')
-        
-        issues_updated += 1
-        
-        repo_data = get_latest_release(repo_name)
 
-        if repo_data is not None:
-            # REPOSITORY 1: Update the latest_release of a repository
-            update_attribute(session, repo_name, repo_data.get('tag_name'), Repository, 'latest_release', name='name')
-            # REPOSITORY 2: Update the release_description of a repository
-            update_attribute(session, repo_name, repo_data.get('body'), Repository, 'release_description', name='full_name')
-            # REPOSITORY 3: Update the release_create_date of a repository
-            update_attribute(session, repo_name, handle_datetime(repo_data.get('created_at')), Repository, 'release_create_date', name='name')
-            # REPOSITORY 4: Update the open_issues_count of a repository
-            update_attribute(session, repo_name, num_issues - pulls_updated, Repository, 'open_issues', name='name')
-        else:
-            logging.warning(f"No release data found for {repo_name}")
+        issues_updated += 1
 
         if num_issues % 10 == 0:
             rate_limit_check()
-    
+
+    # Release / repo-level data is the same for every issue, so fetch it once
+    # per repo after the loop (not once per issue) using the final counts.
+    repo_data = get_latest_release(repo_name)
+    if repo_data is not None:
+        # REPOSITORY 1: Update the latest_release of a repository
+        update_attribute(session, repo_name, repo_data.get('tag_name'), Repository, 'latest_release', name='name')
+        # REPOSITORY 2: Update the release_description of a repository
+        update_attribute(session, repo_name, repo_data.get('body'), Repository, 'release_description', name='full_name')
+        # REPOSITORY 3: Update the release_create_date of a repository
+        update_attribute(session, repo_name, handle_datetime(repo_data.get('created_at')), Repository, 'release_create_date', name='name')
+        # REPOSITORY 4: Update the open_issues_count of a repository
+        update_attribute(session, repo_name, num_issues - pulls_updated, Repository, 'open_issues', name='name')
+    else:
+        logging.warning(f"No release data found for {repo_name}")
+
     logging.info(f"Successfully updated {issues_updated} issues in the database for {repo_name}")
     logging.info(f"Successfully updated {pulls_updated} pull requests in the database for {repo_name}")
 

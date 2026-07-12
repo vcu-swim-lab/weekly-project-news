@@ -33,40 +33,54 @@ headers = {'Authorization': f'token {API_KEYS[current_key_index]}'}
 
 logging.basicConfig(filename='parse-log.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Checks the rate limit
-def rate_limit_check(min_remaining: int = 50):
-    #ensures we have at least min_remaining core requests left
-    #tries to switch API keys if we're low, if all keys are low, sleeps until reset
-    try:
-        r = requests.get(
-            "https://api.github.com/rate_limit", 
-            headers=headers, 
-            timeout=10
-        )
-        r.raise_for_status()
-        core = r.json().get("resources", {}).get("core", {})
-        remaining = core.get("remaining", 0)
-        reset_ts = core.get("reset", int(time.time()) + 60)
-        
-        print(f"Rate limit: remaining={remaining}, resests_at={reset_ts}")
-        print(f"Current key number: {current_key_index + 1} of {len(API_KEYS)}")
-        
-        if remaining < min_remaining:  
-            print("Approaching rate limit, switching API key...")
-            switched = switch_api_key()
-            if switched:
-                return rate_limit_check(min_remaining)
-            
-            sleep_for = max(0, reset_ts - int(time.time()) + 5)
-            print(f"All keys are exhausted. Sleeping {sleep_for}s until reset...")
-            time.sleep(sleep_for)
-            return rate_limit_check(min_remaining)
+# Timestamp of the last real /rate_limit round-trip (throttling gate).
+_last_rate_limit_check = 0.0
+
+# Proactively ensure the current key has at least `min_remaining` core requests,
+# switching keys or sleeping until reset if not.
+#
+# This used to run a full /rate_limit round-trip on *every* page/issue, which
+# dominated the runtime. github_get now reacts to 403/429 directly, so a
+# proactive check is only needed occasionally: it's throttled to at most once
+# per `min_interval` seconds and returns immediately otherwise.
+def rate_limit_check(min_remaining: int = 50, min_interval: float = 60.0):
+    global _last_rate_limit_check
+    now = time.time()
+    if now - _last_rate_limit_check < min_interval:
         return
-    except Exception as e:
-        logging.error("Error checking rate limit: %s", e)
-        print("Error checking rate limit:", e)
-        if switch_api_key():
-            return rate_limit_check(min_remaining)
+    _last_rate_limit_check = now
+
+    reset_ts = int(now) + 60
+    # Try each key at most once before falling back to sleeping until reset.
+    for _ in range(len(API_KEYS)):
+        try:
+            r = requests.get(
+                "https://api.github.com/rate_limit",
+                headers=headers,
+                timeout=10,
+            )
+            r.raise_for_status()
+            core = r.json().get("resources", {}).get("core", {})
+            remaining = core.get("remaining", 0)
+            reset_ts = core.get("reset", int(time.time()) + 60)
+        except Exception as e:
+            logging.error("Error checking rate limit: %s", e)
+            print("Error checking rate limit:", e)
+            switch_api_key()
+            continue
+
+        print(f"Rate limit: remaining={remaining}, resets_at={reset_ts}")
+        print(f"Current key number: {current_key_index + 1} of {len(API_KEYS)}")
+
+        if remaining >= min_remaining:
+            return
+        print("Approaching rate limit, switching API key...")
+        switch_api_key()
+
+    # Every key is low/unreachable — sleep until the most recent reset.
+    sleep_for = max(0, reset_ts - int(time.time()) + 5)
+    print(f"All keys are exhausted. Sleeping {sleep_for}s until reset...")
+    time.sleep(sleep_for)
 
 # Switches API keys. When hits array limit, goes back to index 0
 def switch_api_key():
@@ -77,16 +91,34 @@ def switch_api_key():
     print(f"Switched to API key index: {current_key_index + 1}")
     return True
 
-# GitHub GET with auto-retry on rate-limit responses.
-# On 403/429: logs body + rate-limit headers, honors Retry-After,
-# switches API keys, and retries. Returns the final Response — caller
-# should still check status_code in case all keys are exhausted.
+# GitHub GET with auto-retry.
+# - 401 (bad/expired token): switches to the next API key and retries, so one
+#   dead token doesn't kill the run.
+# - 5xx (502/503/504 etc, transient server errors) and network errors: retries
+#   with exponential backoff.
+# - 403/429 (rate limited): logs rate-limit headers, honors Retry-After,
+#   switches API keys, and retries.
+# Returns the final Response — caller should still check status_code in case
+# all keys are exhausted or retries run out.
 def github_get(url, params=None, max_retries=None):
     if max_retries is None:
         max_retries = len(API_KEYS) + 1
-    attempts = 0
+    attempts = 0            # counts key rotations (401 / 403 / 429)
+    server_retries = 0      # counts transient 5xx / network backoffs
+    max_server_retries = 5
     while True:
-        response = requests.get(url, headers=headers, params=params)
+        try:
+            response = requests.get(url, headers=headers, params=params, timeout=30)
+        except requests.RequestException as e:
+            server_retries += 1
+            if server_retries > max_server_retries:
+                logging.error("Network error fetching %s, giving up: %s", url, e)
+                raise
+            wait = min(2 ** server_retries, 60)
+            logging.warning("Network error fetching %s (%s); retrying in %ds", url, e, wait)
+            time.sleep(wait)
+            continue
+
         if response.status_code == 200:
             return response
 
@@ -99,6 +131,28 @@ def github_get(url, params=None, max_retries=None):
             response.status_code, url, current_key_index + 1, len(API_KEYS),
             remaining, reset, retry_after, body,
         )
+
+        # 401: the current token is invalid/expired/revoked. Skip to the next
+        # key and retry; don't burn the whole run on one dead token.
+        if response.status_code == 401:
+            attempts += 1
+            if attempts >= max_retries:
+                logging.error("All API keys rejected (401) for %s", url)
+                return response
+            switch_api_key()
+            continue
+
+        # 5xx: transient server-side error. Back off and retry with the same
+        # key; these usually clear on their own.
+        if 500 <= response.status_code < 600:
+            server_retries += 1
+            if server_retries > max_server_retries:
+                logging.error("Exhausted server-error retries (%s) for %s", response.status_code, url)
+                return response
+            wait = min(2 ** server_retries, 60)
+            logging.info("Sleeping %ds due to %s server error", wait, response.status_code)
+            time.sleep(wait)
+            continue
 
         if response.status_code not in (403, 429):
             return response

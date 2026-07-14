@@ -12,8 +12,9 @@ from tables.commit import Commit
 from tables.labels import Label
 from datetime import datetime
 import json
-import requests 
-import os 
+import requests
+import os
+import sys
 from sqlalchemy import create_engine
 import logging
 from sqlalchemy.exc import IntegrityError
@@ -711,7 +712,19 @@ def insert_all_data(repo_name, date):
         
     print(f"Successfully inserted {issues_inserted} issues for {repo_name} into the database for {repo_name}")
     print(f"Successfully inserted {pulls_inserted} pull requests for {repo_name} into the database for {repo_name}")
-  
+
+
+# Coverage gate decision (extracted so it can be unit tested). Returns True when
+# the run should be treated as a failure: either nothing succeeded, or a
+# majority of the attempted repositories errored out. A repo that succeeds but
+# simply has no new activity is NOT a failure — this only counts repos that
+# raised, so we fail loudly instead of silently shipping empty newsletters.
+def coverage_check_failed(num_succeeded, num_failed):
+    attempted = num_succeeded + num_failed
+    if attempted == 0:
+        return False
+    return num_succeeded == 0 or num_failed * 2 > attempted
+
 
 # Main
 if __name__ == '__main__':
@@ -745,42 +758,48 @@ if __name__ == '__main__':
     subscriber_repo_list = []
 
 
-    try:
-        for subscriber in subscriber_data['results']:
-            repo_name = subscriber['metadata'].get('repo_name', '')
-            
-            if repo_name and 'github.com' in repo_name:
-                # Check that the repository is public
-                if not check_repo(repo_name):
-                    print(f"Repository is either private or does not exist.")
-                    logging.warning(f"Repository {repo_name} is either private or does not exist.")
-                    continue
-                parts = repo_name.split('/')
-                if len(parts) >= 5:
-                    full_repo_name = f"{parts[3]}/{parts[4]}"
-                    subscriber_repo_list.append(full_repo_name)
-         
-                    
-        # List of the current repositories in the database
-        current_repo_list = session.query(Repository.full_name).all()
-        current_repo_list = [item[0] for item in current_repo_list]
+    for subscriber in subscriber_data['results']:
+        repo_name = (subscriber.get('metadata') or {}).get('repo_name', '')
 
-        # Making a set to keep track of processed repos to save time
-        processed_repos = set()
-        
-        # Loop through each subscriber repo and insert data
-        for repo in subscriber_repo_list:
-            if repo in processed_repos:
+        if repo_name and 'github.com' in repo_name:
+            # Check that the repository is public
+            if not check_repo(repo_name):
+                print(f"Repository is either private or does not exist.")
+                logging.warning(f"Repository {repo_name} is either private or does not exist.")
                 continue
-            
-            repo_name = repo
-            logging.info(f"Starting {repo_name}")
-            
+            parts = repo_name.split('/')
+            if len(parts) >= 5:
+                full_repo_name = f"{parts[3]}/{parts[4]}"
+                subscriber_repo_list.append(full_repo_name)
+
+    # List of the current repositories in the database
+    current_repo_list = session.query(Repository.full_name).all()
+    current_repo_list = [item[0] for item in current_repo_list]
+
+    # Making a set to keep track of processed repos to save time
+    processed_repos = set()
+    succeeded_repos = []
+    failed_repos = []
+
+    # Loop through each subscriber repo and insert data. Each repo is isolated
+    # in its own try/except so one repo's failure (a GitHub API error, a
+    # malformed payload, an exhausted rate limit) does NOT abort the remaining
+    # repos. Previously a single exception here aborted the whole loop, leaving
+    # every subsequent repo with no data and its newsletter empty.
+    for repo in subscriber_repo_list:
+        if repo in processed_repos:
+            continue
+
+        repo_name = repo
+        processed_repos.add(repo)
+        logging.info(f"Starting {repo_name}")
+
+        try:
             # If repo already exists in database
             if repo in current_repo_list:
                 logging.info(f"Updating existing repository: {repo_name}")
                 insert_all_data(repo_name, one_week_ago)
-            else: # Repo doesn't exist in database, so insert it
+            else:  # Repo doesn't exist in database, so insert it
                 logging.info(f"Inserting new repository: {repo_name}")
                 repo_data = get_a_repository(repo, headers)
 
@@ -793,25 +812,44 @@ if __name__ == '__main__':
                     repo_data['release_description'] = repo_latest_release.get('body')
                     repo_data['release_create_date'] = repo_latest_release.get('created_at')
                     repo_data['release_link'] = repo_latest_release.get('html_url')
-                
+
                 # Insert repo and data
                 insert_repository(repo_data)
                 insert_all_data(repo_name, one_year_ago)
 
-            processed_repos.add(repo)
-            elapsed_time = time.time() - start_time
-            logging.info("Total time elapsed since the start: {:.2f} minutes".format(elapsed_time/60))
-        
-        # Check how long the function takes to run and print result
+            succeeded_repos.append(repo_name)
+        except Exception as e:
+            # Isolate the failure to this repo and keep going.
+            session.rollback()
+            failed_repos.append(repo_name)
+            logging.error(f"Failed to process repository {repo_name}: {e}", exc_info=True)
+            print(f"Failed to process repository {repo_name}: {e}")
+
         elapsed_time = time.time() - start_time
-        if (elapsed_time >= 60):
-            print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
-        else:
-            print("This entire program took {:.2f} seconds to run".format(elapsed_time))
-            
-        logging.info(f"Elapsed time: {elapsed_time}")
-        logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
-    
-    except Exception as e:
-        logging.error(f"An error occurred in the main process: {e}")
-        print(f"An error occurred: {e}")
+        logging.info("Total time elapsed since the start: {:.2f} minutes".format(elapsed_time/60))
+
+    # Run summary
+    attempted = len(succeeded_repos) + len(failed_repos)
+    elapsed_time = time.time() - start_time
+    logging.info(
+        f"parse_github_data finished: {len(succeeded_repos)}/{attempted} repositories "
+        f"succeeded, {len(failed_repos)} failed. Failed: {failed_repos}"
+    )
+    print(f"Succeeded: {len(succeeded_repos)}/{attempted} repos. Failed: {failed_repos}")
+    if elapsed_time >= 60:
+        print("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+    else:
+        print("This entire program took {:.2f} seconds to run".format(elapsed_time))
+    logging.info("This entire program took {:.2f} minutes to run".format(elapsed_time/60))
+
+    # Coverage gate: exit non-zero if the run failed to populate enough repos, so
+    # the pipeline stops here instead of building and sending a batch of empty
+    # newsletters. (run_script_with_retry treats a non-zero exit as a failure and
+    # aborts Stage 1 with a CRITICAL log.)
+    if coverage_check_failed(len(succeeded_repos), len(failed_repos)):
+        logging.critical(
+            f"Coverage check FAILED: only {len(succeeded_repos)}/{attempted} repositories "
+            f"were populated. Aborting so empty newsletters are not sent. Failed: {failed_repos}"
+        )
+        print("Coverage check FAILED - too many repositories errored; see parse-log.log")
+        sys.exit(1)

@@ -14,6 +14,7 @@ from datetime import datetime
 import logging
 from sqlalchemy import create_engine
 import time
+import parse_github_data
 from parse_github_data import *
 
 load_dotenv()
@@ -46,27 +47,69 @@ def handle_datetime(datetime_str):
         return datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%S%z')
     return None
 
+# Returns True if a comment's author looks like a bot.
+def _is_bot(login):
+    return 'bot' in (login or '').lower()
+
+# Insert a pull request that is active this week but not yet in the database,
+# along with its comments and commits. Reuses parse_github_data's insert
+# functions (which operate on parse_github_data.session — set in main).
+def insert_new_pull_request(repo_name, pr):
+    insert_pull_request(pr, repo_name)
+    for comment in get_pr_comments(repo_name, pr):
+        if _is_bot((comment.get('user') or {}).get('login')):
+            continue
+        insert_pr_comment(comment, pr['id'], repo_name)
+    for commit in get_pr_commits(repo_name, pr['number']):
+        insert_commit(commit, repo_name, pr['id'])
+
+# Insert an issue that is active this week but not yet in the database, along
+# with its comments and labels.
+def insert_new_issue(repo_name, issue):
+    insert_issue(issue, repo_name)
+    for comment in get_issue_comments(repo_name, issue):
+        if _is_bot((comment.get('user') or {}).get('login')):
+            continue
+        insert_issue_comment(comment, issue['id'], repo_name)
+    for label in get_issue_labels(repo_name, issue):
+        insert_issue_label(label, issue['id'], repo_name)
+
 # UPDATE ALL DATA
 def update_all_data(session, repo_name, one_week_ago):
     issues = get_issues(repo_name, one_week_ago)
     num_issues = 0
     issues_updated = 0
     pulls_updated = 0
-    
+    issues_inserted = 0
+    pulls_inserted = 0
+
     for issue in issues:
         num_issues += 1
         logging.info(f"Processing issue {num_issues} of {len(issues)} for {repo_name}")
-        
+
         # Check for bots
         if 'bot' in issue['user']['login'].lower() or '[bot]' in issue['user']['login'].lower():
             continue
-        
+
         # Checks if issue is pull request and update
         if 'pull' in issue['html_url']:
             pr = issue
+
+            # Upsert: a PR that is active this week but missing from the DB
+            # (e.g. it was created before the DB's history) gets inserted
+            # rather than logged as "does not exist". A fresh insert already
+            # carries current data, so there is nothing further to update.
+            if session.query(PullRequest).filter_by(id=pr['id']).first() is None:
+                logging.info(f"Pull request {pr['id']} not in database; inserting")
+                insert_new_pull_request(repo_name, pr)
+                pulls_inserted += 1
+                if num_issues % 10 == 0:
+                    rate_limit_check()
+                continue
+
             pr_comments = get_pr_comments(repo_name, pr)
             num_comments = len(pr_comments)
-            
+
             # PRS 1: Update the state of a pull request
             update_attribute(session, pr['id'], pr['state'], PullRequest, 'state')
             # PRS 2: Update the number of comments of a pull request
@@ -88,9 +131,19 @@ def update_all_data(session, repo_name, one_week_ago):
             
             if num_issues % 10 == 0:
                 rate_limit_check()
-            
+
             continue
-        
+
+        # Upsert: an issue active this week but missing from the DB gets
+        # inserted rather than logged as "does not exist".
+        if session.query(Issue).filter_by(id=issue['id']).first() is None:
+            logging.info(f"Issue {issue['id']} not in database; inserting")
+            insert_new_issue(repo_name, issue)
+            issues_inserted += 1
+            if num_issues % 10 == 0:
+                rate_limit_check()
+            continue
+
         issue_comments = get_issue_comments(repo_name, issue)
         num_comments = len(issue_comments)
         # ISSUES 1: Update the state of an issue
@@ -128,6 +181,7 @@ def update_all_data(session, repo_name, one_week_ago):
 
     logging.info(f"Successfully updated {issues_updated} issues in the database for {repo_name}")
     logging.info(f"Successfully updated {pulls_updated} pull requests in the database for {repo_name}")
+    logging.info(f"Inserted {issues_inserted} new issues and {pulls_inserted} new pull requests for {repo_name}")
 
     
 
@@ -141,7 +195,11 @@ if __name__ == '__main__':
     engine = create_engine('sqlite:///github.db')
     Session = sessionmaker(bind=engine)
     session = Session()
-    
+
+    # The reused insert_* helpers from parse_github_data operate on that
+    # module's global `session`, so point it at ours for the upsert path.
+    parse_github_data.session = session
+
     # Time variables
     one_week_ago = datetime.now(timezone.utc) - timedelta(days=7)
 

@@ -369,7 +369,6 @@ def closed_pull_requests(repo):
         if pull_request.get("merged_at"):
            key_pull_request_summary += f"\n - **Merged:** {format_date(pull_request['merged_at'])}\n"
 
-        key_pull_request_summary += f"\n - **Associated Commits:** {commit_list}\n\n"
         key_pull_requests += 1
       elif total_prs > 3:
         # Limit other closed prs to 25
